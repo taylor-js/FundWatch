@@ -27,9 +27,11 @@ jobs:
 
     - name: Deploy to Heroku
       env:
-        HEROKU_API_TOKEN: ${{ secrets.HEROKU_API_TOKEN }}
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
       if: github.ref == 'refs/heads/main' && job.status == 'success'
       run: |
-        git remote add heroku https://heroku:$HEROKU_API_TOKEN@git.heroku.com/$HEROKU_APP_NAME.git
+        # Add Heroku as a remote repository with the API key
+        git remote add heroku https://heroku:${{ env.HEROKU_API_KEY }}@git.heroku.com/${{ env.HEROKU_APP_NAME }}.git
+        # Push to the Heroku repository
         git push heroku HEAD:main
