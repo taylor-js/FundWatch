@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # TradeTracker
 
 TradeTracker is a comprehensive stock tracking and simulation app designed to help investors and traders make informed decisions. Built using .NET Core, this application provides powerful tools to track your investments, analyze potential returns, and simulate various stock purchase scenarios.
@@ -39,3 +40,7 @@ TradeTracker is a comprehensive stock tracking and simulation app designed to he
 
 ## Contributing
 Contributions are welcome! If you'd like to contribute, please fork the repository, create a new branch, and submit a pull request. Make sure to follow the coding standards and include detailed documentation for any new features.
+=======
+# FundWatch
+Tracks stocks and investment potential.
+>>>>>>> 4639d80e601a82fc3ab55feb0a334a20aed7d54b
