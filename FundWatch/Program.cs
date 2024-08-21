@@ -1,4 +1,3 @@
-using FundWatch.Areas.Identity.Data;
 using FundWatch.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,22 +13,21 @@ builder.Services.AddRazorPages();
 
 var connectionString = builder.Configuration.GetConnectionString("HerokuPostgres");
 
-// Register the DbContext for your application
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
-// Register the DbContext for Identity, which uses ApplicationUser
+// Register the DbContext for Identity
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Register Identity services with ApplicationUser and IdentityRole
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-{
-    options.SignIn.RequireConfirmedAccount = false;
-    options.Password.RequireUppercase = false; // Custom password settings
-})
+
+// Register the DbContext for application-specific tables
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// Register Identity services with IdentityUser and IdentityRole
+
+builder.Services.AddDefaultIdentity<IdentityUser>(options => { options.SignIn.RequireConfirmedAccount = false; })
     .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders();
+
 
 // Register a mock email sender for development
 builder.Services.AddSingleton<IEmailSender, MockEmailSender>();
@@ -52,7 +50,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // Register Syncfusion License
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NCaF5cXmZCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdnWXdfeXVTRWFYV0F1XEo=");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Your-Syncfusion-License-Key");
 
 var app = builder.Build();
 

@@ -12,15 +12,14 @@ html {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-html {
-    position: relative;
-    min-height: 100%;
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-body {
-    margin-bottom: 60px;
-    font-family: Roboto,sans-serif;
-}
+
 
 /*tab navigation*/
 .login-logout-card .card-header {
@@ -44,4 +43,43 @@ body {
 
 .login-logout-card .card-body {
     padding: 10px 20px;
+}
+
+
+body {
+    background-color: #0100; /* Black background */
+    color: #b0c4de; /* Light steel blue text */
+    font-family: 'Roboto', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.navbar-brand, .nav-link, .footer {
+    color: #1e90ff; /* Dodger blue */
+}
+
+.nav-link:hover {
+    color: #4682b4; /* Steel blue on hover */
+}
+
+footer {
+    background-color: #1e1e1e; /* Dark background */
+    color: #b0c4de;
+    padding: 20px 0;
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+}
+
+footer a {
+    color: #1e90ff; /* Dodger blue */
+    text-decoration: none;
+    text-align:center;
+}
+
+footer a:hover {
+    color: #4682b4; /* Steel blue on hover */
 }
