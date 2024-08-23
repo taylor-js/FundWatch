@@ -1,6 +1,6 @@
-# TradeTracker
+# FundWatch
 
-TradeTracker is a comprehensive stock tracking and simulation app designed to help investors and traders make informed decisions. Built using .NET Core, this application provides powerful tools to track your investments, analyze potential returns, and simulate various stock purchase scenarios.
+FundWatch is a comprehensive stock tracking and simulation app designed to help investors and traders make informed decisions. Built using .NET Core, this application provides powerful tools to track your investments, analyze potential returns, and simulate various stock purchase scenarios.
 
 ## Features
 
@@ -22,8 +22,8 @@ TradeTracker is a comprehensive stock tracking and simulation app designed to he
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/TradeTracker.git
-   cd TradeTracker
+   git clone https://github.com/your-username/FundWatch.git
+   cd FundWatch
    ```
 2. Set up the database:
    - Update the connection string in appsettings.json to point to your SQL Server or PostgreSQL instance.
@@ -35,7 +35,7 @@ TradeTracker is a comprehensive stock tracking and simulation app designed to he
    ```bash
    dotnet run
    ```
-4. Open your browser and navigate to http://localhost:5000 to start using TradeTracker.
+4. Open your browser and navigate to http://localhost:5000 to start using FundWatch.
 
 # Contributing
 
