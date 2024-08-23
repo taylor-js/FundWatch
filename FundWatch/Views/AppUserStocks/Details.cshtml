@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Stock Details";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var cultureInfo = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
 }
 
 <div class="container mt-5">
@@ -19,7 +20,7 @@
                         <dd class="col-sm-8">@Model.StockSymbol</dd>
 
                         <dt class="col-sm-4">Purchase Price</dt>
-                        <dd class="col-sm-8">@Model.PurchasePrice.ToString("C2")</dd>
+                        <dd class="col-sm-8">@Model.PurchasePrice.ToString("C2", cultureInfo)</dd>
 
                         <dt class="col-sm-4">Date Purchased</dt>
                         <dd class="col-sm-8">@Model.DatePurchased.ToString("MMM dd, yyyy")</dd>
@@ -32,13 +33,13 @@
                     <h5 class="card-title">Current Status</h5>
                     <dl class="row">
                         <dt class="col-sm-4">Current Price</dt>
-                        <dd class="col-sm-8">@Model.CurrentPrice.ToString("C2")</dd>
+                        <dd class="col-sm-8">@Model.CurrentPrice.ToString("C2", cultureInfo)</dd>
 
                         <dt class="col-sm-4">Total Value</dt>
-                        <dd class="col-sm-8">@Model.TotalValue.ToString("C2")</dd>
+                        <dd class="col-sm-8">@Model.TotalValue.ToString("C2", cultureInfo)</dd>
 
                         <dt class="col-sm-4">Value Change</dt>
-                        <dd class="col-sm-8">@Model.ValueChange.ToString("C2")</dd>
+                        <dd class="col-sm-8">@Model.ValueChange.ToString("C2", cultureInfo)</dd>
 
                         <dt class="col-sm-4">Performance %</dt>
                         <dd class="col-sm-8">@Model.PerformancePercentage.ToString("N2")%</dd>
