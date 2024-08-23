@@ -92,6 +92,12 @@
               "target": "Package",
               "version": "[8.0.0, )"
             },
+            "Microsoft.TypeScript.MSBuild": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[5.5.3, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.4, )"
@@ -100,9 +106,13 @@
               "target": "Package",
               "version": "[8.0.4, )"
             },
+            "Syncfusion.Blazor": {
+              "target": "Package",
+              "version": "[26.2.10, )"
+            },
             "Syncfusion.EJ2.AspNet.Core": {
               "target": "Package",
-              "version": "[26.2.9, )"
+              "version": "[26.2.10, )"
             }
           },
           "imports": [

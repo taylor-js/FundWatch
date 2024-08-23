@@ -1,0 +1,66 @@
+﻿@model FundWatch.Models.AppUserStock
+
+@{
+    ViewData["Title"] = "Stock Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">@ViewData["Title"]</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="card-title">Basic Information</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">Stock Symbol</dt>
+                        <dd class="col-sm-8">@Model.StockSymbol</dd>
+
+                        <dt class="col-sm-4">Purchase Price</dt>
+                        <dd class="col-sm-8">@Model.PurchasePrice.ToString("C2")</dd>
+
+                        <dt class="col-sm-4">Date Purchased</dt>
+                        <dd class="col-sm-8">@Model.DatePurchased.ToString("MMM dd, yyyy")</dd>
+
+                        <dt class="col-sm-4">Shares Purchased</dt>
+                        <dd class="col-sm-8">@Model.NumberOfSharesPurchased</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="card-title">Current Status</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">Current Price</dt>
+                        <dd class="col-sm-8">@Model.CurrentPrice.ToString("C2")</dd>
+
+                        <dt class="col-sm-4">Total Value</dt>
+                        <dd class="col-sm-8">@Model.TotalValue.ToString("C2")</dd>
+
+                        <dt class="col-sm-4">Value Change</dt>
+                        <dd class="col-sm-8">@Model.ValueChange.ToString("C2")</dd>
+
+                        <dt class="col-sm-4">Performance %</dt>
+                        <dd class="col-sm-8">@Model.PerformancePercentage.ToString("N2")%</dd>
+                    </dl>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h5 class="card-title">Sale Information</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">Date Sold</dt>
+                        <dd class="col-sm-8">@Model.DateSold?.ToString("MMM dd, yyyy")</dd>
+
+                        <dt class="col-sm-4">Shares Sold</dt>
+                        <dd class="col-sm-8">@Model.NumberOfSharesSold</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-right">
+            <a asp-action="CreateOrEdit" asp-route-id="@Model?.Id" class="btn btn-warning">Edit</a>
+            <a asp-action="Dashboard" class="btn btn-secondary">Back to List</a>
+        </div>
+    </div>
+</div>

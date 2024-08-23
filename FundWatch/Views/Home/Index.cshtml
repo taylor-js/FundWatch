@@ -2,8 +2,66 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-    <p>User ID: @ViewData["UserID"]</p>
+<div class="container-fluid mt-5">
+    <div class="jumbotron text-center bg-primary text-white">
+        <h1 class="display-4">Welcome to FundWatch</h1>
+        <p class="lead">Your go-to solution for managing and tracking your stock portfolio with ease.</p>
+        <a class="btn btn-light btn-lg" href="/AppUserStocks/CreateOrEdit" role="button">Get Started</a>
+    </div>
+
+    <div class="row text-center mt-5">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <img class="card-img-top" src="https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1080&q=80" alt="Portfolio Management">
+                <div class="card-body">
+                    <h5 class="card-title">Portfolio Management</h5>
+                    <p class="card-text">Easily manage your stock investments and track performance with our intuitive tools.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <img class="card-img-top" src="https://images.pexels.com/photos/159888/pexels-photo-159888.jpeg" alt="Real-Time Analytics">
+                <div class="card-body">
+                    <h5 class="card-title">Real-Time Analytics</h5>
+                    <p class="card-text">Get the latest stock prices and market trends with our real-time analytics.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-5">
+                <img class="card-img-top" src="https://images.unsplash.com/photo-1591696205602-2f950c417cb9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNjUyOXwwfDF8c2VhcmNofDV8fHNlY3VyaXR5fGVufDB8fHx8MTY5MjQ4NjA2Ng&ixlib=rb-1.2.1&q=80&w=1080" alt="Secure Platform">
+                <div class="card-body">
+                    <h5 class="card-title">Secure Platform</h5>
+                    <p class="card-text">Your data is safe with us. We prioritize security to protect your investments.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .card-img-top {
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .jumbotron {
+        padding: 2rem 1rem;
+        background-image: linear-gradient(to right, #007bff, #0056b3);
+        border-radius: 0.5rem;
+    }
+
+        .jumbotron h1 {
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .jumbotron p {
+            font-size: 1.25rem;
+        }
+
+    .btn-lg {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+</style>

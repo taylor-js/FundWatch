@@ -1,0 +1,148 @@
+﻿@model FundWatch.Models.AppUserStock
+
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Create" : "Edit";
+}
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">@ViewData["Title"] User Stock</h3>
+        </div>
+        <div class="card-body">
+            <form asp-controller="AppUserStocks" asp-action="CreateOrEdit" method="post">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <!-- Explicit hidden field for Id -->
+                @if (Model.Id != 0)
+                {
+                    <input type="hidden" asp-for="Id" />
+                }
+                <input type="hidden" asp-for="UserId" name="UserId" value="@Model.UserId" />
+
+
+                <!-- Other form fields -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <ejs-textbox id="StockSymbol" ejs-for="StockSymbol" placeholder="Stock Symbol" floatLabelType="Always" cssClass="e-outline"></ejs-textbox>
+                        <span asp-validation-for="StockSymbol" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <ejs-numerictextbox id="NumberOfSharesPurchased" ejs-for="NumberOfSharesPurchased" placeholder="Number of Shares Purchased"
+                                            floatLabelType="Always" format="n0" min="0" cssClass="e-outline"></ejs-numerictextbox>
+                        <span asp-validation-for="NumberOfSharesPurchased" class="text-danger"></span>
+                    </div>
+                    
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <ejs-datepicker id="DatePurchased" ejs-for="DatePurchased" placeholder="Date Purchased" floatLabelType="Always"
+                                        format="MM/dd/yyyy" cssClass="e-outline"></ejs-datepicker>
+                        <span asp-validation-for="DatePurchased" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <ejs-numerictextbox id="PurchasePrice" ejs-for="PurchasePrice" placeholder="Purchase Price" floatLabelType="Always" format="c2" min="0" cssClass="e-outline"></ejs-numerictextbox>
+                        <span asp-validation-for="PurchasePrice" class="text-danger"></span>
+                    </div>
+                    
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <ejs-datepicker id="DateSold" ejs-for="DateSold" placeholder="Date Sold" floatLabelType="Always"
+                                        format="MM/dd/yyyy" cssClass="e-outline"></ejs-datepicker>
+                        <span asp-validation-for="DateSold" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <ejs-numerictextbox id="CurrentPrice" ejs-for="CurrentPrice" placeholder="Current Price" floatLabelType="Always"
+                                            format="c2" min="0" cssClass="e-outline"></ejs-numerictextbox>
+                        <span asp-validation-for="CurrentPrice" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <ejs-numerictextbox id="NumberOfSharesSold" ejs-for="NumberOfSharesSold" placeholder="Number of Shares Sold"
+                                        floatLabelType="Always" format="n0" min="0" cssClass="e-outline"></ejs-numerictextbox>
+                    <span asp-validation-for="NumberOfSharesSold" class="text-danger"></span>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Dashboard" class="btn btn-secondary">Back to List</a>
+                    <ejs-button id="submit" type="submit" cssClass="e-success">@(Model.Id == 0 ? "Create" : "Save")</ejs-button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var stockSymbolInput = document.getElementById('StockSymbol');
+            var datePurchasedPicker = document.getElementById('DatePurchased').ej2_instances[0];
+            var purchasePriceInput = document.getElementById('PurchasePrice').ej2_instances[0];
+
+            var dateSoldPicker = document.getElementById('DateSold').ej2_instances[0];
+            var currentPriceInput = document.getElementById('CurrentPrice').ej2_instances[0];
+
+            function updatePurchasePrice() {
+                var stockSymbol = stockSymbolInput.value;
+                var datePurchased = datePurchasedPicker.value;
+
+                if (stockSymbol && datePurchased) {
+                    var formattedDate = moment(datePurchased).format('YYYY-MM-DD');
+
+                    fetch(`@Url.Action("GetHistoricalPrice", "AppUserStocks")?stockSymbol=${stockSymbol}&datePurchased=${formattedDate}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                purchasePriceInput.value = data.price;
+                            } else {
+                                console.error(data.message || "Could not fetch the price.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("An error occurred while fetching the price:", error);
+                        });
+                }
+            }
+
+            function updateCurrentPrice() {
+                var stockSymbol = stockSymbolInput.value;
+                var dateSold = dateSoldPicker.value;
+
+                if (stockSymbol && dateSold) {
+                    var formattedDate = moment(dateSold).format('YYYY-MM-DD');
+
+                    fetch(`@Url.Action("GetHistoricalPrice", "AppUserStocks")?stockSymbol=${stockSymbol}&datePurchased=${formattedDate}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                currentPriceInput.value = data.price;
+                            } else {
+                                console.error(data.message || "Could not fetch the price.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("An error occurred while fetching the price:", error);
+                        });
+                }
+            }
+
+            stockSymbolInput.addEventListener('change', function () {
+                updatePurchasePrice();
+                updateCurrentPrice();
+            });
+            datePurchasedPicker.addEventListener('change', updatePurchasePrice);
+            dateSoldPicker.addEventListener('change', updateCurrentPrice);
+        });
+    </script>
+
+}

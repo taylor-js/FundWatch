@@ -1,0 +1,200 @@
+﻿@using static FundWatch.Controllers.AppUserStocksController
+@model IEnumerable<FundWatch.Models.AppUserStock>
+@{
+    ViewData["Title"] = "Stock Portfolio Dashboard";
+    var stockSummaryData = ViewBag.StockSummary as List<StockSummaryData>;
+    var monthlyTrendData = ViewBag.MonthlyTrendData as List<MonthlyTrendData>;
+    var bubbleChartData = ViewBag.BubbleChartData as List<BubbleChartData>;
+}
+
+<h2 class="text-center mb-4 mt-4">@ViewData["Title"]</h2>
+
+<div class="container-fluid mt-4 mb-4">
+    <!-- Portfolio Overview -->
+    <div class="row mb-4">
+        @* Decorated Cards *@
+        <div class="col-md-3">
+            <div class="card shadow fixed-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title">Total Portfolio Value</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="card-text display-value">
+                        @(stockSummaryData != null ? stockSummaryData.Sum(s => s.TotalValue).ToString("C2") : "N/A")
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow fixed-card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title">Total Number of Stocks</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="card-text display-value">@(stockSummaryData?.Count ?? 0)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow fixed-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title">Best Performing Stock</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="card-text display-value">
+                        @(stockSummaryData != null && stockSummaryData.Any()
+                            ? stockSummaryData.OrderByDescending(s => s.PerformancePercentage).First().StockSymbol
+                            : "N/A")
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow fixed-card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title">Worst Performing Stock</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="card-text display-value">
+                        @(stockSummaryData != null && stockSummaryData.Any()
+                            ? stockSummaryData.OrderBy(s => s.PerformancePercentage).First().StockSymbol
+                            : "N/A")
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Stock Value Trend Chart -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Monthly Stock Value Trend</h5>
+                </div>
+                <div class="card-body">
+                    <ejs-chart id="monthlyTrendChart" background="#212529">
+                        <e-chart-primaryxaxis valueType="Category" title="Month" labelRotation="90" LabelIntersectAction="Rotate90" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                            <e-majorgridlines width="0"></e-majorgridlines>
+                            <e-labelstyle color="#ffffff"></e-labelstyle>
+                        </e-chart-primaryxaxis>
+                        <e-chart-primaryyaxis title="Total Value" labelFormat="c2" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                            <e-majorgridlines width="1" color="#4a4a4a"></e-majorgridlines>
+                            <e-labelstyle color="#ffffff"></e-labelstyle>
+                        </e-chart-primaryyaxis>
+                        <e-series-collection>
+                            @if (monthlyTrendData != null && monthlyTrendData.Any())
+                            {
+                                @foreach (var stockGroup in monthlyTrendData.GroupBy(x => x.StockSymbol))
+                                {
+                                    <e-series dataSource="@stockGroup" xName="Month" yName="TotalValue" type="Line" name="@stockGroup.Key" width="2">
+                                        <e-series-marker visible="true" height="8" width="8"></e-series-marker>
+                                    </e-series>
+                                }
+                            }
+                            else
+                            {
+                                <text>No data available for Monthly Stock Value Trend.</text>
+                            }
+                        </e-series-collection>
+                        <e-chart-legendsettings visible="true" position="Bottom" toggleSeriesVisibility="true">
+                            <e-legendsettings-textstyle color="#ffffff"></e-legendsettings-textstyle>
+                        </e-chart-legendsettings>
+                        <e-chart-tooltipsettings enable="true" shared="false" format="${series.name}<br>Month: ${point.x}<br>Value: ${point.y}">
+                            <e-tooltipsettings-textstyle color="#ffffff" size="12px"></e-tooltipsettings-textstyle>
+                            <e-tooltipsettings-border color="#000000" width="1"></e-tooltipsettings-border>
+                        </e-chart-tooltipsettings>
+                        <e-chart-zoomsettings enableSelectionZooming="true" mode="X" enablePan="true"></e-chart-zoomsettings>
+                    </ejs-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row mb-4">
+        <!-- Stock Performance Chart -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Stock Performance</h5>
+                </div>
+                <div class="card-body">
+                    <ejs-chart id="stockPerformanceChart" background="#212529">
+                        <e-chart-primaryxaxis valueType="Category" title="Stock Symbol" labelRotation="90" LabelIntersectAction="Rotate90" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                            <e-labelstyle color="#ffffff"></e-labelstyle>
+                        </e-chart-primaryxaxis>
+                        <e-chart-primaryyaxis title="Performance (%)" labelFormat="n2" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                            <e-labelstyle color="#ffffff"></e-labelstyle>
+                        </e-chart-primaryyaxis>
+                        <e-series-collection>
+                            <e-series dataSource="@stockSummaryData" xName="StockSymbol" yName="PerformancePercentage" type="Column" name="Performance">
+                            </e-series>
+                        </e-series-collection>
+                        <e-chart-tooltipsettings enable="true" format="Symbol: ${point.x}<br>Performance: ${point.y}%"></e-chart-tooltipsettings>
+                    </ejs-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bubble Chart for Stock Distribution -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Stock Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <ejs-chart id="bubbleChart" background="#212529">
+                        <e-chart-primaryxaxis valueType="Category" title="Stock Symbol" labelRotation="90" LabelIntersectAction="Rotate90" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                            <e-labelstyle color="#ffffff"></e-labelstyle>
+                        </e-chart-primaryxaxis>
+                        <e-chart-primaryyaxis title="Current Price" labelFormat="c2" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                            <e-labelstyle color="#ffffff"></e-labelstyle>
+                        </e-chart-primaryyaxis>
+                        <e-series-collection>
+                            <e-series dataSource="@bubbleChartData" xName="StockSymbol" yName="CurrentPrice" size="Size" type="Bubble" name="Stock Distribution">
+                            </e-series>
+                        </e-series-collection>
+                        <e-chart-tooltipsettings enable="true" format="Symbol: ${point.x}<br>Price: ${point.y}<br>Total Value: ${point.size}"></e-chart-tooltipsettings>
+                    </ejs-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Summary Grid -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">Stock Summary</h5>
+                </div>
+                <div class="card-body">
+                    @{
+                        await Html.RenderPartialAsync("_StockGrid", Model);
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.addEventListener('load', function () {
+            var stockPerformanceChart = document.getElementById('stockPerformanceChart');
+            var monthlyTrendChart = document.getElementById('monthlyTrendChart');
+            var bubbleChart = document.getElementById('bubbleChart');
+
+            if (stockPerformanceChart && stockPerformanceChart.ej2_instances) {
+                stockPerformanceChart.ej2_instances[0].refresh();
+            }
+            if (monthlyTrendChart && monthlyTrendChart.ej2_instances) {
+                monthlyTrendChart.ej2_instances[0].refresh();
+            }
+            if (bubbleChart && bubbleChart.ej2_instances) {
+                bubbleChart.ej2_instances[0].refresh();
+            }
+        });
+    </script>
+}

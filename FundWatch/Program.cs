@@ -2,6 +2,9 @@ using FundWatch.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using FundWatch.Models;
+using Syncfusion.Blazor;
+using FundWatch.Controllers; // Ensure this using directive is included
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,23 +14,28 @@ builder.Services.AddHttpClient();
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
 builder.Services.AddRazorPages();
 
+// Register StockService
+builder.Services.AddHttpClient<StockService>();
+
 var connectionString = builder.Configuration.GetConnectionString("HerokuPostgres");
 
 // Register the DbContext for Identity
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-
 // Register the DbContext for application-specific tables
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Register Identity services with IdentityUser and IdentityRole
-
 builder.Services.AddDefaultIdentity<IdentityUser>(options => { options.SignIn.RequireConfirmedAccount = false; })
     .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddHttpClient<StockService>();
+builder.Services.AddScoped<StockService>();
+builder.Services.AddTransient<StockService>();
+builder.Services.AddLogging();
 
 // Register a mock email sender for development
 builder.Services.AddSingleton<IEmailSender, MockEmailSender>();
@@ -50,7 +58,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // Register Syncfusion License
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Your-Syncfusion-License-Key");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBMAY9C3t2U1hhQlJBfV5AQmBIYVp/TGpJfl96cVxMZVVBJAtUQF1hTX5bdERiWXtfc3BdT2FU\r\n");
+
+// Register Syncfusion Blazor services
+builder.Services.AddSyncfusionBlazor();
 
 var app = builder.Build();
 
@@ -71,6 +82,23 @@ app.UseCookiePolicy(); // Apply the cookie policy
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "AppUserStocks",
+    pattern: "{controller=AppUserStocks}/{action=Dashboard}/{id?}");
+
+app.MapControllerRoute(
+    name: "AppStockSimulation",
+    pattern: "{controller=AppStockSimulation}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "AppStockTransaction",
+    pattern: "{controller=AppStockTransaction}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "AppWatchlist",
+    pattern: "{controller=AppWatchlist}/{action=Index}/{id?}");
+
 app.MapRazorPages();
 
 app.Run();
