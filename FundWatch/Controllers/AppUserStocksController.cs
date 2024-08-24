@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using System;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FundWatch.Controllers
 {
@@ -20,15 +21,22 @@ namespace FundWatch.Controllers
         private readonly ILogger<AppUserStocksController> _logger;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly StockService _stockService;
+        private readonly IMemoryCache _cache;
+        private const int CACHE_DURATION_MINUTES = 15;
 
-        public AppUserStocksController(ApplicationDbContext context, ILogger<AppUserStocksController> logger, UserManager<IdentityUser> userManager, StockService stockService)
+        public AppUserStocksController(
+            ApplicationDbContext context,
+            ILogger<AppUserStocksController> logger,
+            UserManager<IdentityUser> userManager,
+            StockService stockService,
+            IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
             _userManager = userManager;
             _stockService = stockService;
+            _cache = cache;
         }
-
         // GET: AppUserStocks
         public async Task<IActionResult> Index()
         {
@@ -213,24 +221,25 @@ namespace FundWatch.Controllers
             var stockSummary = new List<StockSummaryData>();
             var bubbleChartData = new List<BubbleChartData>();
 
+            // Batch process real-time prices
+            var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
+            var realTimePrices = await GetCachedRealTimePricesAsync(stockSymbols);
+
             foreach (var stock in userStocks)
             {
                 try
                 {
-                    var realTimePrice = await _stockService.GetRealTimePriceAsync(stock.StockSymbol);
-                    if (!realTimePrice.HasValue)
+                    if (!realTimePrices.TryGetValue(stock.StockSymbol, out decimal realTimePrice))
                     {
                         _logger.LogWarning($"No real-time price available for {stock.StockSymbol}");
                         continue;
                     }
 
-                    stock.CurrentPrice = realTimePrice.Value;
+                    stock.CurrentPrice = realTimePrice;
                     var currentShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
-                    var currentValue = stock.TotalValue;
 
                     if (currentShares > 0)
                     {
-                        // Use NotMapped properties for calculations
                         stockSummary.Add(new StockSummaryData
                         {
                             StockSymbol = stock.StockSymbol,
@@ -251,17 +260,16 @@ namespace FundWatch.Controllers
                         });
 
                         // Fetch historical prices and process for monthly trend
-                        var historicalPrices = await _stockService.GetHistoricalPricesAsync(stock.StockSymbol, stock.DatePurchased);
+                        var historicalPrices = await GetCachedHistoricalPricesAsync(stock.StockSymbol, stock.DatePurchased);
                         if (historicalPrices != null)
                         {
-                            // Group by month and calculate average value per month
                             var groupedByMonth = historicalPrices
                                 .GroupBy(p => p.Key.ToString("yyyy-MM"))
                                 .Select(g => new MonthlyTrendData
                                 {
                                     StockSymbol = stock.StockSymbol,
                                     Month = g.Key,
-                                    TotalValue = g.Average(p => p.Value * currentShares) // Average of close price * shares
+                                    TotalValue = g.Average(p => p.Value * currentShares)
                                 });
 
                             monthlyTrendData.AddRange(groupedByMonth);
@@ -278,14 +286,12 @@ namespace FundWatch.Controllers
                 }
             }
 
-            // Order monthly trend data by Month
             var orderedMonthlyTrendData = monthlyTrendData.OrderBy(m => m.Month).ToList();
 
             _logger.LogInformation($"Total monthly trend data points: {orderedMonthlyTrendData.Count}");
             _logger.LogInformation($"Total stock summary entries: {stockSummary.Count}");
             _logger.LogInformation($"Total bubble chart data points: {bubbleChartData.Count}");
 
-            // Assign data to ViewBag for use in the view
             ViewBag.MonthlyTrendData = orderedMonthlyTrendData;
             ViewBag.StockSummary = stockSummary;
             ViewBag.BubbleChartData = bubbleChartData;
@@ -320,7 +326,57 @@ namespace FundWatch.Controllers
             public decimal TotalValue { get; set; }
             public int Size { get; set; }
         }
+        private async Task<Dictionary<string, decimal>> GetCachedRealTimePricesAsync(List<string> stockSymbols)
+        {
+            var result = new Dictionary<string, decimal>();
+            var symbolsToFetch = new List<string>();
 
+            foreach (var symbol in stockSymbols)
+            {
+                string cacheKey = $"RealTimePrice_{symbol}";
+                if (_cache.TryGetValue(cacheKey, out decimal price))
+                {
+                    result[symbol] = price;
+                }
+                else
+                {
+                    symbolsToFetch.Add(symbol);
+                }
+            }
+
+            if (symbolsToFetch.Any())
+            {
+                var fetchedPrices = await _stockService.GetRealTimePricesAsync(symbolsToFetch);
+                foreach (var kvp in fetchedPrices)
+                {
+                    result[kvp.Key] = kvp.Value;
+                    _cache.Set($"RealTimePrice_{kvp.Key}", kvp.Value, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<Dictionary<DateTime, decimal>> GetCachedHistoricalPricesAsync(string stockSymbol, DateTime startDate)
+        {
+            string cacheKey = $"HistoricalPrices_{stockSymbol}_{startDate:yyyyMMdd}";
+            if (_cache.TryGetValue(cacheKey, out Dictionary<DateTime, decimal>? historicalPrices) && historicalPrices != null)
+            {
+                return historicalPrices;
+            }
+
+            historicalPrices = await _stockService.GetHistoricalPricesAsync(stockSymbol, startDate);
+
+            if (historicalPrices != null)
+            {
+                var cacheEntryOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromDays(1));
+                _cache.Set(cacheKey, historicalPrices, cacheEntryOptions);
+                return historicalPrices;
+            }
+
+            // If we couldn't get historical prices, return an empty dictionary
+            return new Dictionary<DateTime, decimal>();
+        }
         [HttpGet]
         public async Task<IActionResult> GetHistoricalPrice(string stockSymbol, DateTime datePurchased)
         {
@@ -427,6 +483,44 @@ namespace FundWatch.Controllers
             return null;
         }
 
+        public async Task<Dictionary<string, decimal>> GetRealTimePricesAsync(List<string> stockSymbols)
+        {
+            var result = new Dictionary<string, decimal>();
+            var symbolsString = string.Join(",", stockSymbols);
+            var url = $"{BaseUrl}/markets/stock/quotes?ticker={symbolsString}";
+
+            try
+            {
+                _logger.LogInformation($"Fetching real-time prices for {symbolsString}");
+                var response = await _httpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync();
+
+                var data = JObject.Parse(json);
+                var bodyArray = data["body"] as JArray;
+
+                if (bodyArray != null)
+                {
+                    foreach (var item in bodyArray)
+                    {
+                        var symbol = item["symbol"]?.ToString();
+                        var priceToken = item["regularMarketPrice"];
+                        if (!string.IsNullOrEmpty(symbol) && priceToken != null && decimal.TryParse(priceToken.ToString(), out decimal price))
+                        {
+                            result[symbol] = price;
+                        }
+                    }
+                }
+
+                _logger.LogInformation($"Successfully fetched real-time prices for {result.Count} stocks");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to fetch real-time prices for multiple stocks");
+            }
+
+            return result;
+        }
 
         public async Task<Dictionary<DateTime, decimal>> GetHistoricalPricesAsync(string stockSymbol, DateTime startDate)
         {
@@ -498,6 +592,7 @@ namespace FundWatch.Controllers
 
             return historicalPrices;
         }
+
         public async Task<List<StockSymbolData>> GetAllStocksAsync()
         {
             var allStocks = new List<StockSymbolData>();

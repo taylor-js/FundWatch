@@ -36,7 +36,7 @@ builder.Services.AddHttpClient<StockService>();
 builder.Services.AddScoped<StockService>();
 builder.Services.AddTransient<StockService>();
 builder.Services.AddLogging();
-
+builder.Services.AddMemoryCache();
 // Register a mock email sender for development
 builder.Services.AddSingleton<IEmailSender, MockEmailSender>();
 
