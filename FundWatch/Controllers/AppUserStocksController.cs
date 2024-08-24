@@ -217,74 +217,89 @@ namespace FundWatch.Controllers
                 return View();
             }
 
-            var monthlyTrendData = new List<MonthlyTrendData>();
-            var stockSummary = new List<StockSummaryData>();
-            var bubbleChartData = new List<BubbleChartData>();
-
-            // Batch process real-time prices
+            // Fetch real-time prices for the stocks
             var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
             var realTimePrices = await GetCachedRealTimePricesAsync(stockSymbols);
 
+            var stockSummary = new List<StockSummaryData>();
+            var bubbleChartData = new List<BubbleChartData>();
+            var monthlyTrendData = new List<MonthlyTrendData>();
+
             foreach (var stock in userStocks)
             {
-                try
+                if (realTimePrices.TryGetValue(stock.StockSymbol, out decimal realTimePrice))
                 {
-                    if (!realTimePrices.TryGetValue(stock.StockSymbol, out decimal realTimePrice))
-                    {
-                        _logger.LogWarning($"No real-time price available for {stock.StockSymbol}");
-                        continue;
-                    }
-
                     stock.CurrentPrice = realTimePrice;
-                    var currentShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                }
+                else
+                {
+                    _logger.LogWarning($"No real-time price available for {stock.StockSymbol}");
+                    continue;
+                }
 
-                    if (currentShares > 0)
+                var currentShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                if (currentShares > 0)
+                {
+                    // Calculate TotalValue and PerformancePercentage with updated CurrentPrice
+                    var totalValue = currentShares * stock.CurrentPrice;
+                    var performancePercentage = ((stock.CurrentPrice - stock.PurchasePrice) / stock.PurchasePrice) * 100;
+                    var valueChange = (stock.CurrentPrice - stock.PurchasePrice) * currentShares;
+
+                    // Stock Summary Data
+                    stockSummary.Add(new StockSummaryData
                     {
-                        stockSummary.Add(new StockSummaryData
-                        {
-                            StockSymbol = stock.StockSymbol,
-                            CurrentPrice = stock.CurrentPrice,
-                            PurchasePrice = stock.PurchasePrice,
-                            TotalShares = currentShares,
-                            TotalValue = stock.TotalValue,
-                            PerformancePercentage = stock.PerformancePercentage,
-                            ValueChange = stock.ValueChange
-                        });
+                        StockSymbol = stock.StockSymbol,
+                        CurrentPrice = stock.CurrentPrice,
+                        PurchasePrice = stock.PurchasePrice,
+                        TotalShares = currentShares,
+                        TotalValue = totalValue,
+                        PerformancePercentage = performancePercentage,
+                        ValueChange = valueChange
+                    });
 
+                    // Bubble Chart Data
+                    var existingData = bubbleChartData.FirstOrDefault(b => b.StockSymbol == stock.StockSymbol);
+                    if (existingData == null)
+                    {
                         bubbleChartData.Add(new BubbleChartData
                         {
                             StockSymbol = stock.StockSymbol,
                             CurrentPrice = stock.CurrentPrice,
-                            TotalValue = stock.TotalValue,
+                            TotalValue = totalValue,
                             Size = currentShares
                         });
-
-                        // Fetch historical prices and process for monthly trend
-                        var historicalPrices = await GetCachedHistoricalPricesAsync(stock.StockSymbol, stock.DatePurchased);
-                        if (historicalPrices != null)
-                        {
-                            var groupedByMonth = historicalPrices
-                                .GroupBy(p => p.Key.ToString("yyyy-MM"))
-                                .Select(g => new MonthlyTrendData
-                                {
-                                    StockSymbol = stock.StockSymbol,
-                                    Month = g.Key,
-                                    TotalValue = g.Average(p => p.Value * currentShares)
-                                });
-
-                            monthlyTrendData.AddRange(groupedByMonth);
-                        }
                     }
                     else
                     {
-                        _logger.LogWarning($"Invalid data for {stock.StockSymbol}: CurrentShares={currentShares}");
+                        existingData.CurrentPrice = stock.CurrentPrice;
+                        existingData.TotalValue += totalValue;
+                        existingData.Size += currentShares;
+                    }
+
+                    // Monthly Trend Data
+                    var historicalPrices = await GetCachedHistoricalPricesAsync(stock.StockSymbol, stock.DatePurchased);
+                    if (historicalPrices != null)
+                    {
+                        var groupedByMonth = historicalPrices
+                            .GroupBy(p => p.Key.ToString("yyyy-MM"))
+                            .Select(g => new MonthlyTrendData
+                            {
+                                StockSymbol = stock.StockSymbol,
+                                Month = g.Key,
+                                TotalValue = g.Average(p => p.Value * currentShares)
+                            });
+
+                        monthlyTrendData.AddRange(groupedByMonth);
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogError(ex, $"An error occurred while processing stock: {stock.StockSymbol}");
+                    _logger.LogWarning($"Invalid data for {stock.StockSymbol}: CurrentShares={currentShares}");
                 }
             }
+
+            // Sort stockSummary by PerformancePercentage in ascending order
+            stockSummary = stockSummary.OrderBy(s => s.PerformancePercentage).ToList();
 
             var orderedMonthlyTrendData = monthlyTrendData.OrderBy(m => m.Month).ToList();
 
@@ -298,6 +313,9 @@ namespace FundWatch.Controllers
 
             return View(userStocks);
         }
+
+
+
 
 
         public class StockSummaryData

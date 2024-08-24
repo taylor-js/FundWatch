@@ -59,9 +59,14 @@
                 </div>
             </div>
         </div>
-        <div class="card-footer text-right">
-            <a asp-action="CreateOrEdit" asp-route-id="@Model?.Id" class="btn btn-warning">Edit</a>
-            <a asp-action="Dashboard" class="btn btn-secondary">Back to List</a>
+
+        <div class="card-footer d-flex flex-column flex-md-row justify-content-between">
+            <div class="flex-fill mb-4 mb-md-0 me-lg-2">
+                <a asp-action="CreateOrEdit" asp-route-id="@Model?.Id" class="btn btn-warning w-100 py-2">Edit</a>
+            </div>
+            <div class="flex-fill ms-lg-2">
+                <a asp-action="Dashboard" class="btn btn-secondary w-100 py-2">Back to List</a>
+            </div>
         </div>
     </div>
 </div>

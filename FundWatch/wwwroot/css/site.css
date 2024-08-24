@@ -64,3 +64,17 @@ body {
     color: #4682b4; /* Steel blue on hover */
 }
 
+/* Ensure grid columns are responsive */
+e-grid-column {
+    width: 100%; /* Allow columns to fill available space */
+}
+
+
+
+/* Enable horizontal scrolling for grid on smaller screens */
+.ejs-grid {
+    overflow-x: auto;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+

@@ -4,7 +4,7 @@
     ViewData["Title"] = Model.Id == 0 ? "Create" : "Edit";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
             <h3 class="mb-0">@ViewData["Title"] User Stock</h3>
@@ -69,9 +69,13 @@
                     <span asp-validation-for="NumberOfSharesSold" class="text-danger"></span>
                 </div>
 
-                <div class="d-flex justify-content-between mt-4">
-                    <a asp-action="Dashboard" class="btn btn-secondary">Back to List</a>
-                    <ejs-button id="submit" type="submit" cssClass="e-success">@(Model.Id == 0 ? "Create" : "Save")</ejs-button>
+                <div class="d-flex flex-column flex-md-row justify-content-between mt-4">
+                    <div class="flex-fill mb-4 mb-md-0 me-lg-2">
+                        <a asp-action="Dashboard" class="btn btn-secondary w-100 py-2">Back to List</a>
+                    </div>
+                    <div class="flex-fill ms-lg-2">
+                        <ejs-button id="submit" type="submit" cssClass="e-success w-100 py-2">@(Model.Id == 0 ? "Create" : "Save")</ejs-button>
+                    </div>
                 </div>
             </form>
         </div>
