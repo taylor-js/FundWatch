@@ -3,64 +3,32 @@
   "WorkspaceRootPath": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\appuserstocks\\details.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\appuserstocks\\details.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\shared\\_loginpartial.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\shared\\_loginpartial.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
       "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\models\\appuserstock.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\models\\appuserstock.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\shared\\_loginpartial.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\shared\\_loginpartial.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\appuserstocks\\createoredit.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\appuserstocks\\createoredit.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\appuserstocks\\dashboard.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\appuserstocks\\dashboard.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\controllers\\appuserstockscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\controllers\\appuserstockscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\appuserstocks\\_stockgrid.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\appuserstocks\\_stockgrid.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\areas\\identity\\pages\\account\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\areas\\identity\\pages\\account\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\areas\\identity\\pages\\account\\register.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\areas\\identity\\pages\\account\\register.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\areas\\identity\\pages\\_authlayout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\areas\\identity\\pages\\_authlayout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\controllers\\appuserstockscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\controllers\\appuserstockscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\appuserstocks\\dashboard.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\appuserstocks\\dashboard.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|c:\\users\\taylo\\documents\\github\\fundwatch\\fundwatch\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{7403D984-A758-42CF-9820-E3700B39D97D}|FundWatch\\FundWatch.csproj|solutionrelative:fundwatch\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     }
   ],
   "DocumentGroupContainers": [
@@ -70,7 +38,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -78,187 +46,94 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "_LoginPartial.cshtml",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Shared\\_LoginPartial.cshtml",
-              "RelativeDocumentMoniker": "FundWatch\\Views\\Shared\\_LoginPartial.cshtml",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Shared\\_LoginPartial.cshtml",
-              "RelativeToolTip": "FundWatch\\Views\\Shared\\_LoginPartial.cshtml",
-              "ViewState": "AQIAAAMAAAAAAAAAAAAAAAcAAAAdAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-24T22:16:11.114Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "AppUserStocksController.cs",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Controllers\\AppUserStocksController.cs",
-              "RelativeDocumentMoniker": "FundWatch\\Controllers\\AppUserStocksController.cs",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Controllers\\AppUserStocksController.cs",
-              "RelativeToolTip": "FundWatch\\Controllers\\AppUserStocksController.cs",
-              "ViewState": "AQIAACMBAAAAAAAAAAAkwDsBAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-08-22T21:23:45.016Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "Dashboard.cshtml",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
-              "RelativeDocumentMoniker": "FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
-              "RelativeToolTip": "FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
-              "ViewState": "AQIAAHsAAAAAAAAAAAAAAIoAAAAyAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-22T21:25:04.359Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Details.cshtml",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\Details.cshtml",
-              "RelativeDocumentMoniker": "FundWatch\\Views\\AppUserStocks\\Details.cshtml",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\Details.cshtml",
-              "RelativeToolTip": "FundWatch\\Views\\AppUserStocks\\Details.cshtml",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAgAAAAdAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-23T17:38:06.124Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "CreateOrEdit.cshtml",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\CreateOrEdit.cshtml",
-              "RelativeDocumentMoniker": "FundWatch\\Views\\AppUserStocks\\CreateOrEdit.cshtml",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\CreateOrEdit.cshtml",
-              "RelativeToolTip": "FundWatch\\Views\\AppUserStocks\\CreateOrEdit.cshtml",
-              "ViewState": "AQIAADwAAAAAAAAAAAAAAEkAAABVAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-22T22:06:03.323Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "AppUserStock.cs",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Models\\AppUserStock.cs",
-              "RelativeDocumentMoniker": "FundWatch\\Models\\AppUserStock.cs",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Models\\AppUserStock.cs",
-              "RelativeToolTip": "FundWatch\\Models\\AppUserStock.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAADUAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-08-23T13:10:09.648Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "_Layout.cshtml",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Shared\\_Layout.cshtml",
-              "RelativeDocumentMoniker": "FundWatch\\Views\\Shared\\_Layout.cshtml",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Shared\\_Layout.cshtml",
-              "RelativeToolTip": "FundWatch\\Views\\Shared\\_Layout.cshtml",
-              "ViewState": "AQIAABIAAAAAAAAAAAAAABwAAAAhAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-23T14:36:32.91Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "site.css",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\site.css",
-              "RelativeDocumentMoniker": "FundWatch\\wwwroot\\css\\site.css",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\site.css",
-              "RelativeToolTip": "FundWatch\\wwwroot\\css\\site.css",
-              "ViewState": "AQIAACkAAAAAAAAAAAAAAEcAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2024-08-24T20:30:21.868Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
               "Title": "_StockGrid.cshtml",
               "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\_StockGrid.cshtml",
               "RelativeDocumentMoniker": "FundWatch\\Views\\AppUserStocks\\_StockGrid.cshtml",
               "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\_StockGrid.cshtml",
               "RelativeToolTip": "FundWatch\\Views\\AppUserStocks\\_StockGrid.cshtml",
-              "ViewState": "AQIAABcAAAAAAAAAAAAowC0AAAAKAAAA",
+              "ViewState": "AQIAABsAAAAAAAAAAAAAAAMAAAAeAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-23T16:22:20.073Z"
+              "WhenOpened": "2024-08-27T01:06:26.958Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
-              "Title": "HomeController.cs",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Controllers\\HomeController.cs",
-              "RelativeDocumentMoniker": "FundWatch\\Controllers\\HomeController.cs",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Controllers\\HomeController.cs",
-              "RelativeToolTip": "FundWatch\\Controllers\\HomeController.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAgAAAARAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-08-23T20:08:29.263Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "Login.cshtml",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Areas\\Identity\\Pages\\Account\\Login.cshtml",
-              "RelativeDocumentMoniker": "FundWatch\\Areas\\Identity\\Pages\\Account\\Login.cshtml",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Areas\\Identity\\Pages\\Account\\Login.cshtml",
-              "RelativeToolTip": "FundWatch\\Areas\\Identity\\Pages\\Account\\Login.cshtml",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAABEAAAA+AAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-24T18:42:57.629Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "_AuthLayout.cshtml",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Areas\\Identity\\Pages\\_AuthLayout.cshtml",
-              "RelativeDocumentMoniker": "FundWatch\\Areas\\Identity\\Pages\\_AuthLayout.cshtml",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Areas\\Identity\\Pages\\_AuthLayout.cshtml",
-              "RelativeToolTip": "FundWatch\\Areas\\Identity\\Pages\\_AuthLayout.cshtml",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAUAAAAgAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-24T18:41:29.3Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "Register.cshtml",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Areas\\Identity\\Pages\\Account\\Register.cshtml",
-              "RelativeDocumentMoniker": "FundWatch\\Areas\\Identity\\Pages\\Account\\Register.cshtml",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Areas\\Identity\\Pages\\Account\\Register.cshtml",
-              "RelativeToolTip": "FundWatch\\Areas\\Identity\\Pages\\Account\\Register.cshtml",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAcAAAAWAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-24T18:44:48.523Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Program.cs",
-              "RelativeDocumentMoniker": "FundWatch\\Program.cs",
-              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Program.cs",
-              "RelativeToolTip": "FundWatch\\Program.cs",
-              "ViewState": "AQIAABgAAAAAAAAAAAAAACYAAAAQAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-08-20T14:14:02.472Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 3,
               "Title": "Index.cshtml",
               "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Home\\Index.cshtml",
               "RelativeDocumentMoniker": "FundWatch\\Views\\Home\\Index.cshtml",
               "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Home\\Index.cshtml",
               "RelativeToolTip": "FundWatch\\Views\\Home\\Index.cshtml",
-              "ViewState": "AQIAACsAAAAAAAAAAAAUwEIAAAAIAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAACkAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2024-08-23T20:31:06.427Z"
+              "WhenOpened": "2024-08-27T01:05:08.913Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "site.css",
+              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\site.css",
+              "RelativeDocumentMoniker": "FundWatch\\wwwroot\\css\\site.css",
+              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\site.css",
+              "RelativeToolTip": "FundWatch\\wwwroot\\css\\site.css",
+              "ViewState": "AQIAAJMAAAAAAAAAAAAAACsAAAABAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2024-08-27T00:41:25.156Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "_LoginPartial.cshtml",
+              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Shared\\_LoginPartial.cshtml",
+              "RelativeDocumentMoniker": "FundWatch\\Views\\Shared\\_LoginPartial.cshtml",
+              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Shared\\_LoginPartial.cshtml",
+              "RelativeToolTip": "FundWatch\\Views\\Shared\\_LoginPartial.cshtml",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAgAAAA4AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2024-08-27T00:41:08.135Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "_Layout.cshtml",
+              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Shared\\_Layout.cshtml",
+              "RelativeDocumentMoniker": "FundWatch\\Views\\Shared\\_Layout.cshtml",
+              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\Shared\\_Layout.cshtml",
+              "RelativeToolTip": "FundWatch\\Views\\Shared\\_Layout.cshtml",
+              "ViewState": "AQIAAA4AAAAAAAAAAAAQwBcAAAA3AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2024-08-27T00:40:57.954Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "AppUserStocksController.cs",
+              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Controllers\\AppUserStocksController.cs",
+              "RelativeDocumentMoniker": "FundWatch\\Controllers\\AppUserStocksController.cs",
+              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Controllers\\AppUserStocksController.cs",
+              "RelativeToolTip": "FundWatch\\Controllers\\AppUserStocksController.cs",
+              "ViewState": "AQIAABQCAAAAAAAAAAAkwPQCAAAjAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-26T21:33:34.457Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Dashboard.cshtml",
+              "DocumentMoniker": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
+              "RelativeDocumentMoniker": "FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
+              "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
+              "RelativeToolTip": "FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
+              "ViewState": "AQIAAEYAAAAAAAAAAAAlwE8AAABAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2024-08-26T21:33:28.537Z",
+              "EditorCaption": ""
             }
           ]
         }

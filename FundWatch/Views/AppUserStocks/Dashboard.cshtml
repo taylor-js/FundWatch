@@ -4,7 +4,7 @@
 @{
     ViewData["Title"] = "Stock Portfolio Dashboard";
     var stockSummaryData = ViewBag.StockSummary as List<StockSummaryData>;
-    var monthlyTrendData = ViewBag.MonthlyTrendData as List<MonthlyTrendData>;
+    var realTimeTrendData = ViewBag.RealTimeTrendData as List<RealTimeDataPoint>;
     var bubbleChartData = ViewBag.BubbleChartData as List<BubbleChartData>;
 }
 
@@ -13,100 +13,84 @@
 <div class="container-fluid mt-4 mb-4">
     <!-- Portfolio Overview -->
     <div class="row">
-        @* Decorated Cards *@
-        <div class="col-md-3 mb-4">
-            <div class="card shadow fixed-card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title">Total Portfolio Value</h5>
+        <!-- Portfolio Overview -->
+        <div class="row">
+            @* Decorated Cards *@
+            <div class="col-sm-6 col-md-3 mb-4">
+                <div class="card shadow fixed-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title">Total Portfolio Value</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="card-text display-value">
+                            @(stockSummaryData != null ? stockSummaryData.Sum(s => s.TotalValue).ToString("C2", CultureInfo.CreateSpecificCulture("en-US")) : "N/A")
+                        </p>
+                    </div>
                 </div>
-                <div class="card-body text-center">
-                    <p class="card-text display-value">
-                        @(stockSummaryData != null ? stockSummaryData.Sum(s => s.TotalValue).ToString("C2", CultureInfo.CreateSpecificCulture("en-US")) : "N/A")
-                    </p>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-4">
+                <div class="card shadow fixed-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title">Total Number of Stocks</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="card-text display-value">@(stockSummaryData?.Count ?? 0)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-4">
+                <div class="card shadow fixed-card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title">Best Performing Stock</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="card-text display-value">
+                            @(stockSummaryData != null && stockSummaryData.Any()
+                                ? stockSummaryData.OrderByDescending(s => s.PerformancePercentage).First().StockSymbol
+                                : "N/A")
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-4">
+                <div class="card shadow fixed-card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="card-title">Worst Performing Stock</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="card-text display-value">
+                            @(stockSummaryData != null && stockSummaryData.Any()
+                                ? stockSummaryData.OrderBy(s => s.PerformancePercentage).First().StockSymbol
+                                : "N/A")
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-4">
-            <div class="card shadow fixed-card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title">Total Number of Stocks</h5>
-                </div>
-                <div class="card-body text-center">
-                    <p class="card-text display-value">@(stockSummaryData?.Count ?? 0)</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card shadow fixed-card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title">Best Performing Stock</h5>
-                </div>
-                <div class="card-body text-center">
-                    <p class="card-text display-value">
-                        @(stockSummaryData != null && stockSummaryData.Any()
-                            ? stockSummaryData.OrderByDescending(s => s.PerformancePercentage).First().StockSymbol
-                            : "N/A")
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card shadow fixed-card">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="card-title">Worst Performing Stock</h5>
-                </div>
-                <div class="card-body text-center">
-                    <p class="card-text display-value">
-                        @(stockSummaryData != null && stockSummaryData.Any()
-                            ? stockSummaryData.OrderBy(s => s.PerformancePercentage).First().StockSymbol
-                            : "N/A")
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Monthly Stock Value Trend Chart -->
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Monthly Stock Value Trend</h5>
+                    <h5 class="card-title mb-0">Real-time Stock Chart</h5>
                 </div>
                 <div class="card-body">
-                    <ejs-chart id="monthlyTrendChart" background="#212529">
-                        <e-chart-primaryxaxis valueType="Category" title="Month" labelRotation="90" LabelIntersectAction="Rotate90" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
-                            <e-majorgridlines width="0"></e-majorgridlines>
-                            <e-labelstyle color="#ffffff"></e-labelstyle>
-                        </e-chart-primaryxaxis>
-                        <e-chart-primaryyaxis title="Total Value" labelFormat="c2" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
-                            <e-majorgridlines width="1" color="#4a4a4a"></e-majorgridlines>
-                            <e-labelstyle color="#ffffff"></e-labelstyle>
-                        </e-chart-primaryyaxis>
-                        <e-series-collection>
-                            @if (monthlyTrendData != null && monthlyTrendData.Any())
+                    <ejs-stockchart id="realTimeStockChart" load="stockChartLoad"
+                                    width="100%" height="500px">
+                        <e-stockchart-series-collection>
+                            @foreach (var stock in Model.GroupBy(x => x.StockSymbol))
                             {
-                                @foreach (var stockGroup in monthlyTrendData.GroupBy(x => x.StockSymbol))
-                                {
-                                    <e-series dataSource="@stockGroup" xName="Month" yName="TotalValue" type="Line" name="@stockGroup.Key" width="2">
-                                        <e-series-marker visible="false" height="8" width="8"></e-series-marker>
-                                    </e-series>
-                                }
+                                <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock"></e-stockchart-series>
                             }
-                            else
-                            {
-                                <text>No data available for Monthly Stock Value Trend.</text>
-                            }
-                        </e-series-collection>
-                        <e-chart-legendsettings visible="true" position="Bottom" toggleSeriesVisibility="true">
-                            <e-legendsettings-textstyle color="#ffffff"></e-legendsettings-textstyle>
-                        </e-chart-legendsettings>
-                        <e-chart-tooltipsettings enable="true" shared="false" format="${series.name}<br>Month: ${point.x}<br>Value: ${point.y}">
-                            <e-tooltipsettings-textstyle color="#ffffff" size="12px"></e-tooltipsettings-textstyle>
-                            <e-tooltipsettings-border color="#000000" width="1"></e-tooltipsettings-border>
-                        </e-chart-tooltipsettings>
-                        <e-chart-zoomsettings enableSelectionZooming="true" mode="X" enablePan="false"></e-chart-zoomsettings>
-                    </ejs-chart>
+                        </e-stockchart-series-collection>
+                        <e-stockchart-primaryxaxis valueType="DateTime"></e-stockchart-primaryxaxis>
+                        <e-stockchart-primaryyaxis></e-stockchart-primaryyaxis>
+                        <e-stockchart-tooltipsettings showNearestPoint="true" enable="true" shared="false" position="Nearest" format="${series.name}<br>Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.close}"></e-stockchart-tooltipsettings>
+                        <e-stockchart-crosshairsettings enable="true"></e-stockchart-crosshairsettings>
+                        <e-stockchart-legendsettings visible="true"></e-stockchart-legendsettings>
+                    </ejs-stockchart>
+
                 </div>
             </div>
         </div>
@@ -206,22 +190,110 @@
     </div>
 </div>
 
-@section Scripts {
+@section Scripts{
     <script>
-        window.addEventListener('load', function () {
-            var stockPerformanceChart = document.getElementById('stockPerformanceChart');
-            var monthlyTrendChart = document.getElementById('monthlyTrendChart');
-            var bubbleChart = document.getElementById('bubbleChart');
+        var realTimeData = @Html.Raw(Json.Serialize(ViewBag.RealTimeData));
+        var chart;
 
-            if (stockPerformanceChart && stockPerformanceChart.ej2_instances) {
-                stockPerformanceChart.ej2_instances[0].refresh();
+        function stockChartLoad(args) {
+            args.stockChart.tooltip.enable = true;
+            args.stockChart.tooltip.shared = false;
+            args.stockChart.crosshair.enable = true;
+
+            chart = args.stockChart;
+            chart.series.forEach((series, index) => {
+                var stockData = realTimeData[series.name];
+                if (stockData && stockData.length > 0) {
+                    series.dataSource = stockData.map(d => ({
+                        x: new Date(d.date),
+                        open: d.open,
+                        high: d.high,
+                        low: d.low,
+                        close: d.close
+                    }));
+                    series.fill = getColorForIndex(index);
+                } else {
+                    console.warn(`No data available for ${series.name}`);
+                    series.dataSource = [];
+                }
+            });
+        }
+
+        function tooltipRender(args) {
+            if (!chart || !args.series) {
+                args.cancel = true;
+                return;
             }
-            if (monthlyTrendChart && monthlyTrendChart.ej2_instances) {
-                monthlyTrendChart.ej2_instances[0].refresh();
+
+            var visibleSeries = chart.series.filter(s => s.visible);
+            if (visibleSeries.length === 0) {
+                args.cancel = true;
+                return;
             }
-            if (bubbleChart && bubbleChart.ej2_instances) {
-                bubbleChart.ej2_instances[0].refresh();
+
+            var closestSeries = null;
+            var closestPoint = null;
+            var minDistance = Infinity;
+
+            visibleSeries.forEach(series => {
+                var pointIndex = chart.baseTooltip.getClosest(series.xValues, args.xValue);
+                if (pointIndex !== -1) {
+                    var point = series.points[pointIndex];
+                    var distance = Math.abs(point.x.getTime() - args.xValue.getTime());
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestSeries = series;
+                        closestPoint = point;
+                    }
+                }
+            });
+
+            if (!closestPoint || !closestSeries) {
+                args.cancel = true;
+                return;
             }
-        });
+
+            var date = new Date(closestPoint.x);
+            args.text = `${closestSeries.name}<br>` +
+                `Date: ${date.toLocaleDateString()}<br>` +
+                `Open: ${closestPoint.open.toFixed(2)}<br>` +
+                `High: ${closestPoint.high.toFixed(2)}<br>` +
+                `Low: ${closestPoint.low.toFixed(2)}<br>` +
+                `Close: ${closestPoint.close.toFixed(2)}`;
+        }
+
+        function getColorForIndex(index) {
+            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#36A2EB', '#FFCE56'];
+            return colors[index % colors.length];
+        }
+
+        function updateRealTimeData() {
+            fetch('/AppUserStocks/GetRealTimeData')
+                .then(response => response.json())
+                .then(data => {
+                    realTimeData = data;
+                    if (chart) {
+                        chart.series.forEach((series, index) => {
+                            var stockData = realTimeData[series.name];
+                            if (stockData && stockData.length > 0) {
+                                series.dataSource = stockData.map(d => ({
+                                    x: new Date(d.date),
+                                    open: d.open,
+                                    high: d.high,
+                                    low: d.low,
+                                    close: d.close
+                                }));
+                            }
+                        });
+                        chart.refresh();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching real-time data:', error);
+                });
+        }
+
+        // Update data every 5 minutes
+        setInterval(updateRealTimeData, 5 * 60 * 1000);
     </script>
 }

@@ -118,6 +118,7 @@ namespace FundWatch.Controllers
                     if (appUserStock.Id == 0)
                     {
                         appUserStock.UserId = userId;
+                        appUserStock.StockSymbol = appUserStock.StockSymbol.ToUpper();
                         _context.Add(appUserStock);
                     }
                     else
@@ -128,7 +129,7 @@ namespace FundWatch.Controllers
                             return NotFound();
                         }
 
-                        existingStock.StockSymbol = appUserStock.StockSymbol;
+                        existingStock.StockSymbol = appUserStock.StockSymbol.ToUpper();
                         existingStock.PurchasePrice = appUserStock.PurchasePrice;
                         existingStock.DatePurchased = appUserStock.DatePurchased;
                         existingStock.NumberOfSharesPurchased = appUserStock.NumberOfSharesPurchased;
@@ -200,6 +201,15 @@ namespace FundWatch.Controllers
             return _context.UserStocks.Any(e => e.Id == id);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetRealTimeData()
+        {
+            var userId = _userManager.GetUserId(User);
+            var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
+            var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
+            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols);
+            return Json(realTimeData);
+        }
         // GET: AppUserStocks/Dashboard
         public async Task<IActionResult> Dashboard()
         {
@@ -217,50 +227,38 @@ namespace FundWatch.Controllers
                 return View();
             }
 
-            // Fetch real-time prices for the stocks
             var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
-            var realTimePrices = await GetCachedRealTimePricesAsync(stockSymbols);
+            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols);
 
             var stockSummary = new List<StockSummaryData>();
             var bubbleChartData = new List<BubbleChartData>();
-            var monthlyTrendData = new List<MonthlyTrendData>();
+            var realTimeTrendData = new List<RealTimeDataPoint>();
 
             foreach (var stock in userStocks)
             {
-                if (realTimePrices.TryGetValue(stock.StockSymbol, out decimal realTimePrice))
+                if (realTimeData.TryGetValue(stock.StockSymbol, out var stockData) && stockData.Any())
                 {
-                    stock.CurrentPrice = realTimePrice;
-                }
-                else
-                {
-                    _logger.LogWarning($"No real-time price available for {stock.StockSymbol}");
-                    continue;
-                }
+                    var latestData = stockData.Last();
+                    stock.CurrentPrice = latestData.Close;
 
-                var currentShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
-                if (currentShares > 0)
-                {
-                    // Calculate TotalValue and PerformancePercentage with updated CurrentPrice
-                    var totalValue = currentShares * stock.CurrentPrice;
-                    var performancePercentage = ((stock.CurrentPrice - stock.PurchasePrice) / stock.PurchasePrice) * 100;
-                    var valueChange = (stock.CurrentPrice - stock.PurchasePrice) * currentShares;
-
-                    // Stock Summary Data
-                    stockSummary.Add(new StockSummaryData
+                    var currentShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                    if (currentShares > 0)
                     {
-                        StockSymbol = stock.StockSymbol,
-                        CurrentPrice = stock.CurrentPrice,
-                        PurchasePrice = stock.PurchasePrice,
-                        TotalShares = currentShares,
-                        TotalValue = totalValue,
-                        PerformancePercentage = performancePercentage,
-                        ValueChange = valueChange
-                    });
+                        var totalValue = currentShares * stock.CurrentPrice;
+                        var performancePercentage = ((stock.CurrentPrice - stock.PurchasePrice) / stock.PurchasePrice) * 100;
+                        var valueChange = (stock.CurrentPrice - stock.PurchasePrice) * currentShares;
 
-                    // Bubble Chart Data
-                    var existingData = bubbleChartData.FirstOrDefault(b => b.StockSymbol == stock.StockSymbol);
-                    if (existingData == null)
-                    {
+                        stockSummary.Add(new StockSummaryData
+                        {
+                            StockSymbol = stock.StockSymbol,
+                            CurrentPrice = stock.CurrentPrice,
+                            PurchasePrice = stock.PurchasePrice,
+                            TotalShares = currentShares,
+                            TotalValue = totalValue,
+                            PerformancePercentage = performancePercentage,
+                            ValueChange = valueChange
+                        });
+
                         bubbleChartData.Add(new BubbleChartData
                         {
                             StockSymbol = stock.StockSymbol,
@@ -268,55 +266,53 @@ namespace FundWatch.Controllers
                             TotalValue = totalValue,
                             Size = currentShares
                         });
-                    }
-                    else
-                    {
-                        existingData.CurrentPrice = stock.CurrentPrice;
-                        existingData.TotalValue += totalValue;
-                        existingData.Size += currentShares;
-                    }
 
-                    // Monthly Trend Data
-                    var historicalPrices = await GetCachedHistoricalPricesAsync(stock.StockSymbol, stock.DatePurchased);
-                    if (historicalPrices != null)
-                    {
-                        var groupedByMonth = historicalPrices
-                            .GroupBy(p => p.Key.ToString("yyyy-MM"))
-                            .Select(g => new MonthlyTrendData
-                            {
-                                StockSymbol = stock.StockSymbol,
-                                Month = g.Key,
-                                TotalValue = g.Average(p => p.Value * currentShares)
-                            });
-
-                        monthlyTrendData.AddRange(groupedByMonth);
+                        realTimeTrendData.AddRange(stockData.Select(data => new RealTimeDataPoint
+                        {
+                            StockSymbol = stock.StockSymbol,
+                            Date = data.Date,
+                            Open = data.Open,
+                            High = data.High,
+                            Low = data.Low,
+                            Close = data.Close,
+                            Volume = data.Volume
+                        }));
                     }
                 }
                 else
                 {
-                    _logger.LogWarning($"Invalid data for {stock.StockSymbol}: CurrentShares={currentShares}");
+                    _logger.LogWarning($"No data available for {stock.StockSymbol}. Using placeholder data.");
+                    var currentShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                    var totalValue = currentShares * stock.PurchasePrice;
+
+                    stockSummary.Add(new StockSummaryData
+                    {
+                        StockSymbol = stock.StockSymbol,
+                        CurrentPrice = stock.PurchasePrice, // Maintain the original purchase price
+                        PurchasePrice = stock.PurchasePrice,
+                        TotalShares = currentShares,
+                        TotalValue = totalValue,
+                        PerformancePercentage = 0, // Placeholder, as no real-time data is available
+                        ValueChange = 0 // Placeholder, as no real-time data is available
+                    });
+
+                    bubbleChartData.Add(new BubbleChartData
+                    {
+                        StockSymbol = stock.StockSymbol,
+                        CurrentPrice = stock.PurchasePrice,
+                        TotalValue = totalValue,
+                        Size = currentShares
+                    });
                 }
             }
 
-            // Sort stockSummary by PerformancePercentage in ascending order
-            stockSummary = stockSummary.OrderBy(s => s.PerformancePercentage).ToList();
-
-            var orderedMonthlyTrendData = monthlyTrendData.OrderBy(m => m.Month).ToList();
-
-            _logger.LogInformation($"Total monthly trend data points: {orderedMonthlyTrendData.Count}");
-            _logger.LogInformation($"Total stock summary entries: {stockSummary.Count}");
-            _logger.LogInformation($"Total bubble chart data points: {bubbleChartData.Count}");
-
-            ViewBag.MonthlyTrendData = orderedMonthlyTrendData;
-            ViewBag.StockSummary = stockSummary;
+            ViewBag.RealTimeData = realTimeData;
+            ViewBag.StockSummary = stockSummary.OrderBy(s => s.PerformancePercentage).ToList();
             ViewBag.BubbleChartData = bubbleChartData;
+            ViewBag.RealTimeTrendData = realTimeTrendData;
 
             return View(userStocks);
         }
-
-
-
-
 
         public class StockSummaryData
         {
@@ -330,11 +326,15 @@ namespace FundWatch.Controllers
 
         }
 
-        public class MonthlyTrendData
+        public class RealTimeDataPoint // Renamed from MonthlyTrendData to reflect real-time data
         {
             public string StockSymbol { get; set; }
-            public string Month { get; set; }
-            public decimal TotalValue { get; set; }
+            public DateTime Date { get; set; }
+            public decimal Open { get; set; }
+            public decimal High { get; set; }
+            public decimal Low { get; set; }
+            public decimal Close { get; set; }
+            public long Volume { get; set; }
         }
 
         public class BubbleChartData
@@ -344,6 +344,7 @@ namespace FundWatch.Controllers
             public decimal TotalValue { get; set; }
             public int Size { get; set; }
         }
+
         private async Task<Dictionary<string, decimal>> GetCachedRealTimePricesAsync(List<string> stockSymbols)
         {
             var result = new Dictionary<string, decimal>();
@@ -611,6 +612,109 @@ namespace FundWatch.Controllers
             return historicalPrices;
         }
 
+        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int dataPoints = 100)
+        {
+            var result = new Dictionary<string, List<StockDataPoint>>();
+
+            foreach (var symbol in stockSymbols)
+            {
+                var url = $"{BaseUrl}/markets/stock/history?symbol={symbol}&interval=1d&diffandsplits=false&limit={dataPoints}";
+
+                for (int i = 0; i < 3; i++) // Try up to 3 times for each symbol
+                {
+                    try
+                    {
+                        _logger.LogInformation($"Attempt {i + 1}: Fetching real-time data for {symbol}");
+                        var response = await _httpClient.GetAsync(url);
+
+                        if (response.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity)
+                        {
+                            var errorContent = await response.Content.ReadAsStringAsync();
+                            _logger.LogWarning($"API returned 422 Unprocessable Entity for {symbol}. Error content: {errorContent}");
+                            await Task.Delay(1000 * (int)Math.Pow(2, i)); // Exponential backoff
+                            continue;
+                        }
+
+                        response.EnsureSuccessStatusCode();
+                        var json = await response.Content.ReadAsStringAsync();
+
+                        // Process the JSON for a single symbol
+                        var stockData = ProcessHistoricalData(json);
+                        if (stockData.Any())
+                        {
+                            result[symbol] = stockData;
+                            break; // Success, move to next symbol
+                        }
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        _logger.LogError(ex, $"Attempt {i + 1} failed to fetch data for {symbol}. Status code: {ex.StatusCode}");
+                        if (i < 2) // If it's not the last attempt
+                        {
+                            await Task.Delay(1000 * (int)Math.Pow(2, i)); // Exponential backoff
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Unexpected error on attempt {i + 1} while fetching data for {symbol}");
+                        break; // For unexpected errors, don't retry
+                    }
+                }
+
+                // If we couldn't fetch any data, add a placeholder data point
+                if (!result.ContainsKey(symbol))
+                {
+                    result[symbol] = new List<StockDataPoint>
+                {
+                    new StockDataPoint
+                    {
+                        Date = DateTime.UtcNow,
+                        Open = 0,
+                        High = 0,
+                        Low = 0,
+                        Close = 0,
+                        Volume = 0
+                    }
+                };
+                }
+            }
+
+            return result;
+        }
+
+        private List<StockDataPoint> ProcessHistoricalData(string json)
+        {
+            var stockData = new List<StockDataPoint>();
+            var jObject = JObject.Parse(json);
+
+            var body = jObject["body"] as JObject;
+            if (body != null)
+            {
+                foreach (var item in body)
+                {
+                    if (long.TryParse(item.Key, out long timestamp))
+                    {
+                        var date = DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime;
+                        var dataPoint = item.Value as JObject;
+                        if (dataPoint != null)
+                        {
+                            stockData.Add(new StockDataPoint
+                            {
+                                Date = date,
+                                Open = dataPoint["open"]?.Value<decimal>() ?? 0,
+                                High = dataPoint["high"]?.Value<decimal>() ?? 0,
+                                Low = dataPoint["low"]?.Value<decimal>() ?? 0,
+                                Close = dataPoint["close"]?.Value<decimal>() ?? 0,
+                                Volume = dataPoint["volume"]?.Value<long>() ?? 0
+                            });
+                        }
+                    }
+                }
+            }
+
+            return stockData.OrderBy(d => d.Date).ToList();
+        }
+
         public async Task<List<StockSymbolData>> GetAllStocksAsync()
         {
             var allStocks = new List<StockSymbolData>();
@@ -649,6 +753,15 @@ namespace FundWatch.Controllers
         {
             public string Symbol { get; set; }
             public string Name { get; set; }
+        }
+        public class StockDataPoint
+        {
+            public DateTime Date { get; set; }
+            public decimal Open { get; set; }
+            public decimal High { get; set; }
+            public decimal Low { get; set; }
+            public decimal Close { get; set; }
+            public long Volume { get; set; }
         }
     }
 
