@@ -22,11 +22,15 @@
     }
     else
     {
-        <li class="nav-item">
-            <a class="nav-link" asp-area="Identity" asp-page="/Account/Register"><i class="fas fa-user-plus me-1"></i>Register</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" asp-area="Identity" asp-page="/Account/Login"><i class="fas fa-sign-in-alt me-1"></i>Login</a>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle py-2 px-3" href="#" id="registerLoginDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-sign-in-alt me-1"></i>Register/Login
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="registerLoginDropdown">
+                <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register"><i class="fas fa-user-plus me-2"></i>Register</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Login"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
+            </ul>
         </li>
     }
 </ul>

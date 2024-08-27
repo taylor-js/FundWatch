@@ -139,10 +139,6 @@ body {
 }
 
 @media (max-width: 991.98px) {
-    .navbar-nav {
-        padding-top: 1rem;
-        border-top: 1px solid rgba(255,255,255,.1);
-    }
 
         .navbar-nav .nav-item {
             margin-bottom: 0.5rem;

@@ -12,58 +12,56 @@
 
 <div class="container-fluid mt-4 mb-4">
     <!-- Portfolio Overview -->
+    <!-- Portfolio Overview -->
     <div class="row">
-        <!-- Portfolio Overview -->
-        <div class="row">
-            @* Improved card layout with responsive design *@
-            <div class="col-sm-6 col-md-3 mb-4">
-                <div class="card shadow fixed-card">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="card-title">Total Portfolio Value</h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <p class="card-text display-value">
-                            @(stockSummaryData != null ? stockSummaryData.Sum(s => s.TotalValue).ToString("C2", CultureInfo.CreateSpecificCulture("en-US")) : "N/A")
-                        </p>
-                    </div>
+        @* Improved card layout with responsive design *@
+        <div class="col-sm-6 col-md-3 mb-4">
+            <div class="card shadow fixed-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title">Total Portfolio Value</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="card-text display-value">
+                        @(stockSummaryData != null ? stockSummaryData.Sum(s => s.TotalValue).ToString("C2", CultureInfo.CreateSpecificCulture("en-US")) : "N/A")
+                    </p>
                 </div>
             </div>
-            <div class="col-sm-6 col-md-3 mb-4">
-                <div class="card shadow fixed-card">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="card-title">Total Number of Stocks</h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <p class="card-text display-value">@(stockSummaryData?.Count ?? 0)</p>
-                    </div>
+        </div>
+        <div class="col-sm-6 col-md-3 mb-4">
+            <div class="card shadow fixed-card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title">Total Number of Stocks</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="card-text display-value">@(stockSummaryData?.Count ?? 0)</p>
                 </div>
             </div>
-            <div class="col-sm-6 col-md-3 mb-4">
-                <div class="card shadow fixed-card">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="card-title">Best Performing Stock</h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <p class="card-text display-value">
-                            @(stockSummaryData != null && stockSummaryData.Any()
-                                ? stockSummaryData.OrderByDescending(s => s.PerformancePercentage).First().StockSymbol
-                                : "N/A")
-                        </p>
-                    </div>
+        </div>
+        <div class="col-sm-6 col-md-3 mb-4">
+            <div class="card shadow fixed-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title">Best Performing Stock</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="card-text display-value">
+                        @(stockSummaryData != null && stockSummaryData.Any()
+                            ? stockSummaryData.OrderByDescending(s => s.PerformancePercentage).First().StockSymbol
+                            : "N/A")
+                    </p>
                 </div>
             </div>
-            <div class="col-sm-6 col-md-3 mb-4">
-                <div class="card shadow fixed-card">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="card-title">Worst Performing Stock</h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <p class="card-text display-value">
-                            @(stockSummaryData != null && stockSummaryData.Any()
-                                ? stockSummaryData.OrderBy(s => s.PerformancePercentage).First().StockSymbol
-                                : "N/A")
-                        </p>
-                    </div>
+        </div>
+        <div class="col-sm-6 col-md-3 mb-4">
+            <div class="card shadow fixed-card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title">Worst Performing Stock</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="card-text display-value">
+                        @(stockSummaryData != null && stockSummaryData.Any()
+                            ? stockSummaryData.OrderBy(s => s.PerformancePercentage).First().StockSymbol
+                            : "N/A")
+                    </p>
                 </div>
             </div>
         </div>
