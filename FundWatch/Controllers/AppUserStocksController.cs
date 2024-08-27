@@ -207,9 +207,25 @@ namespace FundWatch.Controllers
             var userId = _userManager.GetUserId(User);
             var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
             var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
-            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols);
-            return Json(realTimeData);
+            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols, 100); // Get 100 data points for each stock
+
+            var result = new Dictionary<string, List<object>>();
+            foreach (var kvp in realTimeData)
+            {
+                result[kvp.Key] = kvp.Value.Select(d => new
+                {
+                    x = d.Date.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    open = d.Open,
+                    high = d.High,
+                    low = d.Low,
+                    close = d.Close,
+                    volume = d.Volume
+                }).Cast<object>().ToList();
+            }
+
+            return Json(result);
         }
+
         // GET: AppUserStocks/Dashboard
         public async Task<IActionResult> Dashboard()
         {
@@ -288,12 +304,12 @@ namespace FundWatch.Controllers
                     stockSummary.Add(new StockSummaryData
                     {
                         StockSymbol = stock.StockSymbol,
-                        CurrentPrice = stock.PurchasePrice, // Maintain the original purchase price
+                        CurrentPrice = stock.PurchasePrice,
                         PurchasePrice = stock.PurchasePrice,
                         TotalShares = currentShares,
                         TotalValue = totalValue,
-                        PerformancePercentage = 0, // Placeholder, as no real-time data is available
-                        ValueChange = 0 // Placeholder, as no real-time data is available
+                        PerformancePercentage = 0,
+                        ValueChange = 0
                     });
 
                     bubbleChartData.Add(new BubbleChartData
@@ -326,7 +342,7 @@ namespace FundWatch.Controllers
 
         }
 
-        public class RealTimeDataPoint // Renamed from MonthlyTrendData to reflect real-time data
+        public class RealTimeDataPoint
         {
             public string StockSymbol { get; set; }
             public DateTime Date { get; set; }
@@ -344,7 +360,6 @@ namespace FundWatch.Controllers
             public decimal TotalValue { get; set; }
             public int Size { get; set; }
         }
-
         private async Task<Dictionary<string, decimal>> GetCachedRealTimePricesAsync(List<string> stockSymbols)
         {
             var result = new Dictionary<string, decimal>();
@@ -426,7 +441,6 @@ namespace FundWatch.Controllers
                 return Json(new { success = false, message = "An error occurred while fetching the price." });
             }
         }
-
     }
 
     public class StockService
@@ -442,174 +456,6 @@ namespace FundWatch.Controllers
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKey);
             _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", "yahoo-finance15.p.rapidapi.com");
-        }
-
-        public async Task<decimal?> GetRealTimePriceAsync(string stockSymbol)
-        {
-            if (string.IsNullOrEmpty(stockSymbol))
-            {
-                throw new ArgumentException("Stock symbol cannot be null or empty", nameof(stockSymbol));
-            }
-
-            var url = $"{BaseUrl}/markets/stock/quotes?ticker={stockSymbol}";
-
-            try
-            {
-                _logger.LogInformation($"Fetching real-time price for {stockSymbol}");
-                var response = await _httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                var json = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Raw JSON response for real-time price of {stockSymbol}: {json}");
-
-                var data = JObject.Parse(json);
-                var bodyArray = data["body"] as JArray;
-
-                if (bodyArray != null && bodyArray.Count > 0)
-                {
-                    var firstItem = bodyArray.FirstOrDefault();
-                    if (firstItem != null)
-                    {
-                        var currentPriceToken = firstItem["regularMarketPrice"];
-                        if (currentPriceToken != null && decimal.TryParse(currentPriceToken.ToString(), out decimal price))
-                        {
-                            _logger.LogInformation($"Successfully fetched real-time price for {stockSymbol}: {price}");
-                            return price;
-                        }
-                        else
-                        {
-                            _logger.LogWarning($"real-time price for {stockSymbol} is either null or cannot be parsed.");
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"No items found in 'body' array for {stockSymbol}");
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning($"'body' array not found or empty in the JSON response for {stockSymbol}");
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, $"Failed to fetch real-time price for {stockSymbol}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Unexpected error while fetching real-time price for {stockSymbol}");
-            }
-
-            return null;
-        }
-
-        public async Task<Dictionary<string, decimal>> GetRealTimePricesAsync(List<string> stockSymbols)
-        {
-            var result = new Dictionary<string, decimal>();
-            var symbolsString = string.Join(",", stockSymbols);
-            var url = $"{BaseUrl}/markets/stock/quotes?ticker={symbolsString}";
-
-            try
-            {
-                _logger.LogInformation($"Fetching real-time prices for {symbolsString}");
-                var response = await _httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                var json = await response.Content.ReadAsStringAsync();
-
-                var data = JObject.Parse(json);
-                var bodyArray = data["body"] as JArray;
-
-                if (bodyArray != null)
-                {
-                    foreach (var item in bodyArray)
-                    {
-                        var symbol = item["symbol"]?.ToString();
-                        var priceToken = item["regularMarketPrice"];
-                        if (!string.IsNullOrEmpty(symbol) && priceToken != null && decimal.TryParse(priceToken.ToString(), out decimal price))
-                        {
-                            result[symbol] = price;
-                        }
-                    }
-                }
-
-                _logger.LogInformation($"Successfully fetched real-time prices for {result.Count} stocks");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Failed to fetch real-time prices for multiple stocks");
-            }
-
-            return result;
-        }
-
-        public async Task<Dictionary<DateTime, decimal>> GetHistoricalPricesAsync(string stockSymbol, DateTime startDate)
-        {
-            if (string.IsNullOrEmpty(stockSymbol))
-            {
-                throw new ArgumentException("Stock symbol cannot be null or empty", nameof(stockSymbol));
-            }
-
-            var endDate = DateTime.UtcNow;
-            var startTimestamp = ((DateTimeOffset)startDate).ToUnixTimeSeconds();
-            var endTimestamp = ((DateTimeOffset)endDate).ToUnixTimeSeconds();
-            var url = $"{BaseUrl}/markets/stock/history?symbol={stockSymbol}&interval=1d&diffandsplits=false&from={startTimestamp}&to={endTimestamp}";
-
-            var historicalPrices = new Dictionary<DateTime, decimal>();
-
-            try
-            {
-                _logger.LogInformation($"Fetching historical prices for {stockSymbol} from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
-                var response = await _httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                var json = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Raw JSON response for {stockSymbol}: {json}");
-
-                var data = JObject.Parse(json);
-                var body = data["body"]?.ToObject<Dictionary<string, JObject>>();
-
-                if (body != null && body.Any())
-                {
-                    foreach (var entry in body)
-                    {
-                        if (entry.Value != null)
-                        {
-                            // Parse the Unix timestamp from the key
-                            if (long.TryParse(entry.Key, out long timestamp))
-                            {
-                                var date = DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime;
-
-                                // Use the "close" price as the representative price
-                                if (decimal.TryParse(entry.Value["close"]?.ToString(), out decimal closePrice))
-                                {
-                                    historicalPrices[date] = closePrice;
-                                }
-                            }
-                        }
-                    }
-
-                    if (historicalPrices.Count > 0)
-                    {
-                        _logger.LogInformation($"Successfully fetched {historicalPrices.Count} historical prices for {stockSymbol}");
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"No historical prices found in the parsed data for {stockSymbol}");
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning($"No historical prices found in the response data for {stockSymbol}");
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, $"Failed to fetch historical prices for {stockSymbol}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Unexpected error while fetching historical prices for {stockSymbol}");
-            }
-
-            return historicalPrices;
         }
 
         public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int dataPoints = 100)
@@ -711,8 +557,115 @@ namespace FundWatch.Controllers
                     }
                 }
             }
-
             return stockData.OrderBy(d => d.Date).ToList();
+        }
+        public async Task<Dictionary<string, decimal>> GetRealTimePricesAsync(List<string> stockSymbols)
+        {
+            var result = new Dictionary<string, decimal>();
+            var symbolsString = string.Join(",", stockSymbols);
+            var url = $"{BaseUrl}/markets/stock/quotes?ticker={symbolsString}";
+
+            try
+            {
+                _logger.LogInformation($"Fetching real-time prices for {symbolsString}");
+                var response = await _httpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync();
+
+                var data = JObject.Parse(json);
+                var bodyArray = data["body"] as JArray;
+
+                if (bodyArray != null)
+                {
+                    foreach (var item in bodyArray)
+                    {
+                        var symbol = item["symbol"]?.ToString();
+                        var priceToken = item["regularMarketPrice"];
+                        if (!string.IsNullOrEmpty(symbol) && priceToken != null && decimal.TryParse(priceToken.ToString(), out decimal price))
+                        {
+                            result[symbol] = price;
+                        }
+                    }
+                }
+
+                _logger.LogInformation($"Successfully fetched real-time prices for {result.Count} stocks");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to fetch real-time prices for multiple stocks");
+            }
+
+            return result;
+        }
+        public async Task<Dictionary<DateTime, decimal>> GetHistoricalPricesAsync(string stockSymbol, DateTime startDate)
+        {
+            if (string.IsNullOrEmpty(stockSymbol))
+            {
+                throw new ArgumentException("Stock symbol cannot be null or empty", nameof(stockSymbol));
+            }
+
+            var endDate = DateTime.UtcNow;
+            var startTimestamp = ((DateTimeOffset)startDate).ToUnixTimeSeconds();
+            var endTimestamp = ((DateTimeOffset)endDate).ToUnixTimeSeconds();
+            var url = $"{BaseUrl}/markets/stock/history?symbol={stockSymbol}&interval=1d&diffandsplits=false&from={startTimestamp}&to={endTimestamp}";
+
+            var historicalPrices = new Dictionary<DateTime, decimal>();
+
+            try
+            {
+                _logger.LogInformation($"Fetching historical prices for {stockSymbol} from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+                var response = await _httpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation($"Raw JSON response for {stockSymbol}: {json}");
+
+                var data = JObject.Parse(json);
+                var body = data["body"]?.ToObject<Dictionary<string, JObject>>();
+
+                if (body != null && body.Any())
+                {
+                    foreach (var entry in body)
+                    {
+                        if (entry.Value != null)
+                        {
+                            // Parse the Unix timestamp from the key
+                            if (long.TryParse(entry.Key, out long timestamp))
+                            {
+                                var date = DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime;
+
+                                // Use the "close" price as the representative price
+                                if (decimal.TryParse(entry.Value["close"]?.ToString(), out decimal closePrice))
+                                {
+                                    historicalPrices[date] = closePrice;
+                                }
+                            }
+                        }
+                    }
+
+                    if (historicalPrices.Count > 0)
+                    {
+                        _logger.LogInformation($"Successfully fetched {historicalPrices.Count} historical prices for {stockSymbol}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"No historical prices found in the parsed data for {stockSymbol}");
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning($"No historical prices found in the response data for {stockSymbol}");
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, $"Failed to fetch historical prices for {stockSymbol}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Unexpected error while fetching historical prices for {stockSymbol}");
+            }
+
+            return historicalPrices;
         }
 
         public async Task<List<StockSymbolData>> GetAllStocksAsync()
@@ -764,6 +717,4 @@ namespace FundWatch.Controllers
             public long Volume { get; set; }
         }
     }
-
-
 }

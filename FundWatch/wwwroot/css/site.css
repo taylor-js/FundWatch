@@ -1,17 +1,21 @@
+/* Base font size for better scaling on mobile devices */
 html {
     font-size: 14px;
 }
 
+/* Increase font size for larger screens */
 @media (min-width: 768px) {
     html {
         font-size: 16px;
     }
 }
 
+/* Focused elements for better accessibility */
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
+/* Flexbox for full-height and vertical alignment */
 html, body {
     height: 100%;
     margin: 0;
@@ -19,11 +23,13 @@ html, body {
     flex-direction: column;
 }
 
+/* Ensure images in cards are appropriately scaled */
 .card-img-top {
     height: 200px;
     object-fit: cover;
 }
 
+/* Styling for the main header section */
 .jumbotron {
     padding: 2rem 1rem;
     background-image: linear-gradient(to right, #007bff, #0056b3);
@@ -43,7 +49,7 @@ html, body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/*tab navigation*/
+/* Tab navigation customization */
 .login-logout-card .card-header {
     padding: 0px 0px 12px 0px;
 }
@@ -67,7 +73,7 @@ html, body {
     padding: 10px 20px;
 }
 
-
+/* Base styles for the body */
 body {
     background-color: #0100; /* Black background */
     color: #b0c4de; /* Light steel blue text */
@@ -77,23 +83,18 @@ body {
     flex-direction: column;
 }
 
-
 .navbar-brand, .nav-link, .footer {
     color: #1e90ff; /* Dodger blue */
 }
 
-.nav-link:hover {
-    color: #4682b4; /* Steel blue on hover */
-}
-
-
+    .nav-link:hover {
+        color: #4682b4; /* Steel blue on hover */
+    }
 
 /* Ensure grid columns are responsive */
 e-grid-column {
     width: 100%; /* Allow columns to fill available space */
 }
-
-
 
 /* Enable horizontal scrolling for grid on smaller screens */
 .ejs-grid {
@@ -102,10 +103,12 @@ e-grid-column {
     margin-bottom: 1rem;
 }
 
+/* Font family for consistent design */
 body {
     font-family: 'Inter', sans-serif;
 }
 
+/* Navbar styling for better visibility */
 .navbar {
     background-color: #1a1a1a !important;
     box-shadow: 0 2px 4px rgba(0,0,0,.1);
@@ -146,13 +149,12 @@ body {
         }
 }
 
+/* Ensure cards are full height and have proper alignment */
 .fixed-card {
     height: 100%;
     display: flex;
     flex-direction: column;
 }
-
-
 
 .card-header h5 {
     font-size: clamp(0.8rem, 1.5vw, 1.1rem);
@@ -162,9 +164,16 @@ body {
 }
 
 .card-body {
-    flex-grow: 1;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+}
+
+.card-title {
+    margin-bottom: 0.5rem;
+}
+
+.card-text {
+    font-size: 0.9rem;
 }
 
 .display-value {
@@ -173,3 +182,15 @@ body {
     margin-bottom: 0;
 }
 
+/* Responsive adjustments for smaller screens */
+@media (max-width: 575.98px) {
+    .card-text {
+        font-size: 0.8rem;
+    }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .card-text {
+        font-size: 0.85rem;
+    }
+}

@@ -3,8 +3,8 @@
 @model IEnumerable<FundWatch.Models.AppUserStock>
 @{
     ViewData["Title"] = "Stock Portfolio Dashboard";
-    var stockSummaryData = ViewBag.StockSummary as List<StockSummaryData>;
     var realTimeTrendData = ViewBag.RealTimeTrendData as List<RealTimeDataPoint>;
+    var stockSummaryData = ViewBag.StockSummary as List<StockSummaryData>;
     var bubbleChartData = ViewBag.BubbleChartData as List<BubbleChartData>;
 }
 
@@ -15,7 +15,7 @@
     <div class="row">
         <!-- Portfolio Overview -->
         <div class="row">
-            @* Decorated Cards *@
+            @* Improved card layout with responsive design *@
             <div class="col-sm-6 col-md-3 mb-4">
                 <div class="card shadow fixed-card">
                     <div class="card-header bg-primary text-white">
@@ -67,7 +67,7 @@
                 </div>
             </div>
         </div>
-
+    </div>
     <!-- Monthly Stock Value Trend Chart -->
     <div class="row mb-4">
         <div class="col-md-12">
@@ -76,26 +76,31 @@
                     <h5 class="card-title mb-0">Real-time Stock Chart</h5>
                 </div>
                 <div class="card-body">
-                    <ejs-stockchart id="realTimeStockChart" load="stockChartLoad"
-                                    width="100%" height="500px">
-                        <e-stockchart-series-collection>
-                            @foreach (var stock in Model.GroupBy(x => x.StockSymbol))
-                            {
-                                <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock"></e-stockchart-series>
-                            }
-                        </e-stockchart-series-collection>
-                        <e-stockchart-primaryxaxis valueType="DateTime"></e-stockchart-primaryxaxis>
-                        <e-stockchart-primaryyaxis></e-stockchart-primaryyaxis>
-                        <e-stockchart-tooltipsettings showNearestPoint="true" enable="true" shared="false" position="Nearest" format="${series.name}<br>Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.close}"></e-stockchart-tooltipsettings>
-                        <e-stockchart-crosshairsettings enable="true"></e-stockchart-crosshairsettings>
-                        <e-stockchart-legendsettings visible="true"></e-stockchart-legendsettings>
-                    </ejs-stockchart>
-
+                    @if (realTimeTrendData != null && realTimeTrendData.Any())
+                    {
+                        <ejs-stockchart id="realTimeStockChart" load="stockChartLoad"
+                                        width="100%" height="500px">
+                            <e-stockchart-series-collection>
+                                @foreach (var stock in realTimeTrendData.GroupBy(x => x.StockSymbol))
+                                {
+                                    <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock"></e-stockchart-series>
+                                }
+                            </e-stockchart-series-collection>
+                            <e-stockchart-primaryxaxis valueType="DateTime"></e-stockchart-primaryxaxis>
+                            <e-stockchart-primaryyaxis></e-stockchart-primaryyaxis>
+                            <e-stockchart-tooltipsettings showNearestPoint="true" enable="true" shared="false" position="Nearest" format="${series.name}<br>Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.close}"></e-stockchart-tooltipsettings>
+                            <e-stockchart-crosshairsettings enable="true"></e-stockchart-crosshairsettings>
+                            <e-stockchart-legendsettings visible="true"></e-stockchart-legendsettings>
+                        </ejs-stockchart>
+                    }
+                    else
+                    {
+                        <p>No data available for the Real Time Stock Chart.</p>
+                    }
                 </div>
             </div>
         </div>
     </div>
-
 
     <div class="row mb-4">
         <!-- Stock Performance Chart -->
@@ -105,33 +110,39 @@
                     <h5 class="card-title mb-0">Stock Performance</h5>
                 </div>
                 <div class="card-body">
-                    <ejs-chart id="stockPerformanceChart" background="#212529">
-                        <e-chart-primaryxaxis valueType="Category" title="Stock Symbol" labelRotation="90" LabelIntersectAction="Rotate90" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
-                            <e-labelstyle color="#ffffff"></e-labelstyle>
-                        </e-chart-primaryxaxis>
-                        <e-chart-primaryyaxis title="Performance (%)" labelFormat="n2" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
-                            <e-labelstyle color="#ffffff"></e-labelstyle>
-                        </e-chart-primaryyaxis>
-                        <e-series-collection>
-                            @foreach (var stock in ViewBag.StockSummary)
-                            {
-                                <e-series dataSource="@(new List<StockSummaryData> { stock })"
-                                          xName="StockSymbol"
-                                          yName="PerformancePercentage"
-                                          type="Column"
-                                          name="@stock.StockSymbol"
-                                          width="1"
-                                          columnWidth="1">
-                                    <!-- Adjust this value to make bars thicker -->
-                                </e-series>
-                            }
-                        </e-series-collection>
-                        <e-chart-tooltipsettings enable="true" format="Symbol: ${point.x}<br>Performance: ${point.y}%"></e-chart-tooltipsettings>
-                        <e-chart-legendsettings visible="true" position="Bottom" toggleSeriesVisibility="true">
-                            <e-legendsettings-textstyle color="#ffffff"></e-legendsettings-textstyle>
-                        </e-chart-legendsettings>
-                    </ejs-chart>
-
+                    @if (stockSummaryData != null && stockSummaryData.Any())
+                    {
+                        <ejs-chart id="stockPerformanceChart" background="#212529">
+                            <e-chart-primaryxaxis valueType="Category" title="Stock Symbol" labelRotation="90" LabelIntersectAction="Rotate90" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                                <e-labelstyle color="#ffffff"></e-labelstyle>
+                            </e-chart-primaryxaxis>
+                            <e-chart-primaryyaxis title="Performance (%)" labelFormat="n2" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                                <e-labelstyle color="#ffffff"></e-labelstyle>
+                            </e-chart-primaryyaxis>
+                            <e-series-collection>
+                                @foreach (var stock in ViewBag.StockSummary)
+                                {
+                                    <e-series dataSource="@(new List<StockSummaryData> { stock })"
+                                              xName="StockSymbol"
+                                              yName="PerformancePercentage"
+                                              type="Column"
+                                              name="@stock.StockSymbol"
+                                              width="1"
+                                              columnWidth="1">
+                                        <!-- Adjust this value to make bars thicker -->
+                                    </e-series>
+                                }
+                            </e-series-collection>
+                            <e-chart-tooltipsettings enable="true" format="Symbol: ${point.x}<br>Performance: ${point.y}%"></e-chart-tooltipsettings>
+                            <e-chart-legendsettings visible="true" position="Bottom" toggleSeriesVisibility="true">
+                                <e-legendsettings-textstyle color="#ffffff"></e-legendsettings-textstyle>
+                            </e-chart-legendsettings>
+                        </ejs-chart>
+                    }
+                    else
+                    {
+                        <p>No data available for the Stock Performance Chart.</p>
+                    }
                 </div>
             </div>
         </div>
@@ -143,31 +154,38 @@
                     <h5 class="card-title mb-0">Stock Distribution</h5>
                 </div>
                 <div class="card-body">
-                    <ejs-chart id="bubbleChart" background="#212529">
-                        <e-chart-primaryxaxis valueType="Double" title="Count of Stocks" labelRotation="0" LabelIntersectAction="None" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
-                            <e-labelstyle color="#ffffff"></e-labelstyle>
-                        </e-chart-primaryxaxis>
-                        <e-chart-primaryyaxis title="Current Price" labelFormat="c2" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
-                            <e-labelstyle color="#ffffff"></e-labelstyle>
-                        </e-chart-primaryyaxis>
-                        <e-series-collection>
-                            @foreach (var stockGroup in ((List<BubbleChartData>)ViewBag.BubbleChartData).GroupBy(x => x.StockSymbol))
-                            {
-                                <e-series dataSource="@stockGroup"
-                                          xName="Size"
-                                          yName="CurrentPrice"
-                                          size="TotalValue"
-                                          type="Bubble"
-                                          name="@stockGroup.Key"
-                                          tooltipMappingName="StockSymbol">
-                                </e-series>
-                            }
-                        </e-series-collection>
-                        <e-chart-tooltipsettings enable="true" format="Symbol: ${point.tooltip}<br>Price: ${point.y}<br>Total Value: ${point.size}"></e-chart-tooltipsettings>
-                        <e-chart-legendsettings visible="true" position="Bottom" toggleSeriesVisibility="true">
-                            <e-legendsettings-textstyle color="#ffffff"></e-legendsettings-textstyle>
-                        </e-chart-legendsettings>
-                    </ejs-chart>
+                    @if (bubbleChartData != null && bubbleChartData.Any())
+                    {
+                        <ejs-chart id="bubbleChart" background="#212529">
+                            <e-chart-primaryxaxis valueType="Double" title="Count of Stocks" labelRotation="0" LabelIntersectAction="None" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                                <e-labelstyle color="#ffffff"></e-labelstyle>
+                            </e-chart-primaryxaxis>
+                            <e-chart-primaryyaxis title="Current Price" labelFormat="c2" titleStyle="@(new Syncfusion.EJ2.Charts.ChartFont { Color = "white" })">
+                                <e-labelstyle color="#ffffff"></e-labelstyle>
+                            </e-chart-primaryyaxis>
+                            <e-series-collection>
+                                @foreach (var stockGroup in ((List<BubbleChartData>)ViewBag.BubbleChartData).GroupBy(x => x.StockSymbol))
+                                {
+                                    <e-series dataSource="@stockGroup"
+                                              xName="Size"
+                                              yName="CurrentPrice"
+                                              size="TotalValue"
+                                              type="Bubble"
+                                              name="@stockGroup.Key"
+                                              tooltipMappingName="StockSymbol">
+                                    </e-series>
+                                }
+                            </e-series-collection>
+                            <e-chart-tooltipsettings enable="true" format="Symbol: ${point.tooltip}<br>Price: ${point.y}<br>Total Value: ${point.size}"></e-chart-tooltipsettings>
+                            <e-chart-legendsettings visible="true" position="Bottom" toggleSeriesVisibility="true">
+                                <e-legendsettings-textstyle color="#ffffff"></e-legendsettings-textstyle>
+                            </e-chart-legendsettings>
+                        </ejs-chart>
+                    }
+                    else
+                    {
+                        <p>No data available for the Stock Distribution Chart.</p>
+                    }
                 </div>
             </div>
         </div>
@@ -190,7 +208,7 @@
     </div>
 </div>
 
-@section Scripts{
+@section Scripts {
     <script>
         var realTimeData = @Html.Raw(Json.Serialize(ViewBag.RealTimeData));
         var chart;
