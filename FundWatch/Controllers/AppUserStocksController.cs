@@ -73,11 +73,8 @@ namespace FundWatch.Controllers
             {
                 return RedirectToAction("Login", "Account");
             }
-
-            // Fetch stock symbols from the StockService
-            var stockSymbols = await _stockService.GetAllStocksAsync();
-            ViewBag.StockSymbols = stockSymbols;
-
+            var allStocks = await _stockService.GetAllStocksAsync(""); // Pass an empty string or a default term if needed
+            ViewBag.StockSymbols = allStocks;
             if (id == 0)
             {
                 var appUserStock = new AppUserStock
@@ -202,28 +199,38 @@ namespace FundWatch.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> SearchStocks(string term)
+        {
+            if (string.IsNullOrEmpty(term))
+                return Json(new List<string>());
+
+            var filteredStocks = await _stockService.GetAllStocksAsync(term);
+            var limitedStocks = filteredStocks.Take(10).Select(s => s.Symbol).ToList();
+            return Json(limitedStocks);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetRealTimeData()
         {
             var userId = _userManager.GetUserId(User);
             var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
             var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
-            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols, 100); // Get 100 data points for each stock
+            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols, 100);
 
-            var result = new Dictionary<string, List<object>>();
-            foreach (var kvp in realTimeData)
-            {
-                result[kvp.Key] = kvp.Value.Select(d => new
+            var formattedData = realTimeData.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.Where(d => d?.Date != null).Select(d => new
                 {
-                    x = d.Date.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    x = d.Date.ToString("yyyy-MM-ddTHH:mm:ss"), // Format date to ISO 8601
                     open = d.Open,
                     high = d.High,
                     low = d.Low,
                     close = d.Close,
                     volume = d.Volume
-                }).Cast<object>().ToList();
-            }
+                }).ToList()
+            );
 
-            return Json(result);
+            return Json(formattedData);
         }
 
         // GET: AppUserStocks/Dashboard
@@ -447,13 +454,17 @@ namespace FundWatch.Controllers
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<StockService> _logger;
+        private readonly IMemoryCache _cache;
+        private const int CACHE_DURATION_MINUTES = 15;
+
         private const string ApiKey = "0d6b96123dmshd1cdf284f3c5deap10eec8jsnc171c25e1d53"; // TODO: Replace with your actual RapidAPI key
         private const string BaseUrl = "https://yahoo-finance15.p.rapidapi.com/api/v1";
 
-        public StockService(HttpClient httpClient, ILogger<StockService> logger)
+        public StockService(HttpClient httpClient, ILogger<StockService> logger, IMemoryCache cache)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKey);
             _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", "yahoo-finance15.p.rapidapi.com");
         }
@@ -668,45 +679,42 @@ namespace FundWatch.Controllers
             return historicalPrices;
         }
 
-        public async Task<List<StockSymbolData>> GetAllStocksAsync()
+        public async Task<List<StockSymbolData>> GetAllStocksAsync(string? searchTerm)
         {
             var allStocks = new List<StockSymbolData>();
-            var url = $"{BaseUrl}/markets/stock/market-status";
-
+            var url = $"{BaseUrl}/markets/search?search={searchTerm}";
             try
             {
                 var response = await _httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
                 var json = await response.Content.ReadAsStringAsync();
                 var data = JObject.Parse(json);
-                var stocksArray = data["body"]?["stockMarketList"] as JArray;
-
+                var stocksArray = data["body"] as JArray;
                 if (stocksArray != null)
                 {
                     foreach (var stock in stocksArray)
                     {
                         allStocks.Add(new StockSymbolData
                         {
-                            Symbol = stock["ticker"]?.ToString() ?? string.Empty,
+                            Symbol = stock["symbol"]?.ToString() ?? string.Empty,
                             Name = stock["name"]?.ToString() ?? string.Empty
                         });
                     }
                 }
                 _logger.LogInformation($"Successfully fetched {allStocks.Count} stocks");
             }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP request error while fetching stocks");
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching all stocks");
+                _logger.LogError(ex, "Unexpected error while fetching stocks");
             }
-
             return allStocks;
         }
 
-        public class StockSymbolData
-        {
-            public string Symbol { get; set; }
-            public string Name { get; set; }
-        }
+
         public class StockDataPoint
         {
             public DateTime Date { get; set; }
@@ -716,5 +724,10 @@ namespace FundWatch.Controllers
             public decimal Close { get; set; }
             public long Volume { get; set; }
         }
+    }
+    public class StockSymbolData
+    {
+        public string Symbol { get; set; }
+        public string Name { get; set; }
     }
 }

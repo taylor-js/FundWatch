@@ -36,7 +36,7 @@ namespace FundWatch.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal CurrentPrice { get; set; }
 
-        public DateTime? DateSold { get; set; } = DateTime.Today.AddDays(1);
+        public DateTime? DateSold { get; set; } = DateTime.Today;
 
         public int? NumberOfSharesSold { get; set; }
 

@@ -81,10 +81,10 @@
                             <e-stockchart-series-collection>
                                 @foreach (var stock in realTimeTrendData.GroupBy(x => x.StockSymbol))
                                 {
-                                    <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock"></e-stockchart-series>
+                                    <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock" width="3"></e-stockchart-series>
                                 }
                             </e-stockchart-series-collection>
-                            <e-stockchart-primaryxaxis valueType="DateTime"></e-stockchart-primaryxaxis>
+                            <e-stockchart-primaryxaxis valueType="DateTime" labelFormat="MM-dd-yyyy"></e-stockchart-primaryxaxis>
                             <e-stockchart-primaryyaxis></e-stockchart-primaryyaxis>
                             <e-stockchart-tooltipsettings showNearestPoint="true" enable="true" shared="false" position="Nearest" format="${series.name}<br>Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.close}"></e-stockchart-tooltipsettings>
                             <e-stockchart-crosshairsettings enable="true"></e-stockchart-crosshairsettings>

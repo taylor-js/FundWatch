@@ -1,7 +1,8 @@
 ﻿@model FundWatch.Models.AppUserStock
-
+@using FundWatch.Controllers
 @{
     ViewData["Title"] = Model.Id == 0 ? "Create" : "Edit";
+    var stockSymbols = ViewBag.StockSymbols as List<StockSymbolData>;
 }
 
 <div class="container mt-5 mb-5">
@@ -26,7 +27,10 @@
                 <!-- Other form fields -->
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <ejs-textbox id="StockSymbol" ejs-for="StockSymbol" placeholder="Stock Symbol" floatLabelType="Always" cssClass="e-outline"></ejs-textbox>
+                        @* <ejs-textbox id="StockSymbol" ejs-for="StockSymbol" placeholder="Stock Symbol" floatLabelType="Always" cssClass="e-outline"></ejs-textbox> *@
+                        <ejs-dropdownlist value="@Model.StockSymbol" text="@Model.StockSymbol" id="StockSymbol" ejs-for="StockSymbol" placeholder="Stock Symbol" floatLabelType="Always" allowFiltering="true" ignoreAccent="true" filterType="Contains" popupHeight="220px">
+                            <e-dropdownlist-fields value="Symbol" text="Name"></e-dropdownlist-fields>
+                        </ejs-dropdownlist>
                         <span asp-validation-for="StockSymbol" class="text-danger"></span>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -44,7 +48,7 @@
                         <span asp-validation-for="DatePurchased" class="text-danger"></span>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <ejs-numerictextbox id="PurchasePrice" ejs-for="PurchasePrice" placeholder="Purchase Price" floatLabelType="Always" format="c2" min="0" cssClass="e-outline"></ejs-numerictextbox>
+                        <ejs-numerictextbox id="PurchasePrice" ejs-for="PurchasePrice" placeholder="Purchase Price" floatLabelType="Always" format="c2" min="0" cssClass="e-outline" readonly="true"></ejs-numerictextbox>
                         <span asp-validation-for="PurchasePrice" class="text-danger"></span>
                     </div>
                     
@@ -57,15 +61,13 @@
                         <span asp-validation-for="DateSold" class="text-danger"></span>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <ejs-numerictextbox id="CurrentPrice" ejs-for="CurrentPrice" placeholder="Current Price" floatLabelType="Always"
-                                            format="c2" min="0" cssClass="e-outline"></ejs-numerictextbox>
+                        <ejs-numerictextbox id="CurrentPrice" ejs-for="CurrentPrice" placeholder="Current Price" floatLabelType="Always" format="c2" min="0" cssClass="e-outline" readonly="true"></ejs-numerictextbox>
                         <span asp-validation-for="CurrentPrice" class="text-danger"></span>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <ejs-numerictextbox id="NumberOfSharesSold" ejs-for="NumberOfSharesSold" placeholder="Number of Shares Sold"
-                                        floatLabelType="Always" format="n0" min="0" cssClass="e-outline"></ejs-numerictextbox>
+                    <ejs-numerictextbox id="NumberOfSharesSold" ejs-for="NumberOfSharesSold" placeholder="Number of Shares Sold" floatLabelType="Always" format="n0" min="0" cssClass="e-outline"></ejs-numerictextbox>
                     <span asp-validation-for="NumberOfSharesSold" class="text-danger"></span>
                 </div>
 
@@ -88,6 +90,26 @@
     }
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var dropdownObj = document.getElementById('StockSymbol').ej2_instances[0];
+
+            dropdownObj.filtering = function (e) {
+                var dataManager = new ej.data.DataManager({
+                    url: '/AppUserStocks/SearchStocks?term=' + e.text,
+                    adaptor: new ej.data.WebApiAdaptor(),
+                    crossDomain: true
+                });
+
+                var query = new ej.data.Query().take(10); // Fetch only 10 items at a time
+                dataManager.executeQuery(query).then(function (response) {
+                    dropdownObj.dataSource = response.result;
+                    dropdownObj.dataBind();
+                }).catch(function (error) {
+                    console.error('Error fetching data:', error);
+                });
+            };
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
             var stockSymbolInput = document.getElementById('StockSymbol');
             var datePurchasedPicker = document.getElementById('DatePurchased').ej2_instances[0];
