@@ -17,24 +17,21 @@
               allowSorting="true"
               allowPaging="true"
               allowResizing="true"
-              enableAdaptiveUI="true"
               toolbar="@(new List<string>() {"Search"})"
               width="100%"
-              height="100%"
-              enableColumnVirtualization="true"
-              enableAdaptiveUI="true">
-        <e-grid-pagesettings pageSize="10"></e-grid-pagesettings>
+              height="215">
+        <e-grid-pagesettings pageSize="5"></e-grid-pagesettings>
         <e-grid-columns>
             <e-grid-column width="120" headerText="Stock Symbol" field="StockSymbol" textAlign="Left" headerTextAlign="Left"></e-grid-column>
-            @* <e-grid-column headerText="Purchase Price" field="PurchasePrice" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
-            @* <e-grid-column headerText="Date Purchased" field="DatePurchased" type="date" format="MMM-dd-yyyy" textAlign="Left" headerTextAlign="Left"></e-grid-column> *@
+            @* <e-grid-column width="120" headerText="Current Price" field="CurrentPrice" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
+            @* <e-grid-column width="120" headerText="Performance %" field="PerformancePercentage" format="N2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
             <e-grid-column width="120" headerText="# Purchased" field="NumberOfSharesPurchased" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-            <e-grid-column width="120" headerText="Current Price" field="CurrentPrice" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-            @* <e-grid-column width="100" headerText="Total Value" field="TotalValue" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
-            @* <e-grid-column width="100" headerText="Value Change" field="ValueChange" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
-            @* <e-grid-column width="100" headerText="Performance %" field="PerformancePercentage" format="N2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
-            @* <e-grid-column headerText="Date Sold" field="DateSold" type="date" format="MMM-dd-yyyy" textAlign="Left" headerTextAlign="Left"></e-grid-column> *@
+            @* <e-grid-column width="120" headerText="Value Change" field="ValueChange" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
+            <e-grid-column width="120" headerText="Purchase Price" field="PurchasePrice" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column>
+            <e-grid-column width="120" headerText="Total Value" field="TotalValue" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column>
+            @* <e-grid-column width="150" headerText="Date Purchased" field="DatePurchased" type="date" format="MMM-dd-yyyy" textAlign="Left" headerTextAlign="Left"></e-grid-column> *@
             @* <e-grid-column width="100" headerText="# Sold" field="NumberOfSharesSold" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
+            @* <e-grid-column width="150" headerText="Date Sold" field="DateSold" type="date" format="MMM-dd-yyyy" textAlign="Left" headerTextAlign="Left"></e-grid-column> *@
             <e-grid-column width="120" headerText="Actions" template="#actionColumnTemplate" textAlign="Right" headerTextAlign="Right"></e-grid-column>
         </e-grid-columns>
     </ejs-grid>

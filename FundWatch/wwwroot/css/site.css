@@ -89,7 +89,6 @@ e-grid-column {
 
 /* Enable horizontal scrolling for grid on smaller screens */
 .ejs-grid {
-    overflow-x: auto;
     width: 100%;
     margin-bottom: 1rem;
 }
