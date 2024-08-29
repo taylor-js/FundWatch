@@ -5,32 +5,39 @@
     ViewData["PageActionText"] = "Create";
     ViewData["PageActionUrl"] = "/AppUserStocks/CreateOrEdit";
 }
-<div class="row">
-    <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="fw-bold my-0">@ViewData["Title"]</h3>
-            <a class="btn btn-success btn-custom" href="@ViewData["PageActionUrl"]">
-                <i class="fa fa-plus" aria-hidden="true"></i> &nbsp; @ViewData["PageActionText"]
-            </a>
-        </div>
-        <ejs-grid id="appUserStocksGrid" dataSource="@Model" allowSorting="true" allowPaging="true" allowSearching="true" toolbar="@(new List<string>() {"Search"})" width="100%" height="auto">
-            <!-- Grid columns here -->
-            <e-grid-pagesettings pageSize="10"></e-grid-pagesettings>
-            <e-grid-columns>
-                <e-grid-column headerText="Stock Symbol" field="StockSymbol" width="150" textAlign="Left" headerTextAlign="Left"></e-grid-column>
-                @* <e-grid-column headerText="Purchase Price" field="PurchasePrice" format="C2" width="150" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
-                @* <e-grid-column headerText="Date Purchased" field="DatePurchased" type="date" format="MMM-dd-yyyy" width="150" textAlign="Left" headerTextAlign="Left"></e-grid-column> *@
-                <e-grid-column headerText="# Purchased" field="NumberOfSharesPurchased" width="150" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-                <e-grid-column headerText="Current Price" field="CurrentPrice" format="C2" width="150" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-                <e-grid-column headerText="Total Value" field="TotalValue" format="C2" width="150" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-                <e-grid-column headerText="Value Change" field="ValueChange" format="C2" width="150" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-                <e-grid-column headerText="Performance %" field="PerformancePercentage" format="N2" width="150" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-                @* <e-grid-column headerText="Date Sold" field="DateSold" type="date" format="MMM-dd-yyyy" width="150" textAlign="Left" headerTextAlign="Left"></e-grid-column> *@
-                <e-grid-column headerText="# Sold" field="NumberOfSharesSold" width="150" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-                <e-grid-column headerText="Actions" template="#actionColumnTemplate" width="150" textAlign="Right" headerTextAlign="Right"></e-grid-column>
-            </e-grid-columns>
-        </ejs-grid>
+<div class="col-md-12">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold my-0">@ViewData["Title"]</h3>
+        <a class="btn btn-success btn-custom" href="@ViewData["PageActionUrl"]">
+            <i class="fa fa-plus" aria-hidden="true"></i> &nbsp; @ViewData["PageActionText"]
+        </a>
     </div>
+    <ejs-grid id="appUserStocksGrid"
+              dataSource="@Model"
+              allowSorting="true"
+              allowPaging="true"
+              allowResizing="true"
+              enableAdaptiveUI="true"
+              toolbar="@(new List<string>() {"Search"})"
+              width="100%"
+              height="100%"
+              enableColumnVirtualization="true"
+              enableAdaptiveUI="true">
+        <e-grid-pagesettings pageSize="10"></e-grid-pagesettings>
+        <e-grid-columns>
+            <e-grid-column width="120" headerText="Stock Symbol" field="StockSymbol" textAlign="Left" headerTextAlign="Left"></e-grid-column>
+            @* <e-grid-column headerText="Purchase Price" field="PurchasePrice" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
+            @* <e-grid-column headerText="Date Purchased" field="DatePurchased" type="date" format="MMM-dd-yyyy" textAlign="Left" headerTextAlign="Left"></e-grid-column> *@
+            <e-grid-column width="120" headerText="# Purchased" field="NumberOfSharesPurchased" textAlign="Right" headerTextAlign="Right"></e-grid-column>
+            <e-grid-column width="120" headerText="Current Price" field="CurrentPrice" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column>
+            @* <e-grid-column width="100" headerText="Total Value" field="TotalValue" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
+            @* <e-grid-column width="100" headerText="Value Change" field="ValueChange" format="C2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
+            @* <e-grid-column width="100" headerText="Performance %" field="PerformancePercentage" format="N2" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
+            @* <e-grid-column headerText="Date Sold" field="DateSold" type="date" format="MMM-dd-yyyy" textAlign="Left" headerTextAlign="Left"></e-grid-column> *@
+            @* <e-grid-column width="100" headerText="# Sold" field="NumberOfSharesSold" textAlign="Right" headerTextAlign="Right"></e-grid-column> *@
+            <e-grid-column width="120" headerText="Actions" template="#actionColumnTemplate" textAlign="Right" headerTextAlign="Right"></e-grid-column>
+        </e-grid-columns>
+    </ejs-grid>
 </div>
 
 <script id="actionColumnTemplate" type="text/x-template">
@@ -42,10 +49,21 @@
             <i class="fa-solid fa-info-circle fa-xl"></i>
         </a>
         <form action="/AppUserStocks/Delete/${Id}" method="post" style="display:inline;">
-    @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-sm no-a-decoration" onclick="return confirm('Are you sure you want to delete this record?')">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm no-a-decoration delete-btn">
                 <i class="fa-solid fa-trash-can fa-xl"></i>
             </button>
         </form>
     </div>
+</script>
+
+<script>
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.delete-btn')) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to delete this record?')) {
+                e.target.closest('form').submit();
+            }
+        }
+    });
 </script>

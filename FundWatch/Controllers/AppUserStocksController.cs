@@ -106,7 +106,10 @@ namespace FundWatch.Controllers
                 if (!string.IsNullOrEmpty(userId))
                 {
                     // Convert DateTime fields to UTC
-                    appUserStock.DatePurchased = ConvertToUtc(appUserStock.DatePurchased);
+                    if (appUserStock.DatePurchased.HasValue)
+                    {
+                        appUserStock.DatePurchased = ConvertToUtc(appUserStock.DatePurchased.Value);
+                    }
                     if (appUserStock.DateSold.HasValue)
                     {
                         appUserStock.DateSold = ConvertToUtc(appUserStock.DateSold.Value);
@@ -233,6 +236,7 @@ namespace FundWatch.Controllers
             return Json(formattedData);
         }
 
+
         // GET: AppUserStocks/Dashboard
         public async Task<IActionResult> Dashboard()
         {
@@ -257,25 +261,26 @@ namespace FundWatch.Controllers
             var bubbleChartData = new List<BubbleChartData>();
             var realTimeTrendData = new List<RealTimeDataPoint>();
 
-            foreach (var stock in userStocks)
+            foreach (var stock in realTimeData)
             {
-                if (realTimeData.TryGetValue(stock.StockSymbol, out var stockData) && stockData.Any())
+                var userStock = userStocks.FirstOrDefault(s => s.StockSymbol == stock.Key);
+                if (userStock != null)
                 {
-                    var latestData = stockData.Last();
-                    stock.CurrentPrice = latestData.Close;
+                    var latestData = stock.Value.Last();
+                    userStock.CurrentPrice = latestData.Close;
 
-                    var currentShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                    var currentShares = userStock.NumberOfSharesPurchased - (userStock.NumberOfSharesSold ?? 0);
                     if (currentShares > 0)
                     {
-                        var totalValue = currentShares * stock.CurrentPrice;
-                        var performancePercentage = ((stock.CurrentPrice - stock.PurchasePrice) / stock.PurchasePrice) * 100;
-                        var valueChange = (stock.CurrentPrice - stock.PurchasePrice) * currentShares;
+                        var totalValue = currentShares * userStock.CurrentPrice;
+                        var performancePercentage = ((userStock.CurrentPrice - userStock.PurchasePrice) / userStock.PurchasePrice) * 100;
+                        var valueChange = (userStock.CurrentPrice - userStock.PurchasePrice) * currentShares;
 
                         stockSummary.Add(new StockSummaryData
                         {
-                            StockSymbol = stock.StockSymbol,
-                            CurrentPrice = stock.CurrentPrice,
-                            PurchasePrice = stock.PurchasePrice,
+                            StockSymbol = userStock.StockSymbol,
+                            CurrentPrice = userStock.CurrentPrice,
+                            PurchasePrice = userStock.PurchasePrice,
                             TotalShares = currentShares,
                             TotalValue = totalValue,
                             PerformancePercentage = performancePercentage,
@@ -284,15 +289,15 @@ namespace FundWatch.Controllers
 
                         bubbleChartData.Add(new BubbleChartData
                         {
-                            StockSymbol = stock.StockSymbol,
-                            CurrentPrice = stock.CurrentPrice,
+                            StockSymbol = userStock.StockSymbol,
+                            CurrentPrice = userStock.CurrentPrice,
                             TotalValue = totalValue,
                             Size = currentShares
                         });
 
-                        realTimeTrendData.AddRange(stockData.Select(data => new RealTimeDataPoint
+                        realTimeTrendData.AddRange(stock.Value.Select(data => new RealTimeDataPoint
                         {
-                            StockSymbol = stock.StockSymbol,
+                            StockSymbol = userStock.StockSymbol,
                             Date = data.Date,
                             Open = data.Open,
                             High = data.High,
@@ -301,31 +306,6 @@ namespace FundWatch.Controllers
                             Volume = data.Volume
                         }));
                     }
-                }
-                else
-                {
-                    _logger.LogWarning($"No data available for {stock.StockSymbol}. Using placeholder data.");
-                    var currentShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
-                    var totalValue = currentShares * stock.PurchasePrice;
-
-                    stockSummary.Add(new StockSummaryData
-                    {
-                        StockSymbol = stock.StockSymbol,
-                        CurrentPrice = stock.PurchasePrice,
-                        PurchasePrice = stock.PurchasePrice,
-                        TotalShares = currentShares,
-                        TotalValue = totalValue,
-                        PerformancePercentage = 0,
-                        ValueChange = 0
-                    });
-
-                    bubbleChartData.Add(new BubbleChartData
-                    {
-                        StockSymbol = stock.StockSymbol,
-                        CurrentPrice = stock.PurchasePrice,
-                        TotalValue = totalValue,
-                        Size = currentShares
-                    });
                 }
             }
 
@@ -336,6 +316,7 @@ namespace FundWatch.Controllers
 
             return View(userStocks);
         }
+
 
         public class StockSummaryData
         {
@@ -448,6 +429,34 @@ namespace FundWatch.Controllers
                 return Json(new { success = false, message = "An error occurred while fetching the price." });
             }
         }
+        [HttpGet]
+        public async Task<IActionResult> LoadRealTimeChart()
+        {
+            var userId = _userManager.GetUserId(User);
+            var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
+            var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
+
+            var realTimeData = await _stockService.GetRealTimeDataCachedAsync(stockSymbols);
+
+            var realTimeTrendData = new List<RealTimeDataPoint>();
+            foreach (var stock in realTimeData)
+            {
+                realTimeTrendData.AddRange(stock.Value.Select(data => new RealTimeDataPoint
+                {
+                    StockSymbol = stock.Key,
+                    Date = data.Date,
+                    Open = data.Open,
+                    High = data.High,
+                    Low = data.Low,
+                    Close = data.Close,
+                    Volume = data.Volume
+                }));
+            }
+
+            ViewBag.RealTimeTrendData = realTimeTrendData;
+            return PartialView("_RealTimeStockChartPartial");
+        }
+
     }
 
     public class StockService
@@ -472,72 +481,71 @@ namespace FundWatch.Controllers
         public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int dataPoints = 100)
         {
             var result = new Dictionary<string, List<StockDataPoint>>();
+            var fetchTasks = new List<Task>();
 
             foreach (var symbol in stockSymbols)
             {
-                var url = $"{BaseUrl}/markets/stock/history?symbol={symbol}&interval=1d&diffandsplits=false&limit={dataPoints}";
-
-                for (int i = 0; i < 3; i++) // Try up to 3 times for each symbol
+                var task = Task.Run(async () =>
                 {
-                    try
-                    {
-                        _logger.LogInformation($"Attempt {i + 1}: Fetching real-time data for {symbol}");
-                        var response = await _httpClient.GetAsync(url);
+                    var url = $"{BaseUrl}/markets/stock/history?symbol={symbol}&interval=1d&diffandsplits=false&limit={dataPoints}";
 
-                        if (response.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity)
+                    for (int i = 0; i < 3; i++) // Try up to 3 times for each symbol
+                    {
+                        try
                         {
-                            var errorContent = await response.Content.ReadAsStringAsync();
-                            _logger.LogWarning($"API returned 422 Unprocessable Entity for {symbol}. Error content: {errorContent}");
-                            await Task.Delay(1000 * (int)Math.Pow(2, i)); // Exponential backoff
-                            continue;
+                            _logger.LogInformation($"Attempt {i + 1}: Fetching real-time data for {symbol}");
+                            var response = await _httpClient.GetAsync(url);
+                            response.EnsureSuccessStatusCode();
+                            var json = await response.Content.ReadAsStringAsync();
+                            var stockData = ProcessHistoricalData(json);
+                            if (stockData.Any())
+                            {
+                                lock (result)
+                                {
+                                    result[symbol] = stockData;
+                                }
+                                break; // Success, move to next symbol
+                            }
                         }
-
-                        response.EnsureSuccessStatusCode();
-                        var json = await response.Content.ReadAsStringAsync();
-
-                        // Process the JSON for a single symbol
-                        var stockData = ProcessHistoricalData(json);
-                        if (stockData.Any())
+                        catch (HttpRequestException ex)
                         {
-                            result[symbol] = stockData;
-                            break; // Success, move to next symbol
+                            _logger.LogError(ex, $"Attempt {i + 1} failed to fetch data for {symbol}. Status code: {ex.StatusCode}");
+                            if (i < 2) // If it's not the last attempt
+                            {
+                                await Task.Delay(1000 * (int)Math.Pow(2, i)); // Exponential backoff
+                            }
                         }
-                    }
-                    catch (HttpRequestException ex)
-                    {
-                        _logger.LogError(ex, $"Attempt {i + 1} failed to fetch data for {symbol}. Status code: {ex.StatusCode}");
-                        if (i < 2) // If it's not the last attempt
+                        catch (Exception ex)
                         {
-                            await Task.Delay(1000 * (int)Math.Pow(2, i)); // Exponential backoff
+                            _logger.LogError(ex, $"Unexpected error on attempt {i + 1} while fetching data for {symbol}");
+                            break; // For unexpected errors, don't retry
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Unexpected error on attempt {i + 1} while fetching data for {symbol}");
-                        break; // For unexpected errors, don't retry
-                    }
-                }
 
-                // If we couldn't fetch any data, add a placeholder data point
-                if (!result.ContainsKey(symbol))
-                {
-                    result[symbol] = new List<StockDataPoint>
-                {
-                    new StockDataPoint
+                    if (!result.ContainsKey(symbol))
                     {
-                        Date = DateTime.UtcNow,
-                        Open = 0,
-                        High = 0,
-                        Low = 0,
-                        Close = 0,
-                        Volume = 0
+                        result[symbol] = new List<StockDataPoint>
+                        {
+                            new StockDataPoint
+                            {
+                                Date = DateTime.UtcNow,
+                                Open = 0,
+                                High = 0,
+                                Low = 0,
+                                Close = 0,
+                                Volume = 0
+                            }
+                        };
                     }
-                };
-                }
+                });
+
+                fetchTasks.Add(task);
             }
 
+            await Task.WhenAll(fetchTasks);
             return result;
         }
+
 
         private List<StockDataPoint> ProcessHistoricalData(string json)
         {
@@ -714,6 +722,20 @@ namespace FundWatch.Controllers
             return allStocks;
         }
 
+        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataCachedAsync(List<string> stockSymbols, int dataPoints = 100)
+        {
+            var cacheKey = $"RealTimeData_{string.Join("_", stockSymbols)}";
+
+            // Try to get cached data
+            if (!_cache.TryGetValue(cacheKey, out Dictionary<string, List<StockDataPoint>>? cachedData) || cachedData == null)
+            {
+                // Fetch data if not in cache or if cached data is null
+                cachedData = await GetRealTimeDataAsync(stockSymbols, dataPoints) ?? new Dictionary<string, List<StockDataPoint>>();
+                _cache.Set(cacheKey, cachedData, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+            }
+
+            return cachedData;
+        }
 
         public class StockDataPoint
         {

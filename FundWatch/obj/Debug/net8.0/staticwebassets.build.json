@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "ZD26AapNK/yW6nd/3UTd/pfceKBo18EcVryPNsD/q5Y=",
+  "Hash": "QQxuv9V8j6TuLR8IaH8SgL92ihFQEvPVoRPH0v5RPAA=",
   "Source": "FundWatch",
   "BasePath": "_content/FundWatch",
   "Mode": "Default",
@@ -3112,6 +3112,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\FundWatch.bundle.scp.css"
+    },
+    {
+      "Identity": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\loading-spinner.gif",
+      "SourceId": "FundWatch",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\",
+      "BasePath": "_content/FundWatch",
+      "RelativePath": "css/loading-spinner.gif",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\css\\loading-spinner.gif"
     },
     {
       "Identity": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\site.css",

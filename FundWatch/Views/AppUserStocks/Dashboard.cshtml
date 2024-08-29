@@ -6,6 +6,8 @@
     var realTimeTrendData = ViewBag.RealTimeTrendData as List<RealTimeDataPoint>;
     var stockSummaryData = ViewBag.StockSummary as List<StockSummaryData>;
     var bubbleChartData = ViewBag.BubbleChartData as List<BubbleChartData>;
+
+
 }
 
 <h2 class="text-center mb-4 mt-4">@ViewData["Title"]</h2>
@@ -74,22 +76,30 @@
                     <h5 class="card-title mb-0">Real-time Stock Chart</h5>
                 </div>
                 <div class="card-body">
+                    @* <div class="loading-spinner-container">
+                        <div id="loadingSpinner" class="loading-spinner">
+                            <img src="~/css/loading-spinner.gif" alt="Loading..." />
+                        </div>
+                    </div> *@
                     @if (realTimeTrendData != null && realTimeTrendData.Any())
                     {
-                        <ejs-stockchart id="realTimeStockChart" load="stockChartLoad"
-                                        width="100%" height="500px">
-                            <e-stockchart-series-collection>
-                                @foreach (var stock in realTimeTrendData.GroupBy(x => x.StockSymbol))
-                                {
-                                    <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock" width="2"></e-stockchart-series>
-                                }
-                            </e-stockchart-series-collection>
-                            <e-stockchart-primaryxaxis valueType="DateTime" labelFormat="MM-dd-yyyy"></e-stockchart-primaryxaxis>
-                            <e-stockchart-primaryyaxis></e-stockchart-primaryyaxis>
-                            <e-stockchart-tooltipsettings showNearestPoint="true" enable="true" shared="false" position="Nearest" format="${series.name}<br>Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.close}"></e-stockchart-tooltipsettings>
-                            <e-stockchart-crosshairsettings enable="true"></e-stockchart-crosshairsettings>
-                            <e-stockchart-legendsettings visible="true"></e-stockchart-legendsettings>
-                        </ejs-stockchart>
+                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <ejs-stockchart id="realTimeStockChart" load="stockChartLoad"
+                                            width="100%" height="500px"
+                                            tooltipRender="tooltipRender">
+                                <e-stockchart-series-collection>
+                                    @foreach (var stock in realTimeTrendData.GroupBy(x => x.StockSymbol))
+                                    {
+                                        <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock" width="2"></e-stockchart-series>
+                                    }
+                                </e-stockchart-series-collection>
+                                <e-stockchart-primaryxaxis labelRotation="90" LabelIntersectAction="Rotate90" valueType="DateTime" labelFormat="MM-dd-yyyy"></e-stockchart-primaryxaxis>
+                                <e-stockchart-primaryyaxis labelFormat="c2"></e-stockchart-primaryyaxis>
+                                <e-stockchart-tooltipsettings enable="true" header="${series.name}"></e-stockchart-tooltipsettings>
+                                <e-stockchart-crosshairsettings enable="true"></e-stockchart-crosshairsettings>
+                                <e-stockchart-legendsettings visible="true"></e-stockchart-legendsettings>
+                            </ejs-stockchart>
+                        </div>
                     }
                     else
                     {
@@ -212,11 +222,11 @@
         var chart;
 
         function stockChartLoad(args) {
-            args.stockChart.tooltip.enable = true;
-            args.stockChart.tooltip.shared = false;
-            args.stockChart.crosshair.enable = true;
-
             chart = args.stockChart;
+            chart.tooltip.enable = true;
+            chart.tooltip.shared = false;
+            chart.crosshair.enable = true;
+
             chart.series.forEach((series, index) => {
                 var stockData = realTimeData[series.name];
                 if (stockData && stockData.length > 0) {
@@ -236,80 +246,27 @@
         }
 
         function tooltipRender(args) {
-            if (!chart || !args.series) {
-                args.cancel = true;
-                return;
-            }
+            if (!args.text) return;
 
-            var visibleSeries = chart.series.filter(s => s.visible);
-            if (visibleSeries.length === 0) {
-                args.cancel = true;
-                return;
-            }
-
-            var closestSeries = null;
-            var closestPoint = null;
-            var minDistance = Infinity;
-
-            visibleSeries.forEach(series => {
-                var pointIndex = chart.baseTooltip.getClosest(series.xValues, args.xValue);
-                if (pointIndex !== -1) {
-                    var point = series.points[pointIndex];
-                    var distance = Math.abs(point.x.getTime() - args.xValue.getTime());
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestSeries = series;
-                        closestPoint = point;
-                    }
-                }
+            var date = new Date(args.point.x);
+            var formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             });
 
-            if (!closestPoint || !closestSeries) {
-                args.cancel = true;
-                return;
-            }
-
-            var date = new Date(closestPoint.x);
-            args.text = `${closestSeries.name}<br>` +
+            args.text = `<b>${args.series.name}</b><br>` +
                 `Date: ${date.toLocaleDateString()}<br>` +
-                `Open: ${closestPoint.open.toFixed(2)}<br>` +
-                `High: ${closestPoint.high.toFixed(2)}<br>` +
-                `Low: ${closestPoint.low.toFixed(2)}<br>` +
-                `Close: ${closestPoint.close.toFixed(2)}`;
+                `Open: ${formatter.format(args.point.open)}<br>` +
+                `High: ${formatter.format(args.point.high)}<br>` +
+                `Low: ${formatter.format(args.point.low)}<br>` +
+                `Close: ${formatter.format(args.point.close)}`;
         }
 
         function getColorForIndex(index) {
             const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#36A2EB', '#FFCE56'];
             return colors[index % colors.length];
         }
-
-        // function updateRealTimeData() {
-        //     fetch('/AppUserStocks/GetRealTimeData')
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             realTimeData = data;
-        //             if (chart) {
-        //                 chart.series.forEach((series, index) => {
-        //                     var stockData = realTimeData[series.name];
-        //                     if (stockData && stockData.length > 0) {
-        //                         series.dataSource = stockData.map(d => ({
-        //                             x: new Date(d.date),
-        //                             open: d.open,
-        //                             high: d.high,
-        //                             low: d.low,
-        //                             close: d.close
-        //                         }));
-        //                     }
-        //                 });
-        //                 chart.refresh();
-        //             }
-        //         })
-        //         .catch(error => {
-        //             console.error('Error fetching real-time data:', error);
-        //         });
-        // }
-
-        // // Update data every 5 minutes
-        // setInterval(updateRealTimeData, 5 * 60 * 1000);
     </script>
 }

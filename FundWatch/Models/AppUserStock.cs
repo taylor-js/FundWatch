@@ -28,17 +28,17 @@ namespace FundWatch.Models
         public decimal PurchasePrice { get; set; }
 
         [Required]
-        public DateTime DatePurchased { get; set; } = DateTime.UtcNow;
+        public DateTime? DatePurchased { get; set; }
 
         [Required]
-        public int NumberOfSharesPurchased { get; set; }
+        public int NumberOfSharesPurchased { get; set; } = 1;
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal CurrentPrice { get; set; }
 
-        public DateTime? DateSold { get; set; } = DateTime.UtcNow;
+        public DateTime? DateSold { get; set; }
 
-        public int? NumberOfSharesSold { get; set; }
+        public int? NumberOfSharesSold { get; set; } = 0;
 
         [NotMapped]
         public decimal ValueChange => (CurrentPrice - PurchasePrice) * NumberOfSharesPurchased;

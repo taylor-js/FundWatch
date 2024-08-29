@@ -103,7 +103,7 @@ namespace FundWatch.Data.Migrations.ApplicationDb
                     b.Property<decimal>("CurrentPrice")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<DateTime>("DatePurchased")
+                    b.Property<DateTime?>("DatePurchased")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("DateSold")

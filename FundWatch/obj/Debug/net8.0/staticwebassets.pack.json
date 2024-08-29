@@ -5,6 +5,10 @@
       "PackagePath": "staticwebassets\\FundWatch.bundle.scp.css"
     },
     {
+      "Id": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\loading-spinner.gif",
+      "PackagePath": "staticwebassets\\css\\loading-spinner.gif"
+    },
+    {
       "Id": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\site.css",
       "PackagePath": "staticwebassets\\css\\site.css"
     },

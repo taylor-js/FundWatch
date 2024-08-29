@@ -23,7 +23,7 @@
                         <dd class="col-sm-8">@Model.PurchasePrice.ToString("C2", cultureInfo)</dd>
 
                         <dt class="col-sm-4">Date Purchased</dt>
-                        <dd class="col-sm-8">@Model.DatePurchased.ToString("MMM dd, yyyy")</dd>
+                        <dd class="col-sm-8">@Model.DatePurchased?.ToString("MMM dd, yyyy")</dd>
 
                         <dt class="col-sm-4">Shares Purchased</dt>
                         <dd class="col-sm-8">@Model.NumberOfSharesPurchased</dd>

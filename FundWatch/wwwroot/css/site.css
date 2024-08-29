@@ -1,14 +1,5 @@
 /* Base font size for better scaling on mobile devices */
-html {
-    font-size: 14px;
-}
 
-/* Increase font size for larger screens */
-@media (min-width: 768px) {
-    html {
-        font-size: 16px;
-    }
-}
 
 /* Focused elements for better accessibility */
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
@@ -93,7 +84,7 @@ body {
 
 /* Ensure grid columns are responsive */
 e-grid-column {
-    width: 100%; /* Allow columns to fill available space */
+    width: auto; /* Allow columns to fill available space */
 }
 
 /* Enable horizontal scrolling for grid on smaller screens */
@@ -147,7 +138,6 @@ body {
 
 /* Ensure cards are full height and have proper alignment */
 .fixed-card {
-    height: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -163,6 +153,8 @@ body {
     justify-content: center;
     align-items: center;
 }
+
+
 
 .card-title {
     margin-bottom: 0.5rem;
