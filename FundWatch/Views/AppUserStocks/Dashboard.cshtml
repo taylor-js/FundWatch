@@ -76,11 +76,6 @@
                     <h5 class="card-title mb-0">Real-time Stock Chart</h5>
                 </div>
                 <div class="card-body">
-                    @* <div class="loading-spinner-container">
-                        <div id="loadingSpinner" class="loading-spinner">
-                            <img src="~/css/loading-spinner.gif" alt="Loading..." />
-                        </div>
-                    </div> *@
                     @if (realTimeTrendData != null && realTimeTrendData.Any())
                     {
                         <div style="-webkit-overflow-scrolling: touch;">
@@ -93,11 +88,15 @@
                                         <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock" width="2"></e-stockchart-series>
                                     }
                                 </e-stockchart-series-collection>
-                                <e-stockchart-primaryxaxis labelRotation="90" LabelIntersectAction="Rotate90" valueType="DateTime" labelFormat="MM-dd-yyyy"></e-stockchart-primaryxaxis>
+                                <e-stockchart-primaryxaxis zoomFactor="2" labelRotation="90" LabelIntersectAction="Rotate90" valueType="DateTime" labelFormat="MM-dd-yyyy"></e-stockchart-primaryxaxis>
                                 <e-stockchart-primaryyaxis labelFormat="c2"></e-stockchart-primaryyaxis>
-                                <e-stockchart-tooltipsettings enable="true" header="${series.name}"></e-stockchart-tooltipsettings>
+                                <e-stockchart-tooltipsettings enable="true"  position="Fixed" header="${series.name}"></e-stockchart-tooltipsettings>
                                 <e-stockchart-crosshairsettings enable="true"></e-stockchart-crosshairsettings>
                                 <e-stockchart-legendsettings visible="true"></e-stockchart-legendsettings>
+
+                                <!-- Modified Zoom Settings -->
+                                <e-stockchart-zoomsettings  showToolbar="true" enableSelectionZooming="true" enablePinchZooming="true" enableMouseWheelZooming="false" enableDeferredZooming="true" mode="XY">
+                                </e-stockchart-zoomsettings>
                             </ejs-stockchart>
                         </div>
                     }
@@ -135,9 +134,8 @@
                                               yName="PerformancePercentage"
                                               type="Column"
                                               name="@stock.StockSymbol"
-                                              width="1"
-                                              columnWidth="1">
-                                        <!-- Adjust this value to make bars thicker -->
+                                              columnWidth="1"
+                                              columnSpacing="0.1">
                                     </e-series>
                                 }
                             </e-series-collection>
@@ -225,6 +223,8 @@
             chart = args.stockChart;
             chart.tooltip.enable = true;
             chart.tooltip.shared = false;
+            chart.tooltip.position = 'Fixed';
+            chart.tooltip.location = { x: 10, y: 60 }; // Add this line to set a fixed position
             chart.crosshair.enable = true;
 
             chart.series.forEach((series, index) => {
@@ -255,7 +255,6 @@
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
-
             args.text = `<b>${args.series.name}</b><br>` +
                 `Date: ${date.toLocaleDateString()}<br>` +
                 `Open: ${formatter.format(args.point.open)}<br>` +
