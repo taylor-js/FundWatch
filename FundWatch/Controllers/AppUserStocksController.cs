@@ -22,6 +22,7 @@ namespace FundWatch.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly StockService _stockService;
         private readonly IMemoryCache _cache;
+        private readonly IHttpClientFactory _clientFactory;
         private const int CACHE_DURATION_MINUTES = 15;
 
         public AppUserStocksController(
@@ -29,13 +30,15 @@ namespace FundWatch.Controllers
             ILogger<AppUserStocksController> logger,
             UserManager<IdentityUser> userManager,
             StockService stockService,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            IHttpClientFactory clientFactory)
         {
             _context = context;
             _logger = logger;
             _userManager = userManager;
             _stockService = stockService;
             _cache = cache;
+            _clientFactory = clientFactory;
         }
         // GET: AppUserStocks
         public async Task<IActionResult> Index()
@@ -464,16 +467,19 @@ namespace FundWatch.Controllers
         private readonly HttpClient _httpClient;
         private readonly ILogger<StockService> _logger;
         private readonly IMemoryCache _cache;
+        private readonly IHttpClientFactory _clientFactory;
         private const int CACHE_DURATION_MINUTES = 15;
 
         private const string ApiKey = "0d6b96123dmshd1cdf284f3c5deap10eec8jsnc171c25e1d53"; // TODO: Replace with your actual RapidAPI key
         private const string BaseUrl = "https://yahoo-finance15.p.rapidapi.com/api/v1";
 
-        public StockService(HttpClient httpClient, ILogger<StockService> logger, IMemoryCache cache)
+        public StockService(HttpClient httpClient, ILogger<StockService> logger, IMemoryCache cache, IHttpClientFactory clientFactory)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
+
             _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKey);
             _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", "yahoo-finance15.p.rapidapi.com");
         }
@@ -494,7 +500,13 @@ namespace FundWatch.Controllers
                         try
                         {
                             _logger.LogInformation($"Attempt {i + 1}: Fetching real-time data for {symbol}");
-                            var response = await _httpClient.GetAsync(url);
+
+                            // Create a new HttpClient instance for each request using the factory
+                            var client = _clientFactory.CreateClient();
+                            client.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKey);
+                            client.DefaultRequestHeaders.Add("x-rapidapi-host", "yahoo-finance15.p.rapidapi.com");
+
+                            var response = await client.GetAsync(url);
                             response.EnsureSuccessStatusCode();
                             var json = await response.Content.ReadAsStringAsync();
                             var stockData = ProcessHistoricalData(json);
@@ -525,17 +537,17 @@ namespace FundWatch.Controllers
                     if (!result.ContainsKey(symbol))
                     {
                         result[symbol] = new List<StockDataPoint>
+                    {
+                        new StockDataPoint
                         {
-                            new StockDataPoint
-                            {
-                                Date = DateTime.UtcNow,
-                                Open = 0,
-                                High = 0,
-                                Low = 0,
-                                Close = 0,
-                                Volume = 0
-                            }
-                        };
+                            Date = DateTime.UtcNow,
+                            Open = 0,
+                            High = 0,
+                            Low = 0,
+                            Close = 0,
+                            Volume = 0
+                        }
+                    };
                     }
                 });
 
@@ -545,8 +557,6 @@ namespace FundWatch.Controllers
             await Task.WhenAll(fetchTasks);
             return result;
         }
-
-
         private List<StockDataPoint> ProcessHistoricalData(string json)
         {
             var stockData = new List<StockDataPoint>();
@@ -587,7 +597,13 @@ namespace FundWatch.Controllers
             try
             {
                 _logger.LogInformation($"Fetching real-time prices for {symbolsString}");
-                var response = await _httpClient.GetAsync(url);
+
+                // Create a new HttpClient instance for this request
+                var client = _clientFactory.CreateClient();
+                client.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKey);
+                client.DefaultRequestHeaders.Add("x-rapidapi-host", "yahoo-finance15.p.rapidapi.com");
+
+                var response = await client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
                 var json = await response.Content.ReadAsStringAsync();
 
