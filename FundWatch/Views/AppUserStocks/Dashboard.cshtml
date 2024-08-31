@@ -81,16 +81,16 @@
                         <div style="-webkit-overflow-scrolling: touch;">
                             <ejs-stockchart id="realTimeStockChart" load="stockChartLoad"
                                             width="100%" height="500px"
-                                            tooltipRender="tooltipRender">
+                                            >
                                 <e-stockchart-series-collection>
                                     @foreach (var stock in realTimeTrendData.GroupBy(x => x.StockSymbol))
                                     {
                                         <e-stockchart-series type="Line" xName="x" yName="close" name="@stock.Key" dataSource="@stock" width="2"></e-stockchart-series>
                                     }
                                 </e-stockchart-series-collection>
-                                <e-stockchart-primaryxaxis zoomFactor="2" labelRotation="90" LabelIntersectAction="Rotate90" valueType="DateTime" labelFormat="MM-dd-yyyy"></e-stockchart-primaryxaxis>
-                                <e-stockchart-primaryyaxis labelFormat="c2"></e-stockchart-primaryyaxis>
-                                <e-stockchart-tooltipsettings enable="true"  position="Fixed" header="${series.name}"></e-stockchart-tooltipsettings>
+                                <e-stockchart-primaryxaxis zoomFactor="1" labelRotation="90" LabelIntersectAction="Rotate90" valueType="DateTime" labelFormat="MM-dd-yyyy"></e-stockchart-primaryxaxis>
+                                <e-stockchart-primaryyaxis zoomFactor="1" plotOffset="50" labelFormat="c2" valueType="Double"></e-stockchart-primaryyaxis>
+                                <e-stockchart-tooltipsettings enable="true" position="Fixed" header="${series.name}" format="Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.y}"></e-stockchart-tooltipsettings>
                                 <e-stockchart-crosshairsettings enable="true"></e-stockchart-crosshairsettings>
                                 <e-stockchart-legendsettings visible="true"></e-stockchart-legendsettings>
 
@@ -245,23 +245,6 @@
             });
         }
 
-        function tooltipRender(args) {
-            if (!args.text) return;
-
-            var date = new Date(args.point.x);
-            var formatter = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-            args.text = `<b>${args.series.name}</b><br>` +
-                `Date: ${date.toLocaleDateString()}<br>` +
-                `Open: ${formatter.format(args.point.open)}<br>` +
-                `High: ${formatter.format(args.point.high)}<br>` +
-                `Low: ${formatter.format(args.point.low)}<br>` +
-                `Close: ${formatter.format(args.point.close)}`;
-        }
 
         function getColorForIndex(index) {
             const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#36A2EB', '#FFCE56'];

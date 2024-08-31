@@ -36,7 +36,7 @@
               "RelativeDocumentMoniker": "FundWatch\\wwwroot\\css\\site.css",
               "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\site.css",
               "RelativeToolTip": "FundWatch\\wwwroot\\css\\site.css",
-              "ViewState": "AQIAAKcAAAAAAAAAAAAAALgAAAAAAAAA",
+              "ViewState": "AQIAALMAAAAAAAAAAAAAALgAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
               "WhenOpened": "2024-08-31T16:06:11.384Z",
               "EditorCaption": ""
@@ -51,8 +51,7 @@
               "RelativeToolTip": "FundWatch\\Controllers\\AppUserStocksController.cs",
               "ViewState": "AQIAAPQCAAAAAAAAAAAIwAEDAAAFAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-08-29T18:03:19.562Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-08-29T18:03:19.562Z"
             },
             {
               "$type": "Document",
@@ -62,7 +61,7 @@
               "RelativeDocumentMoniker": "FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
               "ToolTip": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
               "RelativeToolTip": "FundWatch\\Views\\AppUserStocks\\Dashboard.cshtml",
-              "ViewState": "AQIAANIAAAAAAAAAAAAwwOIAAAAyAAAA",
+              "ViewState": "AQIAAE0AAAAAAAAAAAAnwFsAAABqAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2024-08-28T15:26:35.536Z",
               "EditorCaption": ""
