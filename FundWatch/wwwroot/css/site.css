@@ -128,12 +128,6 @@ body {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(0, 123, 255, 0.75)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
-@media (max-width: 991.98px) {
-
-        .navbar-nav .nav-item {
-            margin-bottom: 0.5rem;
-        }
-}
 
 /* Ensure cards are full height and have proper alignment */
 .fixed-card {
@@ -182,3 +176,26 @@ body {
     }
 }
 
+#chartContainer {
+    width: 100%;
+    padding-top: 100%; /* This creates a square aspect ratio */
+    position: relative;
+}
+
+#realTimeStockChart {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
+.equal-btn {
+    min-width: 150px; /* Ensure both buttons have the same minimum width */
+}
+
+@media (max-width: 768px) {
+    .equal-btn {
+        width: 100%; /* On smaller screens, make the buttons take full width */
+    }
+}

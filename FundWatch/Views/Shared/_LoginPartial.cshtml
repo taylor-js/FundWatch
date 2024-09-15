@@ -2,19 +2,19 @@
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
 
-<ul class="navbar-nav">
+<ul class="navbar-nav d-flex align-items-center">
     @if (SignInManager.IsSignedIn(User))
     {
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle py-2 px-3" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <li class="nav-item dropdown w-100">
+            <a class="nav-link dropdown-toggle px-3" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-user-circle me-1"></i>Account
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage"><i class="fas fa-cog me-2"></i>Settings</a></li>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown" style="width: auto; min-width: 100%;">
+                <li><a class="dropdown-item py-2 px-3" style="width: 100%;" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage"><i class="fas fa-cog me-2"></i>Settings</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
-                    <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                        <button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
+                    <form class="form-inline">
+                        <button type="submit" class="dropdown-item py-2 px-3" style="width: 100%;"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
                     </form>
                 </li>
             </ul>
@@ -22,14 +22,14 @@
     }
     else
     {
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle py-2 px-3" href="#" id="registerLoginDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <li class="nav-item dropdown w-100">
+            <a class="nav-link dropdown-toggle px-3" href="#" id="registerLoginDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-sign-in-alt me-1"></i>Register/Login
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="registerLoginDropdown">
-                <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register"><i class="fas fa-user-plus me-2"></i>Register</a></li>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="registerLoginDropdown" style="width: auto; min-width: 100%;">
+                <li><a class="dropdown-item py-2 px-3" style="width: 100%;" asp-area="Identity" asp-page="/Account/Register"><i class="fas fa-user-plus me-2"></i>Register</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Login"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
+                <li><a class="dropdown-item py-2 px-3" style="width: 100%;" asp-area="Identity" asp-page="/Account/Login"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
             </ul>
         </li>
     }

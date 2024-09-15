@@ -11,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
+using static FundWatch.Controllers.StockService;
 
 namespace FundWatch.Controllers
 {
@@ -145,7 +146,7 @@ namespace FundWatch.Controllers
 
                     await _context.SaveChangesAsync();
                     _logger.LogInformation("AppUserStock with ID {Id} has been created or updated", appUserStock.Id);
-                    return RedirectToAction(nameof(Dashboard));
+                    return RedirectToAction("Dashboard");
                 }
                 else
                 {
@@ -196,7 +197,7 @@ namespace FundWatch.Controllers
                 _logger.LogInformation("AppUserStock with ID {Id} deleted", id);
             }
 
-            return RedirectToAction(nameof(Dashboard));
+            return RedirectToAction("Dashboard");
         }
 
         private bool AppUserStockExists(int id)
@@ -238,8 +239,6 @@ namespace FundWatch.Controllers
 
             return Json(formattedData);
         }
-
-
         // GET: AppUserStocks/Dashboard
         public async Task<IActionResult> Dashboard()
         {
@@ -254,70 +253,116 @@ namespace FundWatch.Controllers
             if (!userStocks.Any())
             {
                 _logger.LogWarning($"No stocks found for user {userId}");
-                return View();
             }
 
-            var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
-            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols);
+            // Return the list of AppUserStock directly
+            return View(userStocks);
+        }
 
-            var stockSummary = new List<StockSummaryData>();
-            var bubbleChartData = new List<BubbleChartData>();
-            var realTimeTrendData = new List<RealTimeDataPoint>();
-
-            foreach (var stock in realTimeData)
+        [HttpGet]
+        public async Task<IActionResult> GetDashboardData()
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
             {
-                var userStock = userStocks.FirstOrDefault(s => s.StockSymbol == stock.Key);
-                if (userStock != null)
+                return Unauthorized();
+            }
+
+            var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
+            var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
+
+            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols);
+            var stockSummary = CalculateStockSummary(realTimeData, userStocks);
+            var chartData = PrepareChartData(realTimeData);
+            var bubbleChartData = PrepareBubbleChartData(stockSummary);
+
+            var dashboardData = new DashboardData
+            {
+                RealTimeData = realTimeData,
+                StockSummary = stockSummary,
+                ChartData = chartData,
+                BubbleChartData = bubbleChartData
+            };
+
+            _logger.LogInformation("Dashboard data prepared: {@DashboardData}", dashboardData);
+
+            return Json(dashboardData);
+        }
+
+        private List<BubbleChartData> PrepareBubbleChartData(List<StockSummaryData> stockSummary)
+        {
+            if (stockSummary == null || !stockSummary.Any())
+            {
+                _logger.LogWarning("Stock summary is null or empty when preparing bubble chart data");
+                return new List<BubbleChartData>();
+            }
+
+            return stockSummary.Select(stock => new BubbleChartData
+            {
+                StockSymbol = stock.StockSymbol,
+                CurrentPrice = stock.CurrentPrice,
+                TotalValue = stock.TotalValue,
+                Size = stock.TotalShares
+            }).ToList();
+        }
+
+        private List<StockSummaryData> CalculateStockSummary(Dictionary<string, List<StockDataPoint>> realTimeData, List<AppUserStock> userStocks)
+        {
+            var summary = new List<StockSummaryData>();
+
+            foreach (var userStock in userStocks)
+            {
+                if (realTimeData.TryGetValue(userStock.StockSymbol, out var stockData) && stockData.Any())
                 {
-                    var latestData = stock.Value.Last();
-                    userStock.CurrentPrice = latestData.Close;
-
+                    var latestData = stockData.Last();
                     var currentShares = userStock.NumberOfSharesPurchased - (userStock.NumberOfSharesSold ?? 0);
-                    if (currentShares > 0)
+                    var currentValue = currentShares * latestData.Close;
+                    var purchaseValue = currentShares * userStock.PurchasePrice;
+                    var performancePercentage = (currentValue - purchaseValue) / purchaseValue * 100;
+
+                    summary.Add(new StockSummaryData
                     {
-                        var totalValue = currentShares * userStock.CurrentPrice;
-                        var performancePercentage = ((userStock.CurrentPrice - userStock.PurchasePrice) / userStock.PurchasePrice) * 100;
-                        var valueChange = (userStock.CurrentPrice - userStock.PurchasePrice) * currentShares;
-
-                        stockSummary.Add(new StockSummaryData
-                        {
-                            StockSymbol = userStock.StockSymbol,
-                            CurrentPrice = userStock.CurrentPrice,
-                            PurchasePrice = userStock.PurchasePrice,
-                            TotalShares = currentShares,
-                            TotalValue = totalValue,
-                            PerformancePercentage = performancePercentage,
-                            ValueChange = valueChange
-                        });
-
-                        bubbleChartData.Add(new BubbleChartData
-                        {
-                            StockSymbol = userStock.StockSymbol,
-                            CurrentPrice = userStock.CurrentPrice,
-                            TotalValue = totalValue,
-                            Size = currentShares
-                        });
-
-                        realTimeTrendData.AddRange(stock.Value.Select(data => new RealTimeDataPoint
-                        {
-                            StockSymbol = userStock.StockSymbol,
-                            Date = data.Date,
-                            Open = data.Open,
-                            High = data.High,
-                            Low = data.Low,
-                            Close = data.Close,
-                            Volume = data.Volume
-                        }));
-                    }
+                        StockSymbol = userStock.StockSymbol,
+                        CurrentPrice = latestData.Close,
+                        PurchasePrice = userStock.PurchasePrice,
+                        TotalShares = currentShares,
+                        TotalValue = currentValue,
+                        PerformancePercentage = performancePercentage,
+                        ValueChange = currentValue - purchaseValue
+                    });
                 }
             }
 
-            ViewBag.RealTimeData = realTimeData;
-            ViewBag.StockSummary = stockSummary.OrderBy(s => s.PerformancePercentage).ToList();
-            ViewBag.BubbleChartData = bubbleChartData;
-            ViewBag.RealTimeTrendData = realTimeTrendData;
+            return summary;
+        }
 
-            return View(userStocks);
+        private Dictionary<string, List<object>> PrepareChartData(Dictionary<string, List<StockDataPoint>> realTimeData)
+        {
+            return realTimeData.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.Select(d => new
+                {
+                    x = d.Date,
+                    open = d.Open,
+                    high = d.High,
+                    low = d.Low,
+                    close = d.Close
+                }).Cast<object>().ToList()
+            );
+        }
+
+        // GET: AppUserStocks/Dashboard
+        public class DashboardViewModel
+        {
+            public List<AppUserStock> UserStocks { get; set; }
+        }
+
+        public class DashboardData
+        {
+            public Dictionary<string, List<StockDataPoint>> RealTimeData { get; set; }
+            public List<StockSummaryData> StockSummary { get; set; }
+            public Dictionary<string, List<object>> ChartData { get; set; }
+            public List<BubbleChartData> BubbleChartData { get; set; }
         }
 
 
@@ -753,15 +798,16 @@ namespace FundWatch.Controllers
             return cachedData;
         }
 
-        public class StockDataPoint
-        {
-            public DateTime Date { get; set; }
-            public decimal Open { get; set; }
-            public decimal High { get; set; }
-            public decimal Low { get; set; }
-            public decimal Close { get; set; }
-            public long Volume { get; set; }
-        }
+
+    }
+    public class StockDataPoint
+    {
+        public DateTime Date { get; set; }
+        public decimal Open { get; set; }
+        public decimal High { get; set; }
+        public decimal Low { get; set; }
+        public decimal Close { get; set; }
+        public long Volume { get; set; }
     }
     public class StockSymbolData
     {
