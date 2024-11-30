@@ -1,72 +1,203 @@
-﻿@model FundWatch.Models.AppUserStock
-
+﻿@model FundWatch.Models.ViewModels.StockDetailsViewModel
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Charts
+@using Syncfusion.EJ2.Grids
 @{
     ViewData["Title"] = "Stock Details";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var cultureInfo = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
+    var culture = new System.Globalization.CultureInfo("en-US");
 }
 
-<div class="container mt-5 mb-5">
-    <div class="card shadow-lg">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">@ViewData["Title"]</h3>
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Basic Information Card -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">@Model.Stock.StockSymbol Details</h5>
+                    <span class="badge bg-light text-primary">@Model.CompanyDetails.Industry</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Company Information</h6>
+                            <dl class="row">
+                                <dt class="col-sm-4">Name</dt>
+                                <dd class="col-sm-8">@Model.CompanyDetails.Name</dd>
+                                <dt class="col-sm-4">Market Cap</dt>
+                                <dd class="col-sm-8">@Model.CompanyDetails.MarketCap.ToString("C0", culture)</dd>
+                                <dt class="col-sm-4">Employees</dt>
+                                <dd class="col-sm-8">@Model.CompanyDetails.Employees.ToString("N0", culture)</dd>
+                                <dt class="col-sm-4">Website</dt>
+                                <dd class="col-sm-8">
+                                    @if (!string.IsNullOrEmpty(Model.CompanyDetails.Website))
+                                    {
+                                        <a href="@Model.CompanyDetails.Website" target="_blank">Visit Website</a>
+                                    }
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Investment Details</h6>
+                            <dl class="row">
+                                <dt class="col-sm-4">Purchase Date</dt>
+                                <dd class="col-sm-8">@Model.Stock.DatePurchased?.ToString("MMM dd, yyyy")</dd>
+                                <dt class="col-sm-4">Purchase Price</dt>
+                                <dd class="col-sm-8">@Model.Stock.PurchasePrice.ToString("C2", culture)</dd>
+                                <dt class="col-sm-4">Shares Owned</dt>
+                                <dd class="col-sm-8">@(Model.Stock.NumberOfSharesPurchased - (Model.Stock.NumberOfSharesSold ?? 0))</dd>
+                                <dt class="col-sm-4">Total Investment</dt>
+                                <dd class="col-sm-8">@((Model.Stock.PurchasePrice * Model.Stock.NumberOfSharesPurchased).ToString("C2", culture))</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.CompanyDetails.Description))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-muted">Company Description</h6>
+                                <p class="text-justify">@Model.CompanyDetails.Description</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 class="card-title">Basic Information</h5>
-                    <dl class="row">
-                        <dt class="col-sm-4">Stock Symbol</dt>
-                        <dd class="col-sm-8">@Model.StockSymbol</dd>
 
-                        <dt class="col-sm-4">Purchase Price</dt>
-                        <dd class="col-sm-8">@Model.PurchasePrice.ToString("C2", cultureInfo)</dd>
-
-                        <dt class="col-sm-4">Date Purchased</dt>
-                        <dd class="col-sm-8">@Model.DatePurchased?.ToString("MMM dd, yyyy")</dd>
-
-                        <dt class="col-sm-4">Shares Purchased</dt>
-                        <dd class="col-sm-8">@Model.NumberOfSharesPurchased</dd>
-                    </dl>
+        <!-- Performance Metrics Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Performance Metrics</h5>
                 </div>
-                <div class="col-md-6">
-                    <h5 class="card-title">Current Status</h5>
-                    <dl class="row">
-                        <dt class="col-sm-4">Current Price</dt>
-                        <dd class="col-sm-8">@Model.CurrentPrice.ToString("C2", cultureInfo)</dd>
+                <div class="card-body">
+                    <div class="metric-item mb-3">
+                        <h6 class="text-muted">Current Price</h6>
+                        <h3 class="mb-0">@Model.Stock.CurrentPrice.ToString("C2", culture)</h3>
+                        <small class="@(Model.Stock.ValueChange >= 0 ? "text-success" : "text-danger")">
+                            @(Model.Stock.ValueChange >= 0 ? "+" : "")@Model.Stock.ValueChange.ToString("C2", culture)
+                        </small>
+                    </div>
 
-                        <dt class="col-sm-4">Total Value</dt>
-                        <dd class="col-sm-8">@Model.TotalValue.ToString("C2", cultureInfo)</dd>
+                    <div class="metric-item mb-3">
+                        <h6 class="text-muted">Total Value</h6>
+                        <h3 class="mb-0">@Model.Stock.TotalValue.ToString("C2", culture)</h3>
+                        <small class="@(Model.Stock.PerformancePercentage >= 0 ? "text-success" : "text-danger")">
+                            @(Model.Stock.PerformancePercentage >= 0 ? "+" : "")@Model.Stock.PerformancePercentage.ToString("N2")%
+                        </small>
+                    </div>
 
-                        <dt class="col-sm-4">Value Change</dt>
-                        <dd class="col-sm-8">@Model.ValueChange.ToString("C2", cultureInfo)</dd>
-
-                        <dt class="col-sm-4">Performance %</dt>
-                        <dd class="col-sm-8">@Model.PerformancePercentage.ToString("N2")%</dd>
-                    </dl>
-                </div>
-            </div>
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <h5 class="card-title">Sale Information</h5>
-                    <dl class="row">
-                        <dt class="col-sm-4">Date Sold</dt>
-                        <dd class="col-sm-8">@Model.DateSold?.ToString("MMM dd, yyyy")</dd>
-
-                        <dt class="col-sm-4">Shares Sold</dt>
-                        <dd class="col-sm-8">@Model.NumberOfSharesSold</dd>
-                    </dl>
+                    @if (Model.Stock.DateSold.HasValue)
+                    {
+                        <div class="metric-item">
+                            <h6 class="text-muted">Sale Information</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-6">Date Sold</dt>
+                                <dd class="col-sm-6">@Model.Stock.DateSold?.ToString("MMM dd, yyyy")</dd>
+                                <dt class="col-sm-6">Shares Sold</dt>
+                                <dd class="col-sm-6">@Model.Stock.NumberOfSharesSold</dd>
+                            </dl>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="card-footer d-flex flex-column flex-md-row justify-content-between">
-            <div class="flex-fill mb-4 mb-md-0 me-lg-2">
-                <a asp-action="CreateOrEdit" asp-route-id="@Model?.Id" class="btn btn-warning w-100 py-2">Edit</a>
+    <!-- Price History Chart -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Price History</h5>
+                </div>
+                <div class="card-body" style="height: 400px;">
+                    @(Html.EJS().Chart("priceHistoryChart")
+                        .PrimaryXAxis(px => px
+                        .ValueType(Syncfusion.EJ2.Charts.ValueType.DateTime)
+                        .LabelFormat("MM/dd/yyyy")
+                        .EdgeLabelPlacement(EdgeLabelPlacement.Shift)
+                        .MajorGridLines(mg => mg.Width(0))
+                        )
+                        .PrimaryYAxis(py => py
+                        .LabelFormat("${value}")
+                        .RangePadding(ChartRangePadding.None)
+                        .LineStyle(ls => ls.Width(0))
+                        .MajorTickLines(mt => mt.Width(0))
+                        )
+                        .Series(sr =>
+                        {
+                            sr.Type(ChartSeriesType.Candle)
+                            .DataSource(Model.HistoricalData)
+                            .XName("Date")
+                            .High("High")
+                            .Low("Low")
+                            .Open("Open")
+                            .Close("Close")
+                            .Name(Model.Stock.StockSymbol)
+                            .Add();
+                        })
+                        .Tooltip(ts => ts
+                        .Enable(true)
+                        .Format("Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.close}")
+                        )
+                        .Crosshair(ch => ch
+                        .Enable(true)
+                        .LineType(LineType.Vertical)
+                        )
+                        //.Title("Price History")
+                        .Render()
+                        )
+                </div>
             </div>
-            <div class="flex-fill ms-lg-2">
-                <a asp-action="Dashboard" class="btn btn-secondary w-100 py-2">Back to List</a>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <a asp-action="CreateOrEdit" asp-route-id="@Model.Stock.Id" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <div>
+                    <a asp-action="Delete" asp-route-id="@Model.Stock.Id" class="btn btn-danger me-2">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                    <a asp-action="Dashboard" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Styles {
+    <style>
+        .metric-item {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: rgb(61 64 67);
+        }
+
+        .text-justify {
+            text-align: justify;
+        }
+
+        .badge {
+            font-size: 0.9rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    </script>
+}

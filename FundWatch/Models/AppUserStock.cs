@@ -44,10 +44,18 @@ namespace FundWatch.Models
         public decimal ValueChange => (CurrentPrice - PurchasePrice) * NumberOfSharesPurchased;
 
         [NotMapped]
-        public decimal PerformancePercentage => ((CurrentPrice - PurchasePrice) / PurchasePrice) * 100;
+        public decimal TotalValue => (NumberOfSharesPurchased - (NumberOfSharesSold ?? 0)) * CurrentPrice;
 
         [NotMapped]
-        public decimal TotalValue => (NumberOfSharesPurchased - (NumberOfSharesSold ?? 0)) * CurrentPrice;
+        public decimal PerformancePercentage
+        {
+            get
+            {
+                var shares = NumberOfSharesPurchased - (NumberOfSharesSold ?? 0);
+                var costBasis = shares * PurchasePrice;
+                return costBasis > 0 ? ((TotalValue - costBasis) / costBasis) : 0;
+            }
+        }
 
     }
 }

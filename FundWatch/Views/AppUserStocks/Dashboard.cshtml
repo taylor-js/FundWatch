@@ -1,386 +1,335 @@
-﻿@model IEnumerable<FundWatch.Models.AppUserStock>
+﻿@model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
+@using FundWatch.Models
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Charts
+@using Syncfusion.EJ2.Grids
 @{
     ViewData["Title"] = "Stock Portfolio Dashboard";
+    var culture = new System.Globalization.CultureInfo("en-US");
+
 }
 
-<h2 class="text-center mb-4 mt-4">@ViewData["Title"]</h2>
-
 <div class="container-fluid mt-4 mb-4">
-    <!-- Portfolio Overview -->
+    <!-- Portfolio Overview Cards -->
     <div class="row mb-4">
         <div class="col-sm-6 col-md-3 mb-4">
-            <div class="card shadow fixed-card">
+            <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="card-title">Total Portfolio Value</h5>
+                    <h5 class="card-title mb-0">Total Portfolio Value</h5>
                 </div>
                 <div class="card-body text-center">
-                    <p class="card-text display-value" id="totalPortfolioValue">Loading...</p>
+                    <h3 class="mb-0">@Model.PortfolioMetrics.TotalValue.ToString("C2", culture)</h3>
+                    <small class="@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "text-success" : "text-danger")">
+                        @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "+" : "")@Model.PortfolioMetrics.TotalPerformance.ToString("F2")%
+                    </small>
                 </div>
             </div>
         </div>
+
         <div class="col-sm-6 col-md-3 mb-4">
-            <div class="card shadow fixed-card">
+            <div class="card shadow">
                 <div class="card-header bg-success text-white">
-                    <h5 class="card-title">Total Number of Stocks</h5>
+                    <h5 class="card-title mb-0">Portfolio Diversity</h5>
                 </div>
                 <div class="card-body text-center">
-                    <p class="card-text display-value" id="totalStocks">Loading...</p>
+                    <h3 class="mb-0">@Model.PortfolioMetrics.UniqueSectors</h3>
+                    <small class="text-muted">Sectors Represented</small>
                 </div>
             </div>
         </div>
+
         <div class="col-sm-6 col-md-3 mb-4">
-            <div class="card shadow fixed-card">
+            <div class="card shadow">
                 <div class="card-header bg-info text-white">
-                    <h5 class="card-title">Best Performing Stock</h5>
+                    <h5 class="card-title mb-0">Best Performer</h5>
                 </div>
                 <div class="card-body text-center">
-                    <p class="card-text display-value" id="bestPerformingStock">Loading...</p>
+                    <h3 class="mb-0">@Model.PortfolioMetrics.BestPerformingStock</h3>
+                    <small class="text-success">
+                        @(Model.PortfolioMetrics.BestPerformingStockReturn.ToString("F2") ?? "0.00")%
+                    </small>
                 </div>
             </div>
         </div>
+
         <div class="col-sm-6 col-md-3 mb-4">
-            <div class="card shadow fixed-card">
+            <div class="card shadow">
                 <div class="card-header bg-danger text-white">
-                    <h5 class="card-title">Worst Performing Stock</h5>
+                    <h5 class="card-title mb-0">Worst Performer</h5>
                 </div>
                 <div class="card-body text-center">
-                    <p class="card-text display-value" id="worstPerformingStock">Loading...</p>
+                    <h3 class="mb-0">@Model.PortfolioMetrics.WorstPerformingStock</h3>
+                    <small class="text-danger">
+                        @(Model.PortfolioMetrics.WorstPerformingStockReturn.ToString("F2") ?? "0.00")%
+                    </small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Real-time Stock Chart -->
+    <!-- Stock Performance Chart -->
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Real-time Stock Chart</h5>
+                    <h5 class="card-title mb-0">Stock Performance History</h5>
                 </div>
                 <div class="card-body">
-                    <div id="realTimeStockChart" style="height: 400px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    @if (Model.PerformanceData != null && Model.PerformanceData.Any())
+                    {
+                        @(Html.EJS().StockChart("stockChart")
+                            .Series(sr =>
+                            {
+                                // Function to generate HSL colors with good spacing
+                                Func<int, int, string> getColor = (int i, int total) =>
+                                {
+                                    // Use golden ratio for even color spacing
+                                    double goldenRatio = 0.618033988749895;
+                                    double hue = (i * goldenRatio * 360) % 360;
+                                    // Keep saturation and lightness high for visibility
+                                    return $"hsl({hue}, 70%, 50%)";
+                                };
 
-    <div class="row mb-4">
-        <!-- Stock Performance Chart -->
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">Stock Performance</h5>
-                </div>
-                <div class="card-body">
-                    <div id="stockPerformanceChart" style="height: 400px;"></div>
-                </div>
-            </div>
-        </div>
+                                int index = 0;
+                                foreach (var stock in Model.PerformanceData)
+                                {
+                                    sr.Type(ChartSeriesType.Line)
+                                    .DataSource(stock.Value)
+                                    .XName("Date")
+                                    .YName("Value")
+                                    .Name(stock.Key)
+                                    .Width(2)
+                                    .Opacity(1)
+                                    .Fill(getColor(index, Model.PerformanceData.Count))
+                                    .Add();
 
-        <!-- Bubble Chart for Stock Distribution -->
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title mb-0">Stock Distribution</h5>
-                </div>
-                <div class="card-body">
-                    <div id="bubbleChart" style="height: 400px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stock Summary Grid -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="card-title mb-0">Stock Summary</h5>
-                </div>
-                <div class="card-body">
-                    @* <div id="stockGrid"></div> *@
-                    @{
-                        await Html.RenderPartialAsync("_StockGrid", Model);
+                                    index++;
+                                }
+                            })
+                            .Title("Portfolio Performance")
+                            .LegendSettings(ls => ls
+                            .Visible(true)
+                            .ToggleVisibility(true)
+                            .Position(LegendPosition.Bottom)
+                            .Alignment(Alignment.Center)
+                            .EnablePages(false)
+                            )
+                            .Tooltip(tooltip => tooltip
+                            .Enable(true)
+                            .Format("${series.name}: ${point.y}")
+                            .Shared(true)
+                            )
+                            .Crosshair(ch => ch
+                            .Enable(true)
+                            )
+                            .PrimaryYAxis(py => py
+                            .LabelFormat("${value}")
+                            )
+                            .EnablePeriodSelector(true)
+                            .EnableSelector(true)
+                            .Render()
+                            )
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            No performance data available. Add some stocks to see their performance over time.
+                        </div>
                     }
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row mb-4">
+        <!-- Sector Distribution -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Sector Distribution</h5>
+                </div>
+                <div class="card-body" >
+                    @(Html.EJS().AccumulationChart("sectorChart")
+                        .Series(sr =>
+                        {
+                            sr.DataSource(Model.SectorDistribution.Select(x => new { x.Key, x.Value }))
+                            .XName("Key")
+                            .YName("Value")
+                            .Type(AccumulationType.Pie)
+                            .DataLabel(dl => dl
+                                .Visible(true)
+                                .Name("${point.x}: ${point.y}")
+                                .Position(AccumulationLabelPosition.Outside)
+                                .ConnectorStyle(style => style.Color("#FFFFFF"))
+                            .Font(font => font.Color("#FFFFFF"))
+                            )
+                            .Add();
+                        })
+                        .LegendSettings(lg => lg
+                        .Visible(true)
+                        .Position(LegendPosition.Right)
+                        )
+                        //.Title("Sector Allocation")
+                        .Render()
+                        )
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Holdings Bar Chart -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Top 5 Holdings by Value</h5>
+                </div>
+                <div class="card-body">
+                    @{
+                        // Prepare the data for the chart
+                        var topHoldings = Model.UserStocks
+                        .Select(x => new
+                        {
+                            Stock = x.StockSymbol,
+                            NumberOfShares = x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0),
+                            CurrentPrice = x.CurrentPrice,
+                            Value = (x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) * x.CurrentPrice
+                        })
+                        .Where(x => x.NumberOfShares > 0) // Exclude stocks with zero holdings
+                        .OrderByDescending(x => x.Value)
+                        .Take(5)
+                        .ToList();
+                    }
+                    @(Html.EJS().Chart("topHoldingsChart")
+                        .Width("100%") // Make the chart fill the container width
+                        .Height("100%") // Make the chart fill the container height
+                        .PrimaryXAxis(px => px
+                        .ValueType(Syncfusion.EJ2.Charts.ValueType.Category) // X-axis represents categories
+                        .Title("Stock")
+                        .TitleStyle(style => style.Color("#FFFFFF"))
+                        .LabelStyle(style => style.Color("#FFFFFF")) // X-axis title
+                        )
+                        .PrimaryYAxis(py => py
+                        .Title("Value (USD)")
+                        .TitleStyle(style => style.Color("#FFFFFF"))// Y-axis title
+                        .LabelFormat("${value}")
+                        .LabelStyle(style => style.Color("#FFFFFF")) // Format Y-axis labels as currency
+                        )
+                        .Series(sr =>
+                        {
+                            sr.Type(ChartSeriesType.Column) // Bar chart (column chart)
+                            .DataSource(topHoldings) // Data source for the chart
+                            .XName("Stock") // X-axis binding property
+                            .YName("Value") // Y-axis binding property
+                            .Name("Current Value") // Static name for the series
+                            .Marker(m => m
+                            .DataLabel(dl => dl
+                            .Visible(true) // Enable data labels
+                            .Position(LabelPosition.Top) // Position the data labels on top of the bars
+                            )
+                            )
+                            .ColumnWidth(0.6) // Adjust column width for better aesthetics
+                            .Add();
+                        })
+                        //.Title("Top 5 Holdings") // Title for the chart
+                        .Tooltip(tt => tt
+                        .Enable(true) // Enable the tooltip
+                        .Format("<b>${point.x}</b>: ${point.y}") // Proper format for stock and value
+                        )
+                        .LegendSettings(lg => lg
+                        .Visible(false) // Hide the legend since there's only one series
+                        )
+                        .Render() // Render the chart
+                        )
+                </div>
+            </div>
+        </div>
+
+    </div>
+    @await Html.PartialAsync("_StockGrid", Model)
+
 </div>
+
+@section Styles {
+    <style>
+        .performance-cell.positive {
+            color: #28a745;
+        }
+
+        .performance-cell.negative {
+            color: #dc3545;
+        }
+
+        .card {
+            transition: transform .2s;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+            }
+    </style>
+}
 
 @section Scripts {
     <script>
-        $(document).ready(function () {
-            loadDashboardData();
+        function getCurrentPrice(field, data) {
+            return data.CurrentPrice || 0;
+        }
+
+        function getValueTemplate(props) {
+            if (!props || !props.NumberOfSharesPurchased) return '$0.00';
+            const shares = props.NumberOfSharesPurchased - (props.NumberOfSharesSold || 0);
+            const value = shares * (props.CurrentPrice || 0);
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+
+        function getPerformanceTemplate(props) {
+            if (!props || !props.NumberOfSharesPurchased || !props.PurchasePrice) return '0.00%';
+            const shares = props.NumberOfSharesPurchased - (props.NumberOfSharesSold || 0);
+            const currentValue = shares * (props.CurrentPrice || 0);
+            const costBasis = shares * props.PurchasePrice;
+            const performance = costBasis !== 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0;
+
+            const formatted = new Intl.NumberFormat('en-US', {
+                style: 'percent',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(performance / 100);
+
+            const className = performance >= 0 ? 'text-success' : 'text-danger';
+            return `<span class="${className}">${performance.toFixed(2)}%</span>`;
+        }
+
+        function chartLoad(args) {
+            args.chart.theme = 'Material';
+        }
+
+        // Color cells based on performance
+        function colorPerformanceCells() {
+            const cells = document.querySelectorAll('.performance-cell');
+            cells.forEach(cell => {
+                const value = parseFloat(cell.textContent);
+                if (value > 0) {
+                    cell.classList.add('positive');
+                } else if (value < 0) {
+                    cell.classList.add('negative');
+                }
+            });
+        }
+
+        // Initialize after the grid renders
+        window.addEventListener('load', function () {
+            colorPerformanceCells();
         });
-
-        function loadDashboardData() {
-            $.ajax({
-                url: '/AppUserStocks/GetDashboardData',
-                method: 'GET',
-                success: function (data) {
-                    updateDashboard(data);
-                },
-                error: function (error) {
-                    console.error('Error loading dashboard data:', error);
-                }
-            });
-        }
-
-        function updateDashboard(data) {
-            console.log('Dashboard Data:', data);
-            updatePortfolioOverview(data.stockSummary);
-            createRealTimeStockChart(data.chartData);
-            createStockPerformanceChart(data.stockSummary);
-            createBubbleChart(data.bubbleChartData);
-            createStockGrid(data.stockSummary);
-        }
-
-        function updatePortfolioOverview(stockSummary) {
-            var totalValue = stockSummary.reduce((sum, stock) => sum + stock.totalValue, 0);
-            $('#totalPortfolioValue').text('$' + totalValue.toFixed(2));
-            $('#totalStocks').text(stockSummary.length);
-
-            var bestStock = stockSummary.reduce((best, stock) =>
-                stock.performancePercentage > best.performancePercentage ? stock : best
-            );
-            $('#bestPerformingStock').text(bestStock.stockSymbol);
-
-            var worstStock = stockSummary.reduce((worst, stock) =>
-                stock.performancePercentage < worst.performancePercentage ? stock : worst
-            );
-            $('#worstPerformingStock').text(worstStock.stockSymbol);
-        }
-
-        var chart;
-
-        function createRealTimeStockChart(chartData) {
-            console.log('Chart Data:', chartData);
-
-            if (!chartData || typeof chartData !== 'object') {
-                console.error('Invalid chart data');
-                return;
+        window.addEventListener('load', function () {
+            var grid = document.getElementById('holdingsGrid').ej2_instances[0];
+            if (grid) {
+                grid.refreshHeader();
+                grid.refresh();
             }
-
-            let seriesCollection = [];
-
-            if (Array.isArray(chartData)) {
-                // If chartData is an array, assume it's already in the correct format
-                seriesCollection = chartData.map((stock, index) => ({
-                    type: 'Line',
-                    xName: 'x',
-                    yName: 'close',
-                    name: stock.StockSymbol,
-                    dataSource: stock.Data.map(item => ({
-                        x: new Date(item.Date),
-                        open: item.Open,
-                        high: item.High,
-                        low: item.Low,
-                        close: item.Close
-                    })),
-                    width: 2,
-                    fill: getColorForIndex(index)
-                }));
-            } else {
-                // If chartData is an object, process it as before
-                seriesCollection = Object.keys(chartData).map((symbol, index) => ({
-                    type: 'Line',
-                    xName: 'x',
-                    yName: 'close',
-                    name: symbol,
-                    dataSource: chartData[symbol].map(item => ({
-                        x: new Date(item.x),
-                        open: item.open,
-                        high: item.high,
-                        low: item.low,
-                        close: item.close
-                    })),
-                    width: 2,
-                    fill: getColorForIndex(index)
-                }));
-            }
-
-            if (seriesCollection.length === 0) {
-                console.error('No valid series data');
-                return;
-            }
-
-            chart = new ej.charts.StockChart({
-                series: seriesCollection,
-                primaryXAxis: {
-                    valueType: 'DateTime',
-                    labelFormat: 'MM-dd-yyyy',
-                    labelRotation: 90,
-                    labelIntersectAction: 'Rotate90',
-                    zoomFactor: 1
-                },
-                primaryYAxis: {
-                    valueType: 'Double',
-                    labelFormat: 'c2',
-                    labelIntersectAction: 'None',
-                    zoomFactor: 1
-                },
-                tooltip: {
-                    enable: true,
-                    shared: false,
-                    position: 'Fixed',
-                    header: '${series.name}',
-                    format: 'Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.close}',
-                    location: { x: 10, y: 60 }
-                },
-                crosshair: {
-                    enable: true
-                },
-                legendSettings: {
-                    visible: true
-                },
-                zoomSettings: {
-                    enableSelectionZooming: true,
-                    enablePinchZooming: true,
-                    enableMouseWheelZooming: true,
-                    enableDeferredZooming: true,
-                    mode: 'XY',
-                    toolbarItems: ['Zoom', 'Pan', 'Reset']
-                },
-                width: '100%',
-                height: '100%',
-                load: stockChartLoad
-            });
-
-            chart.appendTo('#realTimeStockChart');
-        }
-
-        function stockChartLoad(args) {
-            console.log('Stock chart loaded');
-            chart = args.stockChart;
-
-            // Additional chart configurations can be set here if needed
-            chart.tooltip.enable = true;
-            chart.tooltip.shared = false;
-            chart.tooltip.position = 'Fixed';
-            chart.tooltip.location = { x: 10, y: 60 };
-            chart.crosshair.enable = true;
-        }
-
-        function getColorForIndex(index) {
-            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#36A2EB', '#FFCE56'];
-            return colors[index % colors.length];
-        }
-
-        function updateDashboard(data) {
-            console.log('Dashboard Data:', data);
-            updatePortfolioOverview(data.stockSummary);
-
-            // Check which property contains the real-time stock data
-            if (data.realTimeTrendData) {
-                createRealTimeStockChart(data.realTimeTrendData);
-            } else if (data.chartData) {
-                createRealTimeStockChart(data.chartData);
-            } else {
-                console.error('No real-time stock data found in dashboard data');
-            }
-
-            createStockPerformanceChart(data.stockSummary);
-            createBubbleChart(data.bubbleChartData);
-            createStockGrid(data.stockSummary);
-        }
-
-        // Assume this function is called when the page loads or when you want to refresh the dashboard
-        function loadDashboardData() {
-            $.ajax({
-                url: '/AppUserStocks/GetDashboardData',
-                method: 'GET',
-                success: function (data) {
-                    updateDashboard(data);
-                },
-                error: function (error) {
-                    console.error('Error loading dashboard data:', error);
-                }
-            });
-        }
-
-        function createStockPerformanceChart(stockSummary) {
-            var chart = new ej.charts.Chart({
-                primaryXAxis: {
-                    valueType: 'Category',
-                    title: 'Stock Symbol',
-                    labelRotation: 90
-                },
-                primaryYAxis: {
-                    title: 'Performance (%)',
-                    labelFormat: 'n2'
-                },
-                series: [{
-                    dataSource: stockSummary,
-                    xName: 'stockSymbol',
-                    yName: 'performancePercentage',
-                    type: 'Column',
-                }],
-                title: 'Stock Performance',
-                tooltip: { enable: true, format: 'Symbol: ${point.x}<br>Performance: ${point.y}%' },
-                width: '100%',
-                height: '100%'
-            });
-            chart.appendTo('#stockPerformanceChart');
-        }
-        function createBubbleChart(bubbleChartData) {
-            console.log('Bubble Chart Data:', bubbleChartData);
-
-            if (!bubbleChartData || bubbleChartData.length === 0) {
-                console.warn('No data available for bubble chart');
-                $('#bubbleChart').html('<p>No data available for bubble chart</p>');
-                return;
-            }
-
-            var chart = new ej.charts.Chart({
-                primaryXAxis: {
-                    title: 'Total Shares',
-                    minimum: 0,
-                    maximum: Math.max(...bubbleChartData.map(item => item.size)) * 1.1,
-                    labelFormat: '{value}',
-                },
-                primaryYAxis: {
-                    title: 'Current Price ($)',
-                    minimum: 0,
-                    maximum: Math.max(...bubbleChartData.map(item => item.currentPrice)) * 1.1,
-                    labelFormat: '${value}',
-                },
-                series: [{
-                    dataSource: bubbleChartData,
-                    type: 'Bubble',
-                    xName: 'size',
-                    yName: 'currentPrice',
-                    size: 'totalValue',
-                    name: 'Stocks',
-                    minRadius: 3,
-                    maxRadius: 8,
-                    tooltipMappingName: 'stockSymbol',
-                }],
-                title: 'Stock Distribution',
-                tooltip: {
-                    enable: true,
-                    format: 'Symbol: ${point.tooltip}<br>${point.x} shares<br>${point.y} price<br>$${point.size} total value'
-                },
-                legendSettings: { visible: false },
-                width: '100%',
-                height: '100%'
-            });
-            chart.appendTo('#bubbleChart');
-        }
-
-
-        function createStockGrid(stockSummary) {
-            var grid = new ej.grids.Grid({
-                dataSource: stockSummary,
-                columns: [
-                    { field: 'stockSymbol', headerText: 'Symbol', width: 120 },
-                    { field: 'currentPrice', headerText: 'Current Price', width: 130, format: 'C2' },
-                    { field: 'totalShares', headerText: 'Shares', width: 100 },
-                    { field: 'totalValue', headerText: 'Total Value', width: 130, format: 'C2' },
-                    { field: 'performancePercentage', headerText: 'Performance', width: 130, format: 'P2' }
-                ]
-            });
-            grid.appendTo('#stockGrid');
-        }
+        });
     </script>
 }

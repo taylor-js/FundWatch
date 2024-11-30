@@ -1,17 +1,16 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using FundWatch.Models;
-using System.Net.Http;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-using System;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
-using static FundWatch.Controllers.StockService;
+using FundWatch.Models;
+using FundWatch.Services;
+using FundWatch.Models.ViewModels;
 
 namespace FundWatch.Controllers
 {
@@ -23,7 +22,6 @@ namespace FundWatch.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly StockService _stockService;
         private readonly IMemoryCache _cache;
-        private readonly IHttpClientFactory _clientFactory;
         private const int CACHE_DURATION_MINUTES = 15;
 
         public AppUserStocksController(
@@ -31,787 +29,686 @@ namespace FundWatch.Controllers
             ILogger<AppUserStocksController> logger,
             UserManager<IdentityUser> userManager,
             StockService stockService,
-            IMemoryCache cache,
-            IHttpClientFactory clientFactory)
+            IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
             _userManager = userManager;
             _stockService = stockService;
             _cache = cache;
-            _clientFactory = clientFactory;
-        }
-        // GET: AppUserStocks
-        public async Task<IActionResult> Index()
-        {
-            var userId = _userManager.GetUserId(User);
-            var applicationDbContext = _context.UserStocks.Where(u => u.UserId == userId);
-            return View(await applicationDbContext.ToListAsync());
         }
 
-        // GET: AppUserStocks/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var userId = _userManager.GetUserId(User);
-            var appUserStock = await _context.UserStocks
-                .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
-            if (appUserStock == null)
-            {
-                return NotFound();
-            }
-
-            return View(appUserStock);
-        }
-
-        // GET: AppUserStocks/CreateOrEdit/5
-        [HttpGet]
-        public async Task<IActionResult> CreateOrEdit(int id = 0)
-        {
-            var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return RedirectToAction("Login", "Account");
-            }
-            var allStocks = await _stockService.GetAllStocksAsync(""); // Pass an empty string or a default term if needed
-            ViewBag.StockSymbols = allStocks;
-            if (id == 0)
-            {
-                var appUserStock = new AppUserStock
-                {
-                    UserId = userId ?? string.Empty,
-                };
-                return View(appUserStock);
-            }
-            else
-            {
-                var appUserStock = await _context.UserStocks.FindAsync(id);
-                if (appUserStock == null || appUserStock.UserId != userId)
-                {
-                    return NotFound();
-                }
-                return View(appUserStock);
-            }
-        }
-
-
-        // POST: AppUserStocks/CreateOrEdit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateOrEdit([Bind("Id,UserId,StockSymbol,PurchasePrice,DatePurchased,NumberOfSharesPurchased,CurrentPrice,DateSold,NumberOfSharesSold")] AppUserStock appUserStock)
-        {
-            if (ModelState.IsValid)
-            {
-                var userId = _userManager.GetUserId(User);
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    // Convert DateTime fields to UTC
-                    if (appUserStock.DatePurchased.HasValue)
-                    {
-                        appUserStock.DatePurchased = ConvertToUtc(appUserStock.DatePurchased.Value);
-                    }
-                    if (appUserStock.DateSold.HasValue)
-                    {
-                        appUserStock.DateSold = ConvertToUtc(appUserStock.DateSold.Value);
-                    }
-
-                    if (appUserStock.Id == 0)
-                    {
-                        appUserStock.UserId = userId;
-                        appUserStock.StockSymbol = appUserStock.StockSymbol.ToUpper();
-                        _context.Add(appUserStock);
-                    }
-                    else
-                    {
-                        var existingStock = await _context.UserStocks.FindAsync(appUserStock.Id);
-                        if (existingStock == null || existingStock.UserId != userId)
-                        {
-                            return NotFound();
-                        }
-
-                        existingStock.StockSymbol = appUserStock.StockSymbol.ToUpper();
-                        existingStock.PurchasePrice = appUserStock.PurchasePrice;
-                        existingStock.DatePurchased = appUserStock.DatePurchased;
-                        existingStock.NumberOfSharesPurchased = appUserStock.NumberOfSharesPurchased;
-                        existingStock.CurrentPrice = appUserStock.CurrentPrice;
-                        existingStock.DateSold = appUserStock.DateSold;
-                        existingStock.NumberOfSharesSold = appUserStock.NumberOfSharesSold;
-
-                        _context.Update(existingStock);
-                    }
-
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("AppUserStock with ID {Id} has been created or updated", appUserStock.Id);
-                    return RedirectToAction("Dashboard");
-                }
-                else
-                {
-                    ModelState.AddModelError("", "User ID is missing. Please log in again.");
-                }
-            }
-
-            return View(appUserStock);
-        }
-
-        public DateTime ConvertToUtc(DateTime dateTime)
-        {
-            return dateTime.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
-                : dateTime.ToUniversalTime();
-        }
-
-        // GET: AppUserStocks/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var userId = _userManager.GetUserId(User);
-            var appUserStock = await _context.UserStocks
-                .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
-            if (appUserStock == null)
-            {
-                return NotFound();
-            }
-
-            return View(appUserStock);
-        }
-
-        // POST: AppUserStocks/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var userId = _userManager.GetUserId(User);
-            var appUserStock = await _context.UserStocks.FindAsync(id);
-            if (appUserStock != null && appUserStock.UserId == userId)
-            {
-                _context.UserStocks.Remove(appUserStock);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("AppUserStock with ID {Id} deleted", id);
-            }
-
-            return RedirectToAction("Dashboard");
-        }
-
-        private bool AppUserStockExists(int id)
-        {
-            return _context.UserStocks.Any(e => e.Id == id);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> SearchStocks(string term)
-        {
-            if (string.IsNullOrEmpty(term))
-                return Json(new List<string>());
-
-            var filteredStocks = await _stockService.GetAllStocksAsync(term);
-            var limitedStocks = filteredStocks.Take(10).Select(s => s.Symbol).ToList();
-            return Json(limitedStocks);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetRealTimeData()
-        {
-            var userId = _userManager.GetUserId(User);
-            var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
-            var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
-            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols, 100);
-
-            var formattedData = realTimeData.ToDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.Where(d => d?.Date != null).Select(d => new
-                {
-                    x = d.Date.ToString("yyyy-MM-ddTHH:mm:ss"), // Format date to ISO 8601
-                    open = d.Open,
-                    high = d.High,
-                    low = d.Low,
-                    close = d.Close,
-                    volume = d.Volume
-                }).ToList()
-            );
-
-            return Json(formattedData);
-        }
         // GET: AppUserStocks/Dashboard
         public async Task<IActionResult> Dashboard()
         {
             var userId = _userManager.GetUserId(User);
             if (string.IsNullOrEmpty(userId))
             {
-                _logger.LogWarning("User is not logged in.");
                 return RedirectToAction("Login", "Account");
             }
 
-            var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
-            if (!userStocks.Any())
-            {
-                _logger.LogWarning($"No stocks found for user {userId}");
-            }
-
-            // Return the list of AppUserStock directly
-            return View(userStocks);
+            var viewModel = await PrepareDashboardViewModel(userId);
+            return View(viewModel);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetDashboardData()
+        private async Task<PortfolioDashboardViewModel> PrepareDashboardViewModel(string userId)
+        {
+            try
+            {
+                var userStocks = await _context.UserStocks
+                    .Where(u => u.UserId == userId)
+                    .ToListAsync();
+
+                _logger.LogInformation($"Found {userStocks.Count} stocks for user {userId}");
+
+                if (!userStocks.Any())
+                {
+                    _logger.LogInformation($"No stocks found for user {userId}");
+                    return new PortfolioDashboardViewModel
+                    {
+                        UserStocks = new List<AppUserStock>(),
+                        PortfolioMetrics = new PortfolioMetrics(),
+                        SectorDistribution = new Dictionary<string, decimal>(),
+                        PerformanceData = new Dictionary<string, List<PerformancePoint>>(),
+                        CompanyDetails = new Dictionary<string, CompanyDetails>()
+                    };
+                }
+
+                var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
+                _logger.LogInformation($"Fetching data for symbols: {string.Join(", ", stockSymbols)}");
+
+                var realTimePricesTask = _stockService.GetRealTimePricesAsync(stockSymbols);
+                var companyDetailsTask = _stockService.GetCompanyDetailsAsync(stockSymbols);
+                var historicalDataTask = _stockService.GetRealTimeDataAsync(stockSymbols, 1825);
+
+                await Task.WhenAll(realTimePricesTask, companyDetailsTask, historicalDataTask);
+
+                var realTimePrices = await realTimePricesTask;
+                var companyDetails = await companyDetailsTask;
+                var historicalData = await historicalDataTask;
+
+                _logger.LogInformation($"Retrieved {realTimePrices.Count} real-time prices");
+                _logger.LogInformation($"Retrieved {companyDetails.Count} company details");
+
+                // Create a list to track stocks that need updating
+                var stocksToUpdate = new List<AppUserStock>();
+
+                foreach (var stock in userStocks)
+                {
+                    if (realTimePrices.TryGetValue(stock.StockSymbol, out decimal currentPrice))
+                    {
+                        if (currentPrice > 0 && stock.CurrentPrice != currentPrice)  // Only update if price is different
+                        {
+                            stock.CurrentPrice = currentPrice;
+                            stocksToUpdate.Add(stock);
+                            _logger.LogInformation(
+                                "Updated {Symbol}: Price={NewPrice}, Shares={Shares}, Value={Value}",
+                                stock.StockSymbol,
+                                currentPrice,
+                                stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0),
+                                currentPrice * (stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0))
+                            );
+                        }
+                    }
+                    else if (historicalData.TryGetValue(stock.StockSymbol, out var dataPoints) && dataPoints.Any())
+                    {
+                        // Fallback to most recent historical price if real-time is not available
+                        var latestPrice = dataPoints.OrderByDescending(d => d.Date).First().Close;
+                        if (latestPrice > 0 && stock.CurrentPrice != latestPrice)
+                        {
+                            stock.CurrentPrice = latestPrice;
+                            stocksToUpdate.Add(stock);
+                        }
+                    }
+                }
+
+                // Save all updates in a single transaction
+                if (stocksToUpdate.Any())
+                {
+                    await _context.SaveChangesAsync();
+                }
+
+                // Calculate metrics
+                var portfolioMetrics = CalculatePortfolioMetrics(userStocks, realTimePrices, companyDetails);
+
+                _logger.LogInformation(
+                    "Portfolio Metrics Calculated: Value=${Value}, Gain=${Gain}, Performance={Performance}%, Sectors={Sectors}, Best={Best}({BestReturn}%), Worst={Worst}({WorstReturn}%)",
+                    portfolioMetrics.TotalValue,
+                    portfolioMetrics.TotalGain,
+                    portfolioMetrics.TotalPerformance,
+                    portfolioMetrics.UniqueSectors,
+                    portfolioMetrics.BestPerformingStock,
+                    portfolioMetrics.BestPerformingStockReturn,
+                    portfolioMetrics.WorstPerformingStock,
+                    portfolioMetrics.WorstPerformingStockReturn
+                );
+
+                // Calculate sector distribution
+                var sectorDistribution = CalculateSectorDistribution(userStocks, companyDetails);
+
+                // Calculate performance data
+                var performanceData = CalculatePerformanceData(userStocks, historicalData);
+
+                return new PortfolioDashboardViewModel
+                {
+                    UserStocks = userStocks,
+                    PortfolioMetrics = portfolioMetrics,
+                    SectorDistribution = sectorDistribution,
+                    PerformanceData = performanceData,
+                    CompanyDetails = companyDetails
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error preparing dashboard data for user {UserId}", userId);
+                throw;
+            }
+        }
+
+
+        // GET: AppUserStocks
+        public async Task<IActionResult> Index()
         {
             var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrEmpty(userId))
+            var stocks = await _context.UserStocks
+                .Where(u => u.UserId == userId)
+                .ToListAsync();
+
+            var symbols = stocks.Select(s => s.StockSymbol).ToList();
+            var companyDetails = await _stockService.GetCompanyDetailsAsync(symbols);
+
+            return View(new StockListViewModel
             {
-                return Unauthorized();
-            }
+                Stocks = stocks,
+                CompanyDetails = companyDetails
+            });
+        }
 
-            var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
-            var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
+        // GET: AppUserStocks/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+                return NotFound();
 
-            var realTimeData = await _stockService.GetRealTimeDataAsync(stockSymbols);
-            var stockSummary = CalculateStockSummary(realTimeData, userStocks);
-            var chartData = PrepareChartData(realTimeData);
-            var bubbleChartData = PrepareBubbleChartData(stockSummary);
+            var userId = _userManager.GetUserId(User);
+            var stock = await _context.UserStocks
+                .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
 
-            var dashboardData = new DashboardData
+            if (stock == null)
+                return NotFound();
+
+            var companyDetails = await _stockService.GetCompanyDetailsAsync(new List<string> { stock.StockSymbol });
+            var historicalData = await _stockService.GetRealTimeDataAsync(new List<string> { stock.StockSymbol }, 365);
+
+            var viewModel = new Models.ViewModels.StockDetailsViewModel
             {
-                RealTimeData = realTimeData,
-                StockSummary = stockSummary,
-                ChartData = chartData,
-                BubbleChartData = bubbleChartData
+                Stock = stock,
+                CompanyDetails = companyDetails[stock.StockSymbol],
+                HistoricalData = historicalData[stock.StockSymbol]
             };
 
-            _logger.LogInformation("Dashboard data prepared: {@DashboardData}", dashboardData);
-
-            return Json(dashboardData);
+            return View(viewModel);
         }
 
-        private List<BubbleChartData> PrepareBubbleChartData(List<StockSummaryData> stockSummary)
+        [HttpGet]
+        public async Task<IActionResult> CreateOrEdit(int id = 0)
         {
-            if (stockSummary == null || !stockSummary.Any())
+            try
             {
-                _logger.LogWarning("Stock summary is null or empty when preparing bubble chart data");
-                return new List<BubbleChartData>();
-            }
-
-            return stockSummary.Select(stock => new BubbleChartData
-            {
-                StockSymbol = stock.StockSymbol,
-                CurrentPrice = stock.CurrentPrice,
-                TotalValue = stock.TotalValue,
-                Size = stock.TotalShares
-            }).ToList();
-        }
-
-        private List<StockSummaryData> CalculateStockSummary(Dictionary<string, List<StockDataPoint>> realTimeData, List<AppUserStock> userStocks)
-        {
-            var summary = new List<StockSummaryData>();
-
-            foreach (var userStock in userStocks)
-            {
-                if (realTimeData.TryGetValue(userStock.StockSymbol, out var stockData) && stockData.Any())
+                var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
                 {
-                    var latestData = stockData.Last();
-                    var currentShares = userStock.NumberOfSharesPurchased - (userStock.NumberOfSharesSold ?? 0);
-                    var currentValue = currentShares * latestData.Close;
-                    var purchaseValue = currentShares * userStock.PurchasePrice;
-                    var performancePercentage = (currentValue - purchaseValue) / purchaseValue * 100;
-
-                    summary.Add(new StockSummaryData
-                    {
-                        StockSymbol = userStock.StockSymbol,
-                        CurrentPrice = latestData.Close,
-                        PurchasePrice = userStock.PurchasePrice,
-                        TotalShares = currentShares,
-                        TotalValue = currentValue,
-                        PerformancePercentage = performancePercentage,
-                        ValueChange = currentValue - purchaseValue
-                    });
+                    _logger.LogWarning("Attempted to access CreateOrEdit without being logged in");
+                    return RedirectToAction("Login", "Account");
                 }
-            }
 
-            return summary;
-        }
-
-        private Dictionary<string, List<object>> PrepareChartData(Dictionary<string, List<StockDataPoint>> realTimeData)
-        {
-            return realTimeData.ToDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.Select(d => new
+                if (id == 0)
                 {
-                    x = d.Date,
-                    open = d.Open,
-                    high = d.High,
-                    low = d.Low,
-                    close = d.Close
-                }).Cast<object>().ToList()
-            );
-        }
-
-        // GET: AppUserStocks/Dashboard
-        public class DashboardViewModel
-        {
-            public List<AppUserStock> UserStocks { get; set; }
-        }
-
-        public class DashboardData
-        {
-            public Dictionary<string, List<StockDataPoint>> RealTimeData { get; set; }
-            public List<StockSummaryData> StockSummary { get; set; }
-            public Dictionary<string, List<object>> ChartData { get; set; }
-            public List<BubbleChartData> BubbleChartData { get; set; }
-        }
-
-
-        public class StockSummaryData
-        {
-            public string StockSymbol { get; set; }
-            public decimal CurrentPrice { get; set; }
-            public decimal PurchasePrice { get; set; }
-            public int TotalShares { get; set; }
-            public decimal TotalValue { get; set; }
-            public decimal PerformancePercentage { get; set; }
-            public decimal ValueChange { get; set; }
-
-        }
-
-        public class RealTimeDataPoint
-        {
-            public string StockSymbol { get; set; }
-            public DateTime Date { get; set; }
-            public decimal Open { get; set; }
-            public decimal High { get; set; }
-            public decimal Low { get; set; }
-            public decimal Close { get; set; }
-            public long Volume { get; set; }
-        }
-
-        public class BubbleChartData
-        {
-            public string StockSymbol { get; set; }
-            public decimal CurrentPrice { get; set; }
-            public decimal TotalValue { get; set; }
-            public int Size { get; set; }
-        }
-        private async Task<Dictionary<string, decimal>> GetCachedRealTimePricesAsync(List<string> stockSymbols)
-        {
-            var result = new Dictionary<string, decimal>();
-            var symbolsToFetch = new List<string>();
-
-            foreach (var symbol in stockSymbols)
-            {
-                string cacheKey = $"RealTimePrice_{symbol}";
-                if (_cache.TryGetValue(cacheKey, out decimal price))
-                {
-                    result[symbol] = price;
+                    // Creating new stock position
+                    var appUserStock = new AppUserStock
+                    {
+                        UserId = userId,
+                        DatePurchased = DateTime.UtcNow.Date
+                    };
+                    return View(appUserStock);
                 }
                 else
                 {
-                    symbolsToFetch.Add(symbol);
-                }
-            }
+                    // Editing existing stock position
+                    var appUserStock = await _context.UserStocks
+                        .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
 
-            if (symbolsToFetch.Any())
-            {
-                var fetchedPrices = await _stockService.GetRealTimePricesAsync(symbolsToFetch);
-                foreach (var kvp in fetchedPrices)
+                    if (appUserStock == null)
+                    {
+                        _logger.LogWarning("User {UserId} attempted to edit non-existent or unauthorized stock {StockId}",
+                            userId, id);
+                        return NotFound();
+                    }
+
+                    // Get the stock details for the dropdown's initial value
+                    var stockDetails = await _stockService.GetAllStocksAsync(appUserStock.StockSymbol);
+                    var initialStock = stockDetails.FirstOrDefault();
+
+                    if (initialStock != null)
+                    {
+                        ViewBag.InitialStock = new List<object>
                 {
-                    result[kvp.Key] = kvp.Value;
-                    _cache.Set($"RealTimePrice_{kvp.Key}", kvp.Value, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                    new
+                    {
+                        symbol = initialStock.Symbol,
+                        display = $"{initialStock.Symbol} - {initialStock.Name}"
+                    }
+                };
+                    }
+
+                    return View(appUserStock);
                 }
-            }
-
-            return result;
-        }
-
-        private async Task<Dictionary<DateTime, decimal>> GetCachedHistoricalPricesAsync(string stockSymbol, DateTime startDate)
-        {
-            string cacheKey = $"HistoricalPrices_{stockSymbol}_{startDate:yyyyMMdd}";
-            if (_cache.TryGetValue(cacheKey, out Dictionary<DateTime, decimal>? historicalPrices) && historicalPrices != null)
-            {
-                return historicalPrices;
-            }
-
-            historicalPrices = await _stockService.GetHistoricalPricesAsync(stockSymbol, startDate);
-
-            if (historicalPrices != null)
-            {
-                var cacheEntryOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromDays(1));
-                _cache.Set(cacheKey, historicalPrices, cacheEntryOptions);
-                return historicalPrices;
-            }
-
-            // If we couldn't get historical prices, return an empty dictionary
-            return new Dictionary<DateTime, decimal>();
-        }
-        [HttpGet]
-        public async Task<IActionResult> GetHistoricalPrice(string stockSymbol, DateTime datePurchased)
-        {
-            if (string.IsNullOrEmpty(stockSymbol))
-            {
-                return BadRequest("Stock symbol is required.");
-            }
-
-            try
-            {
-                var historicalPrices = await _stockService.GetHistoricalPricesAsync(stockSymbol, datePurchased);
-
-                if (historicalPrices != null && historicalPrices.Any())
-                {
-                    var closestDate = historicalPrices.Keys
-                                        .OrderBy(d => Math.Abs((d - datePurchased).TotalDays))
-                                        .First();
-                    var price = historicalPrices[closestDate];
-
-                    return Json(new { success = true, price });
-                }
-
-                return Json(new { success = false, message = "Price not found for the selected date." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching historical price for {StockSymbol}", stockSymbol);
-                return Json(new { success = false, message = "An error occurred while fetching the price." });
+                _logger.LogError(ex, "Error in CreateOrEdit GET action for ID: {Id}", id);
+                throw;
             }
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateOrEdit([Bind("Id,UserId,StockSymbol,PurchasePrice,DatePurchased,NumberOfSharesPurchased,CurrentPrice,DateSold,NumberOfSharesSold")] AppUserStock appUserStock)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return View(appUserStock);
+                }
+
+                var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    ModelState.AddModelError("", "User ID is missing. Please log in again.");
+                    return View(appUserStock);
+                }
+
+                // Validate dates
+                if (appUserStock.DateSold.HasValue && appUserStock.DatePurchased.HasValue &&
+                    appUserStock.DateSold.Value < appUserStock.DatePurchased.Value)
+                {
+                    ModelState.AddModelError("DateSold", "Sale date cannot be before purchase date");
+                    return View(appUserStock);
+                }
+
+                // Convert dates to UTC
+                appUserStock.DatePurchased = appUserStock.DatePurchased.HasValue
+                    ? ConvertToUtc(appUserStock.DatePurchased.Value)
+                    : null;
+                appUserStock.DateSold = appUserStock.DateSold.HasValue
+                    ? ConvertToUtc(appUserStock.DateSold.Value)
+                    : null;
+
+                if (appUserStock.Id == 0)
+                {
+                    // Create new stock position
+                    appUserStock.UserId = userId;
+                    appUserStock.StockSymbol = appUserStock.StockSymbol.ToUpper();
+
+                    // Get current price
+                    var currentPrices = await _stockService.GetRealTimePricesAsync(new List<string> { appUserStock.StockSymbol });
+                    if (currentPrices.TryGetValue(appUserStock.StockSymbol, out decimal currentPrice))
+                    {
+                        appUserStock.CurrentPrice = currentPrice;
+                    }
+
+                    _context.Add(appUserStock);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("New stock position created for {Symbol} by user {UserId}",
+                        appUserStock.StockSymbol, userId);
+                }
+                else
+                {
+                    // Update existing stock position
+                    var existingStock = await _context.UserStocks
+                        .FirstOrDefaultAsync(s => s.Id == appUserStock.Id && s.UserId == userId);
+
+                    if (existingStock == null)
+                    {
+                        return NotFound();
+                    }
+
+                    // Update properties
+                    existingStock.StockSymbol = appUserStock.StockSymbol.ToUpper();
+                    existingStock.PurchasePrice = appUserStock.PurchasePrice;
+                    existingStock.DatePurchased = appUserStock.DatePurchased;
+                    existingStock.NumberOfSharesPurchased = appUserStock.NumberOfSharesPurchased;
+                    existingStock.DateSold = appUserStock.DateSold;
+                    existingStock.NumberOfSharesSold = appUserStock.NumberOfSharesSold;
+
+                    // Update current price
+                    var currentPrices = await _stockService.GetRealTimePricesAsync(new List<string> { existingStock.StockSymbol });
+                    if (currentPrices.TryGetValue(existingStock.StockSymbol, out decimal currentPrice))
+                    {
+                        existingStock.CurrentPrice = currentPrice;
+                    }
+
+                    _context.Update(existingStock);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Stock position {Id} updated by user {UserId}",
+                        existingStock.Id, userId);
+                }
+
+                return RedirectToAction(nameof(Dashboard));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving stock position for user {UserId}", appUserStock.UserId);
+                ModelState.AddModelError("", "An error occurred while saving the stock position.");
+                return View(appUserStock);
+            }
+        }
+
+        public async Task<IActionResult> Delete(int? id)
+        {
+            try
+            {
+                if (id == null)
+                {
+                    return NotFound();
+                }
+
+                var userId = _userManager.GetUserId(User);
+                var appUserStock = await _context.UserStocks
+                    .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
+
+                if (appUserStock == null)
+                {
+                    _logger.LogWarning("User {UserId} attempted to delete non-existent or unauthorized stock {StockId}",
+                        userId, id);
+                    return NotFound();
+                }
+
+                return View(appUserStock);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in Delete GET action for ID: {Id}", id);
+                throw;
+            }
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var appUserStock = await _context.UserStocks
+                    .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+
+                if (appUserStock != null)
+                {
+                    _context.UserStocks.Remove(appUserStock);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Stock position {Id} deleted by user {UserId}", id, userId);
+                }
+
+                return RedirectToAction(nameof(Dashboard));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting stock position {Id}", id);
+                throw;
+            }
+        }
+
+        private static DateTime ConvertToUtc(DateTime dateTime)
+        {
+            return dateTime.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
+                : dateTime.ToUniversalTime();
+        }
+
         [HttpGet]
-        public async Task<IActionResult> LoadRealTimeChart()
+        public async Task<IActionResult> GetRealTimeUpdates()
         {
             var userId = _userManager.GetUserId(User);
-            var userStocks = await _context.UserStocks.Where(u => u.UserId == userId).ToListAsync();
-            var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
+            var stocks = await _context.UserStocks
+                .Where(u => u.UserId == userId)
+                .ToListAsync();
 
-            var realTimeData = await _stockService.GetRealTimeDataCachedAsync(stockSymbols);
+            var symbols = stocks.Select(s => s.StockSymbol).Distinct().ToList();
+            var realTimePrices = await _stockService.GetRealTimePricesAsync(symbols);
 
-            var realTimeTrendData = new List<RealTimeDataPoint>();
-            foreach (var stock in realTimeData)
+            return Json(new { prices = realTimePrices, timestamp = DateTime.UtcNow });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SearchStocks(string term = "", int limit = 50, int offset = 0)
+        {
+            if (string.IsNullOrWhiteSpace(term) || term.Length < 1)
             {
-                realTimeTrendData.AddRange(stock.Value.Select(data => new RealTimeDataPoint
-                {
-                    StockSymbol = stock.Key,
-                    Date = data.Date,
-                    Open = data.Open,
-                    High = data.High,
-                    Low = data.Low,
-                    Close = data.Close,
-                    Volume = data.Volume
-                }));
+                return Json(new { success = false, message = "Please enter at least one character." });
             }
-
-            ViewBag.RealTimeTrendData = realTimeTrendData;
-            return PartialView("_RealTimeStockChartPartial");
-        }
-
-    }
-
-    public class StockService
-    {
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<StockService> _logger;
-        private readonly IMemoryCache _cache;
-        private readonly IHttpClientFactory _clientFactory;
-        private const int CACHE_DURATION_MINUTES = 15;
-
-        private const string ApiKey = "0d6b96123dmshd1cdf284f3c5deap10eec8jsnc171c25e1d53"; // TODO: Replace with your actual RapidAPI key
-        private const string BaseUrl = "https://yahoo-finance15.p.rapidapi.com/api/v1";
-
-        public StockService(HttpClient httpClient, ILogger<StockService> logger, IMemoryCache cache, IHttpClientFactory clientFactory)
-        {
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-            _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
-
-            _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKey);
-            _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", "yahoo-finance15.p.rapidapi.com");
-        }
-
-        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int dataPoints = 100)
-        {
-            var result = new Dictionary<string, List<StockDataPoint>>();
-            var fetchTasks = new List<Task>();
-
-            foreach (var symbol in stockSymbols)
-            {
-                var task = Task.Run(async () =>
-                {
-                    var url = $"{BaseUrl}/markets/stock/history?symbol={symbol}&interval=1d&diffandsplits=false&limit={dataPoints}";
-
-                    for (int i = 0; i < 3; i++) // Try up to 3 times for each symbol
-                    {
-                        try
-                        {
-                            _logger.LogInformation($"Attempt {i + 1}: Fetching real-time data for {symbol}");
-
-                            // Create a new HttpClient instance for each request using the factory
-                            var client = _clientFactory.CreateClient();
-                            client.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKey);
-                            client.DefaultRequestHeaders.Add("x-rapidapi-host", "yahoo-finance15.p.rapidapi.com");
-
-                            var response = await client.GetAsync(url);
-                            response.EnsureSuccessStatusCode();
-                            var json = await response.Content.ReadAsStringAsync();
-                            var stockData = ProcessHistoricalData(json);
-                            if (stockData.Any())
-                            {
-                                lock (result)
-                                {
-                                    result[symbol] = stockData;
-                                }
-                                break; // Success, move to next symbol
-                            }
-                        }
-                        catch (HttpRequestException ex)
-                        {
-                            _logger.LogError(ex, $"Attempt {i + 1} failed to fetch data for {symbol}. Status code: {ex.StatusCode}");
-                            if (i < 2) // If it's not the last attempt
-                            {
-                                await Task.Delay(1000 * (int)Math.Pow(2, i)); // Exponential backoff
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, $"Unexpected error on attempt {i + 1} while fetching data for {symbol}");
-                            break; // For unexpected errors, don't retry
-                        }
-                    }
-
-                    if (!result.ContainsKey(symbol))
-                    {
-                        result[symbol] = new List<StockDataPoint>
-                    {
-                        new StockDataPoint
-                        {
-                            Date = DateTime.UtcNow,
-                            Open = 0,
-                            High = 0,
-                            Low = 0,
-                            Close = 0,
-                            Volume = 0
-                        }
-                    };
-                    }
-                });
-
-                fetchTasks.Add(task);
-            }
-
-            await Task.WhenAll(fetchTasks);
-            return result;
-        }
-        private List<StockDataPoint> ProcessHistoricalData(string json)
-        {
-            var stockData = new List<StockDataPoint>();
-            var jObject = JObject.Parse(json);
-
-            var body = jObject["body"] as JObject;
-            if (body != null)
-            {
-                foreach (var item in body)
-                {
-                    if (long.TryParse(item.Key, out long timestamp))
-                    {
-                        var date = DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime;
-                        var dataPoint = item.Value as JObject;
-                        if (dataPoint != null)
-                        {
-                            stockData.Add(new StockDataPoint
-                            {
-                                Date = date,
-                                Open = dataPoint["open"]?.Value<decimal>() ?? 0,
-                                High = dataPoint["high"]?.Value<decimal>() ?? 0,
-                                Low = dataPoint["low"]?.Value<decimal>() ?? 0,
-                                Close = dataPoint["close"]?.Value<decimal>() ?? 0,
-                                Volume = dataPoint["volume"]?.Value<long>() ?? 0
-                            });
-                        }
-                    }
-                }
-            }
-            return stockData.OrderBy(d => d.Date).ToList();
-        }
-        public async Task<Dictionary<string, decimal>> GetRealTimePricesAsync(List<string> stockSymbols)
-        {
-            var result = new Dictionary<string, decimal>();
-            var symbolsString = string.Join(",", stockSymbols);
-            var url = $"{BaseUrl}/markets/stock/quotes?ticker={symbolsString}";
 
             try
             {
-                _logger.LogInformation($"Fetching real-time prices for {symbolsString}");
-
-                // Create a new HttpClient instance for this request
-                var client = _clientFactory.CreateClient();
-                client.DefaultRequestHeaders.Add("x-rapidapi-key", ApiKey);
-                client.DefaultRequestHeaders.Add("x-rapidapi-host", "yahoo-finance15.p.rapidapi.com");
-
-                var response = await client.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                var json = await response.Content.ReadAsStringAsync();
-
-                var data = JObject.Parse(json);
-                var bodyArray = data["body"] as JArray;
-
-                if (bodyArray != null)
+                // Check cache first
+                var cacheKey = $"SearchStocks_{term}";
+                if (_cache.TryGetValue(cacheKey, out List<StockSymbolData> cachedStocks))
                 {
-                    foreach (var item in bodyArray)
-                    {
-                        var symbol = item["symbol"]?.ToString();
-                        var priceToken = item["regularMarketPrice"];
-                        if (!string.IsNullOrEmpty(symbol) && priceToken != null && decimal.TryParse(priceToken.ToString(), out decimal price))
-                        {
-                            result[symbol] = price;
-                        }
-                    }
+                    _logger.LogInformation($"Returning cached stocks for term: {term}");
+                    return Json(new { success = true, stocks = cachedStocks });
                 }
 
-                _logger.LogInformation($"Successfully fetched real-time prices for {result.Count} stocks");
+                var stocks = await _stockService.GetAllStocksAsync(term);
+
+                if (!stocks.Any())
+                {
+                    return Json(new { success = false, message = "No matching stocks found." });
+                }
+
+                // Cache the results
+                _cache.Set(cacheKey, stocks, TimeSpan.FromMinutes(5));
+
+                // Return the stocks
+                return Json(new { success = true, stocks });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to fetch real-time prices for multiple stocks");
+                _logger.LogError(ex, "Error searching stocks for term: {Term}", term);
+                return Json(new { success = false, message = "An error occurred while searching stocks." });
             }
-
-            return result;
         }
-        public async Task<Dictionary<DateTime, decimal>> GetHistoricalPricesAsync(string stockSymbol, DateTime startDate)
+
+
+
+
+        private PortfolioMetrics CalculatePortfolioMetrics(
+    List<AppUserStock> userStocks,
+    Dictionary<string, decimal> realTimePrices,
+    Dictionary<string, CompanyDetails> companyDetails)
         {
-            if (string.IsNullOrEmpty(stockSymbol))
+            var metrics = new PortfolioMetrics();
+            _logger.LogInformation("Starting portfolio metrics calculation");
+
+            // Filter to only active stocks with valid prices
+            var activeStocks = userStocks.Where(s =>
+                (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0 &&
+                s.CurrentPrice > 0).ToList();
+
+            if (!activeStocks.Any())
             {
-                throw new ArgumentException("Stock symbol cannot be null or empty", nameof(stockSymbol));
+                _logger.LogInformation("No active stocks found with valid prices");
+                return metrics;
             }
 
-            var endDate = DateTime.UtcNow;
-            var startTimestamp = ((DateTimeOffset)startDate).ToUnixTimeSeconds();
-            var endTimestamp = ((DateTimeOffset)endDate).ToUnixTimeSeconds();
-            var url = $"{BaseUrl}/markets/stock/history?symbol={stockSymbol}&interval=1d&diffandsplits=false&from={startTimestamp}&to={endTimestamp}";
+            decimal totalValue = 0;
+            decimal totalCost = 0;
+            decimal bestReturn = decimal.MinValue;
+            decimal worstReturn = decimal.MaxValue;
+            string bestStock = null;
+            string worstStock = null;
 
-            var historicalPrices = new Dictionary<DateTime, decimal>();
+            foreach (var stock in activeStocks)
+            {
+                var activeShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                var currentPrice = realTimePrices.TryGetValue(stock.StockSymbol, out decimal price) && price > 0
+                    ? price
+                    : stock.CurrentPrice;
 
+                _logger.LogInformation(
+                    "Processing {Symbol}: Shares={Shares}, CurrentPrice=${Price}, PurchasePrice=${PurchasePrice}",
+                    stock.StockSymbol,
+                    activeShares,
+                    currentPrice,
+                    stock.PurchasePrice);
+
+                var currentValue = activeShares * currentPrice;
+                var costBasis = activeShares * stock.PurchasePrice;
+
+                if (costBasis <= 0)
+                {
+                    _logger.LogWarning("Skipping {Symbol} - invalid cost basis", stock.StockSymbol);
+                    continue;
+                }
+
+                totalValue += currentValue;
+                totalCost += costBasis;
+
+                var returnPercent = ((currentValue - costBasis) / costBasis) * 100;
+
+                _logger.LogInformation(
+                    "{Symbol}: CurrentValue=${CurrentValue}, CostBasis=${CostBasis}, Return={Return}%",
+                    stock.StockSymbol,
+                    currentValue,
+                    costBasis,
+                    returnPercent);
+
+                // Update best performer
+                if (returnPercent > bestReturn)
+                {
+                    bestReturn = returnPercent;
+                    bestStock = stock.StockSymbol;
+                }
+
+                // Update worst performer
+                if (returnPercent < worstReturn)
+                {
+                    worstReturn = returnPercent;
+                    worstStock = stock.StockSymbol;
+                }
+            }
+
+            // Set the calculated values
+            metrics.TotalValue = totalValue;
+            metrics.TotalCost = totalCost;
+            metrics.TotalGain = totalValue - totalCost;
+            metrics.TotalPerformance = totalCost > 0 ? (metrics.TotalGain / totalCost) * 100 : 0;
+
+            // Set the performance metrics
+            if (bestStock != null)
+            {
+                metrics.BestPerformingStock = bestStock;
+                metrics.BestPerformingStockReturn = bestReturn;
+                metrics.WorstPerformingStock = worstStock;
+                metrics.WorstPerformingStockReturn = worstReturn;
+            }
+            else
+            {
+                _logger.LogWarning("No valid performance metrics calculated");
+                metrics.BestPerformingStock = "N/A";
+                metrics.WorstPerformingStock = "N/A";
+                metrics.BestPerformingStockReturn = 0;
+                metrics.WorstPerformingStockReturn = 0;
+            }
+
+            // Calculate stock counts
+            metrics.TotalStocks = activeStocks.Count;
+
+            // Calculate sector diversity
+            var sectors = companyDetails.Values
+                .Where(d => !string.IsNullOrEmpty(d.Industry))
+                .Select(d => d.Industry)
+                .Distinct()
+                .ToList();
+
+            metrics.UniqueSectors = sectors.Count;
+
+            _logger.LogInformation(
+                "Final Portfolio Metrics:\n" +
+                "Total Value: ${TotalValue}\n" +
+                "Total Cost: ${TotalCost}\n" +
+                "Total Gain: ${TotalGain}\n" +
+                "Total Performance: {TotalPerformance}%\n" +
+                "Best Performer: {Best} ({BestReturn}%)\n" +
+                "Worst Performer: {Worst} ({WorstReturn}%)\n" +
+                "Active Stocks: {StockCount}\n" +
+                "Unique Sectors: {SectorCount}",
+                totalValue,
+                totalCost,
+                metrics.TotalGain,
+                metrics.TotalPerformance,
+                metrics.BestPerformingStock,
+                metrics.BestPerformingStockReturn,
+                metrics.WorstPerformingStock,
+                metrics.WorstPerformingStockReturn,
+                metrics.TotalStocks,
+                metrics.UniqueSectors);
+
+            return metrics;
+        }
+
+        private Dictionary<string, decimal> CalculateSectorDistribution(
+            List<AppUserStock> userStocks,
+            Dictionary<string, CompanyDetails> companyDetails)
+        {
+            return userStocks
+                .Where(s => companyDetails.ContainsKey(s.StockSymbol))
+                .GroupBy(s => companyDetails[s.StockSymbol].Industry ?? "Unknown")
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(s =>
+                        (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * s.CurrentPrice)
+                );
+        }
+
+        private Dictionary<string, List<PerformancePoint>> CalculatePerformanceData(
+    List<AppUserStock> userStocks,
+    Dictionary<string, List<StockDataPoint>> historicalData)
+        {
+            var performanceData = new Dictionary<string, List<PerformancePoint>>();
+
+            // Guard clause for empty datasets
+            if (!userStocks.Any() || !historicalData.Any())
+            {
+                return performanceData;
+            }
+
+            foreach (var stock in userStocks.Where(s =>
+                (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0)) // Only include stocks with active shares
+            {
+                if (historicalData.TryGetValue(stock.StockSymbol, out var stockHistory) &&
+                    stockHistory != null &&
+                    stockHistory.Any())
+                {
+                    var points = stockHistory
+                        .Where(h => h.Close > 0) // Only include points with valid prices
+                        .Select(h => new PerformancePoint
+                        {
+                            Date = h.Date,
+                            Value = h.Close,
+                            PercentageChange = ((h.Close - stock.PurchasePrice) / stock.PurchasePrice) * 100
+                        })
+                        .ToList();
+
+                    if (points.Any()) // Only add if we have valid points
+                    {
+                        performanceData[stock.StockSymbol] = points;
+                    }
+                }
+            }
+
+            return performanceData;
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetHistoricalPrice(string stockSymbol, DateTime date)
+        {
             try
             {
-                _logger.LogInformation($"Fetching historical prices for {stockSymbol} from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
-                var response = await _httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                var json = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Raw JSON response for {stockSymbol}: {json}");
+                _logger.LogInformation("Fetching historical price for symbol {Symbol} on date {Date}.", stockSymbol, date);
 
-                var data = JObject.Parse(json);
-                var body = data["body"]?.ToObject<Dictionary<string, JObject>>();
-
-                if (body != null && body.Any())
+                // If the date is today, try to get real-time price first
+                if (date.Date == DateTime.UtcNow.Date)
                 {
-                    foreach (var entry in body)
+                    var realTimePrices = await _stockService.GetRealTimePricesAsync(new List<string> { stockSymbol });
+                    if (realTimePrices.TryGetValue(stockSymbol, out decimal realTimePrice) && realTimePrice > 0)
                     {
-                        if (entry.Value != null)
-                        {
-                            // Parse the Unix timestamp from the key
-                            if (long.TryParse(entry.Key, out long timestamp))
-                            {
-                                var date = DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime;
-
-                                // Use the "close" price as the representative price
-                                if (decimal.TryParse(entry.Value["close"]?.ToString(), out decimal closePrice))
-                                {
-                                    historicalPrices[date] = closePrice;
-                                }
-                            }
-                        }
-                    }
-
-                    if (historicalPrices.Count > 0)
-                    {
-                        _logger.LogInformation($"Successfully fetched {historicalPrices.Count} historical prices for {stockSymbol}");
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"No historical prices found in the parsed data for {stockSymbol}");
+                        return Json(new { success = true, price = realTimePrice });
                     }
                 }
-                else
+
+                var data = await _stockService.GetRealTimeDataAsync(new List<string> { stockSymbol }, 1825);
+                if (data.TryGetValue(stockSymbol, out var dataPoints) && dataPoints.Any())
                 {
-                    _logger.LogWarning($"No historical prices found in the response data for {stockSymbol}");
+                    // Handle date mismatch due to timezone
+                    var price = dataPoints.FirstOrDefault(dp => dp.Date.Date == date.Date)?.Close ?? 0;
+
+                    if (price > 0)
+                    {
+                        return Json(new { success = true, price });
+                    }
+
+                    _logger.LogWarning("No matching data found for symbol {Symbol} on date {Date}.", stockSymbol, date);
+                    return Json(new { success = false, message = "No data found for the given date." });
                 }
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, $"Failed to fetch historical prices for {stockSymbol}");
+
+                _logger.LogWarning("No data points found for symbol {Symbol}.", stockSymbol);
+                return Json(new { success = false, message = "No data available." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Unexpected error while fetching historical prices for {stockSymbol}");
+                _logger.LogError(ex, "Error fetching historical price for {Symbol} on {Date}", stockSymbol, date);
+                return Json(new { success = false, message = "An error occurred while fetching price." });
             }
-
-            return historicalPrices;
         }
-
-        public async Task<List<StockSymbolData>> GetAllStocksAsync(string? searchTerm)
-        {
-            var allStocks = new List<StockSymbolData>();
-            var url = $"{BaseUrl}/markets/search?search={searchTerm}";
-            try
-            {
-                var response = await _httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                var json = await response.Content.ReadAsStringAsync();
-                var data = JObject.Parse(json);
-                var stocksArray = data["body"] as JArray;
-                if (stocksArray != null)
-                {
-                    foreach (var stock in stocksArray)
-                    {
-                        allStocks.Add(new StockSymbolData
-                        {
-                            Symbol = stock["symbol"]?.ToString() ?? string.Empty,
-                            Name = stock["name"]?.ToString() ?? string.Empty
-                        });
-                    }
-                }
-                _logger.LogInformation($"Successfully fetched {allStocks.Count} stocks");
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, "HTTP request error while fetching stocks");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error while fetching stocks");
-            }
-            return allStocks;
-        }
-
-        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataCachedAsync(List<string> stockSymbols, int dataPoints = 100)
-        {
-            var cacheKey = $"RealTimeData_{string.Join("_", stockSymbols)}";
-
-            // Try to get cached data
-            if (!_cache.TryGetValue(cacheKey, out Dictionary<string, List<StockDataPoint>>? cachedData) || cachedData == null)
-            {
-                // Fetch data if not in cache or if cached data is null
-                cachedData = await GetRealTimeDataAsync(stockSymbols, dataPoints) ?? new Dictionary<string, List<StockDataPoint>>();
-                _cache.Set(cacheKey, cachedData, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
-            }
-
-            return cachedData;
-        }
-
-
-    }
-    public class StockDataPoint
-    {
-        public DateTime Date { get; set; }
-        public decimal Open { get; set; }
-        public decimal High { get; set; }
-        public decimal Low { get; set; }
-        public decimal Close { get; set; }
-        public long Volume { get; set; }
-    }
-    public class StockSymbolData
-    {
-        public string Symbol { get; set; }
-        public string Name { get; set; }
     }
 }
