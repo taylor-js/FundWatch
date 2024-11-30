@@ -51,7 +51,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     services.AddMemoryCache();
     services.AddLogging();
     services.AddScoped<StockService>();
-
+    services.AddHostedService<StockDataBackgroundService>();
     // Email Service (Mock for development)
     services.AddSingleton<IEmailSender, MockEmailSender>();
 
