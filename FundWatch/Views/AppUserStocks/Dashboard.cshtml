@@ -77,21 +77,28 @@
                 <div class="card-body">
                     @if (Model.PerformanceData != null && Model.PerformanceData.Any())
                     {
+                        @* <div class="small text-muted mb-2">
+                            <strong>Debug Info:</strong>
+                            <ul>
+                                @foreach (var stock in Model.PerformanceData)
+                                {
+                                    <li>@stock.Key: @stock.Value.Count points (@stock.Value.First().Date.ToString("d") - @stock.Value.Last().Date.ToString("d"))</li>
+                                }
+                            </ul>
+                        </div> *@
+
                         @(Html.EJS().StockChart("stockChart")
                             .Series(sr =>
                             {
-                                // Function to generate HSL colors with good spacing
                                 Func<int, int, string> getColor = (int i, int total) =>
                                 {
-                                    // Use golden ratio for even color spacing
                                     double goldenRatio = 0.618033988749895;
                                     double hue = (i * goldenRatio * 360) % 360;
-                                    // Keep saturation and lightness high for visibility
                                     return $"hsl({hue}, 70%, 50%)";
                                 };
 
                                 int index = 0;
-                                foreach (var stock in Model.PerformanceData)
+                                foreach (var stock in Model.PerformanceData.OrderBy(kvp => kvp.Key))  // Sort by symbol for consistent colors
                                 {
                                     sr.Type(ChartSeriesType.Line)
                                     .DataSource(stock.Value)
@@ -106,7 +113,7 @@
                                     index++;
                                 }
                             })
-                            .Title("Portfolio Performance")
+                            //.Title("Portfolio Performance")
                             .LegendSettings(ls => ls
                             .Visible(true)
                             .ToggleVisibility(true)

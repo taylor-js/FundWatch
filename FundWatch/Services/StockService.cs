@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using FundWatch.Models;
 using System.Net;
+using System.Threading.RateLimiting;
+using Newtonsoft.Json;
 
 namespace FundWatch.Services
 {
@@ -18,22 +20,110 @@ namespace FundWatch.Services
         private readonly ILogger<StockService> _logger;
         private readonly IMemoryCache _cache;
         private readonly string _apiKey;
+        private readonly RateLimitingHandler _rateLimiter;
         private const int CACHE_DURATION_MINUTES = 15;
         private const int MAX_BATCH_SIZE = 5;
+        private const int MAX_RETRIES = 3;
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         public StockService(
-            IHttpClientFactory clientFactory,
-            ILogger<StockService> logger,
-            IMemoryCache cache,
-            IConfiguration configuration)
+        IHttpClientFactory clientFactory,
+        ILogger<StockService> logger,
+        IMemoryCache cache,
+        IConfiguration configuration)
         {
             _httpClient = clientFactory.CreateClient("PolygonApi");
             _logger = logger;
             _cache = cache;
-            _apiKey = configuration["PolygonApi:ApiKey"];
+            _apiKey = configuration.GetValue<string>("PolygonApi:ApiKey") ??
+                throw new ArgumentNullException("PolygonApi:ApiKey", "API key is required");
+            _rateLimiter = new RateLimitingHandler(5);
         }
+        public class RateLimitingHandler
+        {
+            private readonly SemaphoreSlim _semaphore;
+            private readonly Queue<DateTime> _requestTimestamps;
+            private readonly int _maxRequestsPerMinute;
+            private readonly object _lockObject = new object();
+            private DateTime _nextAllowedRequestTime = DateTime.MinValue;
 
-        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int daysBack = 365)
+            public RateLimitingHandler(int maxRequestsPerMinute = 5)
+            {
+                _maxRequestsPerMinute = Math.Max(1, maxRequestsPerMinute);
+                _semaphore = new SemaphoreSlim(1, 1);
+                _requestTimestamps = new Queue<DateTime>();
+            }
+
+            public async Task WaitForAvailableSlotAsync(CancellationToken cancellationToken = default)
+            {
+                await _semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    var now = DateTime.UtcNow;
+
+                    // First check if we need to wait based on previous rate limit response
+                    var delayForRateLimit = _nextAllowedRequestTime - now;
+                    if (delayForRateLimit > TimeSpan.Zero)
+                    {
+                        _semaphore.Release();
+                        await Task.Delay(delayForRateLimit, cancellationToken);
+                        await _semaphore.WaitAsync(cancellationToken);
+                    }
+
+                    lock (_lockObject)
+                    {
+                        // Remove timestamps older than 1 minute
+                        while (_requestTimestamps.Count > 0 &&
+                               (now - _requestTimestamps.Peek()).TotalMinutes >= 1)
+                        {
+                            _requestTimestamps.Dequeue();
+                        }
+
+                        // If we've hit the limit, calculate wait time
+                        if (_requestTimestamps.Count >= _maxRequestsPerMinute)
+                        {
+                            var oldestRequest = _requestTimestamps.Peek();
+                            var waitTime = oldestRequest.AddMinutes(1) - now;
+                            if (waitTime > TimeSpan.Zero)
+                            {
+                                _semaphore.Release();
+                                Task.Delay(waitTime, cancellationToken).Wait(cancellationToken);
+                                _semaphore.WaitAsync(cancellationToken).Wait(cancellationToken);
+
+                                // After waiting, remove old timestamp
+                                _requestTimestamps.Dequeue();
+                            }
+                        }
+
+                        _requestTimestamps.Enqueue(now);
+                    }
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
+            }
+
+            public void HandleRateLimitResponse(HttpResponseMessage response)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    if (response.Headers.TryGetValues("Retry-After", out var values) &&
+                        int.TryParse(values.FirstOrDefault(), out int retryAfterSeconds))
+                    {
+                        _nextAllowedRequestTime = DateTime.UtcNow.AddSeconds(retryAfterSeconds);
+                    }
+                    else
+                    {
+                        // Default to waiting 60 seconds if no Retry-After header
+                        _nextAllowedRequestTime = DateTime.UtcNow.AddSeconds(60);
+                    }
+                }
+            }
+        }
+        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(
+        List<string> stockSymbols,
+        int daysBack = 365)
         {
             if (stockSymbols == null || !stockSymbols.Any())
             {
@@ -41,43 +131,92 @@ namespace FundWatch.Services
                 return new Dictionary<string, List<StockDataPoint>>();
             }
 
-            var cacheKey = $"HistoricalData_{string.Join("_", stockSymbols)}_{daysBack}";
-            if (_cache.TryGetValue(cacheKey, out Dictionary<string, List<StockDataPoint>> cachedData))
-            {
-                return cachedData;
-            }
-
             var result = new Dictionary<string, List<StockDataPoint>>();
             var today = DateTime.UtcNow.Date;
-            var startDate = today.AddDays(-daysBack);
+            var startDate = today.AddDays(-Math.Min(daysBack, 1825)); // Limit to 5 years
 
-            foreach (var symbol in stockSymbols)
+            // Process stocks in batches
+            var batches = stockSymbols
+                .Distinct()
+                .Select((symbol, index) => new { Symbol = symbol.Trim().ToUpper(), Index = index })
+                .Where(x => !string.IsNullOrWhiteSpace(x.Symbol))
+                .GroupBy(x => x.Index / MAX_BATCH_SIZE)
+                .Select(g => g.Select(x => x.Symbol).ToList())
+                .ToList();
+
+            foreach (var batch in batches)
             {
+                await _semaphore.WaitAsync();
                 try
                 {
-                    var url = $"/v2/aggs/ticker/{symbol}/range/1/day/{startDate:yyyy-MM-dd}/{today:yyyy-MM-dd}";
-                    var queryParams = new Dictionary<string, string>
+                    foreach (var symbol in batch)
                     {
-                        ["adjusted"] = "true",
-                        ["sort"] = "asc"
-                    };
+                        var cacheKey = $"HistoricalData_{symbol}_{daysBack}";
+                        if (_cache.TryGetValue(cacheKey, out List<StockDataPoint> cachedData))
+                        {
+                            result[symbol] = cachedData;
+                            continue;
+                        }
 
-                    var response = await SendApiRequestAsync(url, queryParams);
-                    if (response == null) continue;
+                        var retryCount = 0;
+                        while (retryCount < MAX_RETRIES)
+                        {
+                            try
+                            {
+                                var url = $"/v2/aggs/ticker/{WebUtility.UrlEncode(symbol)}/range/1/day/{startDate:yyyy-MM-dd}/{today:yyyy-MM-dd}";
+                                var queryParams = new Dictionary<string, string>
+                                {
+                                    ["adjusted"] = "true",
+                                    ["sort"] = "asc",
+                                    ["limit"] = "50000"
+                                };
 
-                    var results = response["results"] as JArray;
-                    if (results != null)
-                    {
-                        result[symbol] = ProcessStockDataPoints(results);
+                                var response = await SendApiRequestAsync(url, queryParams);
+                                if (response == null) break;
+
+                                var results = response["results"] as JArray;
+                                if (results != null && results.Any())
+                                {
+                                    var dataPoints = ProcessStockDataPoints(results);
+                                    result[symbol] = dataPoints;
+
+                                    // Only cache if we have valid data
+                                    if (dataPoints.Any())
+                                    {
+                                        var cacheOptions = new MemoryCacheEntryOptions()
+                                            .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_DURATION_MINUTES))
+                                            .SetSlidingExpiration(TimeSpan.FromMinutes(5));
+
+                                        _cache.Set(cacheKey, dataPoints, cacheOptions);
+                                    }
+                                    break;
+                                }
+
+                                retryCount++;
+                                if (retryCount < MAX_RETRIES)
+                                {
+                                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retryCount))); // Exponential backoff
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error fetching data for {Symbol} on attempt {Attempt}", symbol, retryCount + 1);
+                                retryCount++;
+                                if (retryCount >= MAX_RETRIES) throw;
+                                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retryCount)));
+                            }
+                        }
+
+                        // Add delay between requests in the same batch
+                        await Task.Delay(200);
                     }
                 }
-                catch (Exception ex)
+                finally
                 {
-                    _logger.LogError(ex, "Error fetching real-time data for {Symbol}", symbol);
+                    _semaphore.Release();
                 }
             }
 
-            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
             return result;
         }
 
@@ -157,13 +296,7 @@ namespace FundWatch.Services
             var prices = new Dictionary<string, decimal>();
             var distinctSymbols = stockSymbols.Distinct().ToList();
 
-            // Check cache first
-            var cacheKey = $"RealTimePrices_{string.Join("_", distinctSymbols)}";
-            if (_cache.TryGetValue(cacheKey, out Dictionary<string, decimal> cachedPrices))
-            {
-                return cachedPrices;
-            }
-
+            // Process in smaller batches
             var batches = distinctSymbols
                 .Select((symbol, index) => new { Symbol = symbol, Index = index })
                 .GroupBy(x => x.Index / MAX_BATCH_SIZE)
@@ -174,7 +307,21 @@ namespace FundWatch.Services
             {
                 try
                 {
+                    await _rateLimiter.WaitForAvailableSlotAsync();
+
                     var symbols = string.Join(",", batch);
+                    var cacheKey = $"RealTimePrices_{symbols}";
+
+                    // Check cache first
+                    if (_cache.TryGetValue(cacheKey, out Dictionary<string, decimal> cachedPrices))
+                    {
+                        foreach (var kvp in cachedPrices)
+                        {
+                            prices[kvp.Key] = kvp.Value;
+                        }
+                        continue;
+                    }
+
                     var url = "/v2/snapshot/locale/us/markets/stocks/tickers";
                     var queryParams = new Dictionary<string, string>
                     {
@@ -187,6 +334,7 @@ namespace FundWatch.Services
                     var tickers = response["tickers"] as JArray;
                     if (tickers != null)
                     {
+                        var batchPrices = new Dictionary<string, decimal>();
                         foreach (var ticker in tickers)
                         {
                             var symbol = ticker["ticker"].ToString();
@@ -196,6 +344,7 @@ namespace FundWatch.Services
                                 if (price > 0)
                                 {
                                     prices[symbol] = price;
+                                    batchPrices[symbol] = price;
                                     _logger.LogInformation($"Retrieved price for {symbol}: {price}");
                                 }
                                 else
@@ -204,24 +353,24 @@ namespace FundWatch.Services
                                 }
                             }
                         }
+
+                        // Cache batch results
+                        if (batchPrices.Any())
+                        {
+                            _cache.Set(cacheKey, batchPrices, TimeSpan.FromMinutes(1));
+                        }
                     }
 
-                    // Add small delay between batches to avoid rate limiting
+                    // Add delay between batches
                     if (batches.Count > 1)
                     {
-                        await Task.Delay(100);
+                        await Task.Delay(200);
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error fetching real-time prices for batch {Symbols}", string.Join(", ", batch));
                 }
-            }
-
-            if (prices.Any())
-            {
-                // Cache the results
-                _cache.Set(cacheKey, prices, TimeSpan.FromMinutes(1)); // Short cache duration for real-time prices
             }
 
             return prices;
@@ -278,51 +427,72 @@ namespace FundWatch.Services
 
         private async Task<JObject> SendApiRequestAsync(string endpoint, Dictionary<string, string> queryParams = null)
         {
-            try
+            var retryCount = 0;
+            while (retryCount < MAX_RETRIES)
             {
-                var query = queryParams != null ?
-                    "?" + string.Join("&", queryParams.Select(p => $"{p.Key}={Uri.EscapeDataString(p.Value)}")) :
-                    string.Empty;
-
-                var response = await _httpClient.GetAsync(endpoint + query);
-
-                // Handle rate limiting
-                if (response.StatusCode == (HttpStatusCode)429)
+                try
                 {
-                    _logger.LogWarning("Rate limit exceeded for endpoint: {Endpoint}", endpoint);
-                    // Optionally wait and retry
-                    if (response.Headers.TryGetValues("Retry-After", out var values))
+                    await _rateLimiter.WaitForAvailableSlotAsync();
+
+                    queryParams ??= new Dictionary<string, string>();
+                    queryParams["apiKey"] = _apiKey;
+
+                    var query = string.Join("&", queryParams.Select(p =>
+                        $"{WebUtility.UrlEncode(p.Key)}={WebUtility.UrlEncode(p.Value)}"));
+                    var url = $"{endpoint}?{query}";
+
+                    using var response = await _httpClient.GetAsync(url);
+
+                    if (response.StatusCode == (HttpStatusCode)429)
                     {
-                        if (int.TryParse(values.FirstOrDefault(), out int retryAfterSeconds))
+                        _logger.LogWarning("Rate limit exceeded for endpoint: {Endpoint}", endpoint);
+                        var retryAfterSeconds = 60;
+
+                        if (response.Headers.TryGetValues("Retry-After", out var values))
                         {
-                            _logger.LogInformation("Retrying after {Seconds} seconds", retryAfterSeconds);
-                            await Task.Delay(retryAfterSeconds * 1000);
-                            response = await _httpClient.GetAsync(endpoint + query);
+                            if (int.TryParse(values.FirstOrDefault(), out int headerValue))
+                            {
+                                retryAfterSeconds = headerValue;
+                            }
                         }
+
+                        await Task.Delay(retryAfterSeconds * 1000);
+                        retryCount++;
+                        continue;
                     }
-                    else
+
+                    if (response.StatusCode == HttpStatusCode.Forbidden)
                     {
-                        // Default delay if 'Retry-After' is not provided
-                        await Task.Delay(1000);
-                        response = await _httpClient.GetAsync(endpoint + query);
+                        _logger.LogError("API authentication failed for endpoint: {Endpoint}", endpoint);
+                        throw new UnauthorizedAccessException("API authentication failed");
+                    }
+
+                    response.EnsureSuccessStatusCode();
+                    var content = await response.Content.ReadAsStringAsync();
+
+                    try
+                    {
+                        return JObject.Parse(content);
+                    }
+                    catch (JsonReaderException ex)
+                    {
+                        _logger.LogError(ex, "Invalid JSON response from API: {Content}", content);
+                        throw;
                     }
                 }
+                catch (Exception ex) when (ex is not UnauthorizedAccessException)
+                {
+                    _logger.LogError(ex, "Error in SendApiRequestAsync for endpoint: {Endpoint}, attempt: {Attempt}",
+                        endpoint, retryCount + 1);
 
-                response.EnsureSuccessStatusCode();
+                    retryCount++;
+                    if (retryCount >= MAX_RETRIES) throw;
 
-                var json = await response.Content.ReadAsStringAsync();
-                return JObject.Parse(json);
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retryCount)));
+                }
             }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, "HTTP request failed for endpoint: {Endpoint}", endpoint);
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error for endpoint: {Endpoint}", endpoint);
-                return null;
-            }
+
+            throw new Exception($"Failed to get response after {MAX_RETRIES} attempts");
         }
 
 
@@ -331,16 +501,38 @@ namespace FundWatch.Services
             var stockData = new List<StockDataPoint>();
             foreach (var item in results)
             {
-                var timestamp = DateTimeOffset.FromUnixTimeMilliseconds(item["t"].Value<long>()).UtcDateTime;
-                stockData.Add(new StockDataPoint
+                try
                 {
-                    Date = timestamp,
-                    Open = item["o"]?.Value<decimal>() ?? 0,
-                    High = item["h"]?.Value<decimal>() ?? 0,
-                    Low = item["l"]?.Value<decimal>() ?? 0,
-                    Close = item["c"]?.Value<decimal>() ?? 0,
-                    Volume = item["v"]?.Value<long>() ?? 0
-                });
+                    var timestamp = DateTimeOffset.FromUnixTimeMilliseconds(
+                        item["t"]?.Value<long>() ?? 0).UtcDateTime;
+
+                    var dataPoint = new StockDataPoint
+                    {
+                        Date = timestamp,
+                        Open = item["o"]?.Value<decimal>() ?? 0,
+                        High = item["h"]?.Value<decimal>() ?? 0,
+                        Low = item["l"]?.Value<decimal>() ?? 0,
+                        Close = item["c"]?.Value<decimal>() ?? 0,
+                        Volume = item["v"]?.Value<long>() ?? 0
+                    };
+
+                    // Validate data point
+                    if (dataPoint.Open > 0 && dataPoint.High > 0 && dataPoint.Low > 0 &&
+                        dataPoint.Close > 0 && dataPoint.High >= dataPoint.Low)
+                    {
+                        stockData.Add(dataPoint);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Invalid stock data point detected: {DataPoint}",
+                            JsonConvert.SerializeObject(dataPoint));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing stock data point: {Point}",
+                        item?.ToString() ?? "null");
+                }
             }
             return stockData;
         }

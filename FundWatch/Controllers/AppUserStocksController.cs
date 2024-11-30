@@ -22,48 +22,66 @@ namespace FundWatch.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly StockService _stockService;
         private readonly IMemoryCache _cache;
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private const int CACHE_DURATION_MINUTES = 15;
 
         public AppUserStocksController(
-            ApplicationDbContext context,
-            ILogger<AppUserStocksController> logger,
-            UserManager<IdentityUser> userManager,
-            StockService stockService,
-            IMemoryCache cache)
+        ApplicationDbContext context,
+        ILogger<AppUserStocksController> logger,
+        UserManager<IdentityUser> userManager,
+        StockService stockService,
+        IMemoryCache cache)
         {
-            _context = context;
-            _logger = logger;
-            _userManager = userManager;
-            _stockService = stockService;
-            _cache = cache;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _stockService = stockService ?? throw new ArgumentNullException(nameof(stockService));
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
         // GET: AppUserStocks/Dashboard
+        [HttpGet]
         public async Task<IActionResult> Dashboard()
         {
             var userId = _userManager.GetUserId(User);
             if (string.IsNullOrEmpty(userId))
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("Login", "Account", new { returnUrl = Request.Path });
             }
 
-            var viewModel = await PrepareDashboardViewModel(userId);
-            return View(viewModel);
+            try
+            {
+                var viewModel = await PrepareDashboardViewModel(userId);
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error preparing dashboard for user {UserId}", userId);
+                TempData["ErrorMessage"] = "Unable to load dashboard. Please try again later.";
+                return View(new PortfolioDashboardViewModel());
+            }
         }
 
         private async Task<PortfolioDashboardViewModel> PrepareDashboardViewModel(string userId)
         {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            }
+
+            await _semaphore.WaitAsync();
             try
             {
+                // Get user's stocks
                 var userStocks = await _context.UserStocks
                     .Where(u => u.UserId == userId)
+                    .AsNoTracking()
                     .ToListAsync();
 
-                _logger.LogInformation($"Found {userStocks.Count} stocks for user {userId}");
+                _logger.LogInformation("Found {Count} stocks for user {UserId}", userStocks.Count, userId);
 
                 if (!userStocks.Any())
                 {
-                    _logger.LogInformation($"No stocks found for user {userId}");
                     return new PortfolioDashboardViewModel
                     {
                         UserStocks = new List<AppUserStock>(),
@@ -74,80 +92,111 @@ namespace FundWatch.Controllers
                     };
                 }
 
-                var stockSymbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
-                _logger.LogInformation($"Fetching data for symbols: {string.Join(", ", stockSymbols)}");
+                // Get valid stock symbols
+                var stockSymbols = userStocks
+                    .Where(s => !string.IsNullOrWhiteSpace(s.StockSymbol))
+                    .Select(s => s.StockSymbol.Trim().ToUpper())
+                    .Distinct()
+                    .ToList();
 
+                // Start all data fetching tasks
                 var realTimePricesTask = _stockService.GetRealTimePricesAsync(stockSymbols);
                 var companyDetailsTask = _stockService.GetCompanyDetailsAsync(stockSymbols);
                 var historicalDataTask = _stockService.GetRealTimeDataAsync(stockSymbols, 1825);
 
-                await Task.WhenAll(realTimePricesTask, companyDetailsTask, historicalDataTask);
+                // Default dictionaries in case of failure
+                Dictionary<string, decimal> realTimePrices;
+                Dictionary<string, CompanyDetails> companyDetails;
+                Dictionary<string, List<StockDataPoint>> historicalData;
 
-                var realTimePrices = await realTimePricesTask;
-                var companyDetails = await companyDetailsTask;
-                var historicalData = await historicalDataTask;
+                try
+                {
+                    await Task.WhenAll(realTimePricesTask, companyDetailsTask, historicalDataTask);
 
-                _logger.LogInformation($"Retrieved {realTimePrices.Count} real-time prices");
-                _logger.LogInformation($"Retrieved {companyDetails.Count} company details");
+                    realTimePrices = await realTimePricesTask;
+                    companyDetails = await companyDetailsTask;
+                    historicalData = await historicalDataTask;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error fetching stock data for dashboard. Falling back to partial data.");
 
-                // Create a list to track stocks that need updating
+                    // Handle partial completions
+                    realTimePrices = realTimePricesTask.IsCompleted ? await realTimePricesTask : new Dictionary<string, decimal>();
+                    companyDetails = companyDetailsTask.IsCompleted ? await companyDetailsTask : new Dictionary<string, CompanyDetails>();
+                    historicalData = historicalDataTask.IsCompleted ? await historicalDataTask : new Dictionary<string, List<StockDataPoint>>();
+                }
+
+                // Track stocks needing updates
                 var stocksToUpdate = new List<AppUserStock>();
 
                 foreach (var stock in userStocks)
                 {
-                    if (realTimePrices.TryGetValue(stock.StockSymbol, out decimal currentPrice))
+                    if (string.IsNullOrWhiteSpace(stock.StockSymbol))
+                        continue;
+
+                    decimal? newPrice = null;
+
+                    // Try to get real-time price first
+                    if (realTimePrices.TryGetValue(stock.StockSymbol, out decimal currentPrice) && currentPrice > 0)
                     {
-                        if (currentPrice > 0 && stock.CurrentPrice != currentPrice)  // Only update if price is different
+                        newPrice = currentPrice;
+                    }
+                    // Fall back to historical data if real-time isn't available
+                    else if (historicalData.TryGetValue(stock.StockSymbol, out var dataPoints) &&
+                             dataPoints?.Any() == true)
+                    {
+                        var latestPrice = dataPoints.OrderByDescending(d => d.Date).First().Close;
+                        if (latestPrice > 0)
                         {
-                            stock.CurrentPrice = currentPrice;
-                            stocksToUpdate.Add(stock);
-                            _logger.LogInformation(
-                                "Updated {Symbol}: Price={NewPrice}, Shares={Shares}, Value={Value}",
-                                stock.StockSymbol,
-                                currentPrice,
-                                stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0),
-                                currentPrice * (stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0))
-                            );
+                            newPrice = latestPrice;
                         }
                     }
-                    else if (historicalData.TryGetValue(stock.StockSymbol, out var dataPoints) && dataPoints.Any())
+
+                    // Update stock if we have a valid new price that's different from current
+                    if (newPrice.HasValue && Math.Abs(stock.CurrentPrice - newPrice.Value) > 0.001m)
                     {
-                        // Fallback to most recent historical price if real-time is not available
-                        var latestPrice = dataPoints.OrderByDescending(d => d.Date).First().Close;
-                        if (latestPrice > 0 && stock.CurrentPrice != latestPrice)
-                        {
-                            stock.CurrentPrice = latestPrice;
-                            stocksToUpdate.Add(stock);
-                        }
+                        stock.CurrentPrice = newPrice.Value;
+                        stocksToUpdate.Add(stock);
                     }
                 }
 
-                // Save all updates in a single transaction
+                // Save price updates if needed
                 if (stocksToUpdate.Any())
                 {
-                    await _context.SaveChangesAsync();
+                    try
+                    {
+                        using var transaction = await _context.Database.BeginTransactionAsync();
+                        try
+                        {
+                            _context.UserStocks.UpdateRange(stocksToUpdate);
+                            await _context.SaveChangesAsync();
+                            await transaction.CommitAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            await transaction.RollbackAsync();
+                            _logger.LogError(ex, "Failed to update stock prices. Rolling back changes.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error during price update transaction");
+                    }
                 }
 
-                // Calculate metrics
+                // Calculate portfolio metrics
                 var portfolioMetrics = CalculatePortfolioMetrics(userStocks, realTimePrices, companyDetails);
-
-                _logger.LogInformation(
-                    "Portfolio Metrics Calculated: Value=${Value}, Gain=${Gain}, Performance={Performance}%, Sectors={Sectors}, Best={Best}({BestReturn}%), Worst={Worst}({WorstReturn}%)",
-                    portfolioMetrics.TotalValue,
-                    portfolioMetrics.TotalGain,
-                    portfolioMetrics.TotalPerformance,
-                    portfolioMetrics.UniqueSectors,
-                    portfolioMetrics.BestPerformingStock,
-                    portfolioMetrics.BestPerformingStockReturn,
-                    portfolioMetrics.WorstPerformingStock,
-                    portfolioMetrics.WorstPerformingStockReturn
-                );
-
-                // Calculate sector distribution
                 var sectorDistribution = CalculateSectorDistribution(userStocks, companyDetails);
-
-                // Calculate performance data
                 var performanceData = CalculatePerformanceData(userStocks, historicalData);
+
+                // Log summary of calculations
+                _logger.LogInformation(
+                    "Dashboard prepared for user {UserId}. Metrics: Value=${Value}, Stocks={StockCount}, Sectors={SectorCount}",
+                    userId,
+                    portfolioMetrics.TotalValue,
+                    portfolioMetrics.TotalStocks,
+                    portfolioMetrics.UniqueSectors);
 
                 return new PortfolioDashboardViewModel
                 {
@@ -160,8 +209,12 @@ namespace FundWatch.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error preparing dashboard data for user {UserId}", userId);
+                _logger.LogError(ex, "Critical error preparing dashboard for user {UserId}", userId);
                 throw;
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
@@ -218,40 +271,34 @@ namespace FundWatch.Controllers
                 var userId = _userManager.GetUserId(User);
                 if (string.IsNullOrEmpty(userId))
                 {
-                    _logger.LogWarning("Attempted to access CreateOrEdit without being logged in");
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("Login", "Account", new { returnUrl = Request.Path });
                 }
 
                 if (id == 0)
                 {
-                    // Creating new stock position
-                    var appUserStock = new AppUserStock
+                    return View(new AppUserStock
                     {
                         UserId = userId,
                         DatePurchased = DateTime.UtcNow.Date
-                    };
-                    return View(appUserStock);
+                    });
                 }
-                else
+
+                var appUserStock = await _context.UserStocks
+                    .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+
+                if (appUserStock == null)
                 {
-                    // Editing existing stock position
-                    var appUserStock = await _context.UserStocks
-                        .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+                    _logger.LogWarning("User {UserId} attempted to edit non-existent or unauthorized stock {StockId}",
+                        userId, id);
+                    return NotFound();
+                }
 
-                    if (appUserStock == null)
-                    {
-                        _logger.LogWarning("User {UserId} attempted to edit non-existent or unauthorized stock {StockId}",
-                            userId, id);
-                        return NotFound();
-                    }
+                var stockDetails = await _stockService.GetAllStocksAsync(appUserStock.StockSymbol);
+                var initialStock = stockDetails.FirstOrDefault();
 
-                    // Get the stock details for the dropdown's initial value
-                    var stockDetails = await _stockService.GetAllStocksAsync(appUserStock.StockSymbol);
-                    var initialStock = stockDetails.FirstOrDefault();
-
-                    if (initialStock != null)
-                    {
-                        ViewBag.InitialStock = new List<object>
+                if (initialStock != null)
+                {
+                    ViewBag.InitialStock = new List<object>
                 {
                     new
                     {
@@ -259,15 +306,14 @@ namespace FundWatch.Controllers
                         display = $"{initialStock.Symbol} - {initialStock.Name}"
                     }
                 };
-                    }
-
-                    return View(appUserStock);
                 }
+
+                return View(appUserStock);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in CreateOrEdit GET action for ID: {Id}", id);
-                throw;
+                return RedirectToAction(nameof(Dashboard));
             }
         }
 
@@ -275,91 +321,134 @@ namespace FundWatch.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateOrEdit([Bind("Id,UserId,StockSymbol,PurchasePrice,DatePurchased,NumberOfSharesPurchased,CurrentPrice,DateSold,NumberOfSharesSold")] AppUserStock appUserStock)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return View(appUserStock);
-                }
+                return View(appUserStock);
+            }
 
-                var userId = _userManager.GetUserId(User);
-                if (string.IsNullOrEmpty(userId))
-                {
-                    ModelState.AddModelError("", "User ID is missing. Please log in again.");
-                    return View(appUserStock);
-                }
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToAction("Login", "Account", new { returnUrl = Request.Path });
+            }
 
-                // Validate dates
-                if (appUserStock.DateSold.HasValue && appUserStock.DatePurchased.HasValue &&
+            // Validate input
+            if (string.IsNullOrWhiteSpace(appUserStock.StockSymbol))
+            {
+                ModelState.AddModelError("StockSymbol", "Stock symbol is required");
+                return View(appUserStock);
+            }
+
+            if (appUserStock.PurchasePrice <= 0)
+            {
+                ModelState.AddModelError("PurchasePrice", "Purchase price must be greater than zero");
+                return View(appUserStock);
+            }
+
+            if (appUserStock.NumberOfSharesPurchased <= 0)
+            {
+                ModelState.AddModelError("NumberOfSharesPurchased", "Number of shares must be greater than zero");
+                return View(appUserStock);
+            }
+
+            if (appUserStock.DateSold.HasValue)
+            {
+                if (!appUserStock.DatePurchased.HasValue ||
                     appUserStock.DateSold.Value < appUserStock.DatePurchased.Value)
                 {
                     ModelState.AddModelError("DateSold", "Sale date cannot be before purchase date");
                     return View(appUserStock);
                 }
 
-                // Convert dates to UTC
+                if (appUserStock.NumberOfSharesSold.HasValue &&
+                    appUserStock.NumberOfSharesSold.Value > appUserStock.NumberOfSharesPurchased)
+                {
+                    ModelState.AddModelError("NumberOfSharesSold",
+                        "Cannot sell more shares than purchased");
+                    return View(appUserStock);
+                }
+            }
+
+            try
+            {
+                // Normalize dates to UTC
                 appUserStock.DatePurchased = appUserStock.DatePurchased.HasValue
-                    ? ConvertToUtc(appUserStock.DatePurchased.Value)
+                    ? DateTime.SpecifyKind(appUserStock.DatePurchased.Value.Date, DateTimeKind.Utc)
                     : null;
+
                 appUserStock.DateSold = appUserStock.DateSold.HasValue
-                    ? ConvertToUtc(appUserStock.DateSold.Value)
+                    ? DateTime.SpecifyKind(appUserStock.DateSold.Value.Date, DateTimeKind.Utc)
                     : null;
 
-                if (appUserStock.Id == 0)
+                appUserStock.StockSymbol = appUserStock.StockSymbol.Trim().ToUpper();
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    // Create new stock position
-                    appUserStock.UserId = userId;
-                    appUserStock.StockSymbol = appUserStock.StockSymbol.ToUpper();
-
-                    // Get current price
-                    var currentPrices = await _stockService.GetRealTimePricesAsync(new List<string> { appUserStock.StockSymbol });
-                    if (currentPrices.TryGetValue(appUserStock.StockSymbol, out decimal currentPrice))
+                    if (appUserStock.Id == 0)
                     {
-                        appUserStock.CurrentPrice = currentPrice;
+                        // Create new stock position
+                        appUserStock.UserId = userId;
+
+                        // Get current price
+                        var currentPrices = await _stockService.GetRealTimePricesAsync(
+                            new List<string> { appUserStock.StockSymbol });
+
+                        if (currentPrices.TryGetValue(appUserStock.StockSymbol, out decimal currentPrice))
+                        {
+                            appUserStock.CurrentPrice = currentPrice;
+                        }
+                        else
+                        {
+                            appUserStock.CurrentPrice = appUserStock.PurchasePrice;
+                        }
+
+                        _context.Add(appUserStock);
+                    }
+                    else
+                    {
+                        var existingStock = await _context.UserStocks
+                            .FirstOrDefaultAsync(s => s.Id == appUserStock.Id && s.UserId == userId);
+
+                        if (existingStock == null)
+                        {
+                            return NotFound();
+                        }
+
+                        // Update properties
+                        existingStock.StockSymbol = appUserStock.StockSymbol;
+                        existingStock.PurchasePrice = appUserStock.PurchasePrice;
+                        existingStock.DatePurchased = appUserStock.DatePurchased;
+                        existingStock.NumberOfSharesPurchased = appUserStock.NumberOfSharesPurchased;
+                        existingStock.DateSold = appUserStock.DateSold;
+                        existingStock.NumberOfSharesSold = appUserStock.NumberOfSharesSold;
+
+                        // Update current price
+                        var currentPrices = await _stockService.GetRealTimePricesAsync(
+                            new List<string> { existingStock.StockSymbol });
+
+                        if (currentPrices.TryGetValue(existingStock.StockSymbol, out decimal currentPrice))
+                        {
+                            existingStock.CurrentPrice = currentPrice;
+                        }
+
+                        _context.Update(existingStock);
                     }
 
-                    _context.Add(appUserStock);
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation("New stock position created for {Symbol} by user {UserId}",
-                        appUserStock.StockSymbol, userId);
+                    await transaction.CommitAsync();
+
+                    return RedirectToAction(nameof(Dashboard));
                 }
-                else
+                catch
                 {
-                    // Update existing stock position
-                    var existingStock = await _context.UserStocks
-                        .FirstOrDefaultAsync(s => s.Id == appUserStock.Id && s.UserId == userId);
-
-                    if (existingStock == null)
-                    {
-                        return NotFound();
-                    }
-
-                    // Update properties
-                    existingStock.StockSymbol = appUserStock.StockSymbol.ToUpper();
-                    existingStock.PurchasePrice = appUserStock.PurchasePrice;
-                    existingStock.DatePurchased = appUserStock.DatePurchased;
-                    existingStock.NumberOfSharesPurchased = appUserStock.NumberOfSharesPurchased;
-                    existingStock.DateSold = appUserStock.DateSold;
-                    existingStock.NumberOfSharesSold = appUserStock.NumberOfSharesSold;
-
-                    // Update current price
-                    var currentPrices = await _stockService.GetRealTimePricesAsync(new List<string> { existingStock.StockSymbol });
-                    if (currentPrices.TryGetValue(existingStock.StockSymbol, out decimal currentPrice))
-                    {
-                        existingStock.CurrentPrice = currentPrice;
-                    }
-
-                    _context.Update(existingStock);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Stock position {Id} updated by user {UserId}",
-                        existingStock.Id, userId);
+                    await transaction.RollbackAsync();
+                    throw;
                 }
-
-                return RedirectToAction(nameof(Dashboard));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error saving stock position for user {UserId}", appUserStock.UserId);
+                _logger.LogError(ex, "Error saving stock position for user {UserId}", userId);
                 ModelState.AddModelError("", "An error occurred while saving the stock position.");
                 return View(appUserStock);
             }
@@ -394,29 +483,46 @@ namespace FundWatch.Controllers
             }
         }
 
-        [HttpPost, ActionName("Delete")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> Delete(int id)
         {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToAction("Login", "Account", new { returnUrl = Request.Path });
+            }
+
             try
             {
-                var userId = _userManager.GetUserId(User);
-                var appUserStock = await _context.UserStocks
-                    .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
-
-                if (appUserStock != null)
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
+                    var appUserStock = await _context.UserStocks
+                        .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+
+                    if (appUserStock == null)
+                    {
+                        return NotFound();
+                    }
+
                     _context.UserStocks.Remove(appUserStock);
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation("Stock position {Id} deleted by user {UserId}", id, userId);
-                }
+                    await transaction.CommitAsync();
 
-                return RedirectToAction(nameof(Dashboard));
+                    return RedirectToAction(nameof(Dashboard));
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting stock position {Id}", id);
-                throw;
+                _logger.LogError(ex, "Error deleting stock position {Id} for user {UserId}", id, userId);
+                TempData["ErrorMessage"] = "Unable to delete stock position. Please try again later.";
+                return RedirectToAction(nameof(Dashboard));
             }
         }
 
@@ -442,7 +548,7 @@ namespace FundWatch.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SearchStocks(string term = "", int limit = 50, int offset = 0)
+        public async Task<IActionResult> SearchStocks(string term)
         {
             if (string.IsNullOrWhiteSpace(term) || term.Length < 1)
             {
@@ -451,25 +557,23 @@ namespace FundWatch.Controllers
 
             try
             {
-                // Check cache first
-                var cacheKey = $"SearchStocks_{term}";
+                var cacheKey = $"SearchStocks_{term.Trim().ToUpper()}";
                 if (_cache.TryGetValue(cacheKey, out List<StockSymbolData> cachedStocks))
                 {
-                    _logger.LogInformation($"Returning cached stocks for term: {term}");
                     return Json(new { success = true, stocks = cachedStocks });
                 }
 
                 var stocks = await _stockService.GetAllStocksAsync(term);
-
                 if (!stocks.Any())
                 {
                     return Json(new { success = false, message = "No matching stocks found." });
                 }
 
-                // Cache the results
-                _cache.Set(cacheKey, stocks, TimeSpan.FromMinutes(5));
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5))
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(2));
 
-                // Return the stocks
+                _cache.Set(cacheKey, stocks, cacheOptions);
                 return Json(new { success = true, stocks });
             }
             catch (Exception ex)
@@ -479,195 +583,169 @@ namespace FundWatch.Controllers
             }
         }
 
-
-
-
         private PortfolioMetrics CalculatePortfolioMetrics(
-    List<AppUserStock> userStocks,
-    Dictionary<string, decimal> realTimePrices,
-    Dictionary<string, CompanyDetails> companyDetails)
+        List<AppUserStock> userStocks,
+        Dictionary<string, decimal> realTimePrices,
+        Dictionary<string, CompanyDetails> companyDetails)
         {
             var metrics = new PortfolioMetrics();
-            _logger.LogInformation("Starting portfolio metrics calculation");
 
-            // Filter to only active stocks with valid prices
-            var activeStocks = userStocks.Where(s =>
-                (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0 &&
-                s.CurrentPrice > 0).ToList();
-
-            if (!activeStocks.Any())
+            try
             {
-                _logger.LogInformation("No active stocks found with valid prices");
-                return metrics;
-            }
+                var activeStocks = userStocks.Where(s =>
+                    !string.IsNullOrWhiteSpace(s.StockSymbol) &&
+                    (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0 &&
+                    s.CurrentPrice > 0).ToList();
 
-            decimal totalValue = 0;
-            decimal totalCost = 0;
-            decimal bestReturn = decimal.MinValue;
-            decimal worstReturn = decimal.MaxValue;
-            string bestStock = null;
-            string worstStock = null;
-
-            foreach (var stock in activeStocks)
-            {
-                var activeShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
-                var currentPrice = realTimePrices.TryGetValue(stock.StockSymbol, out decimal price) && price > 0
-                    ? price
-                    : stock.CurrentPrice;
-
-                _logger.LogInformation(
-                    "Processing {Symbol}: Shares={Shares}, CurrentPrice=${Price}, PurchasePrice=${PurchasePrice}",
-                    stock.StockSymbol,
-                    activeShares,
-                    currentPrice,
-                    stock.PurchasePrice);
-
-                var currentValue = activeShares * currentPrice;
-                var costBasis = activeShares * stock.PurchasePrice;
-
-                if (costBasis <= 0)
+                if (!activeStocks.Any())
                 {
-                    _logger.LogWarning("Skipping {Symbol} - invalid cost basis", stock.StockSymbol);
-                    continue;
+                    return metrics;
                 }
 
-                totalValue += currentValue;
-                totalCost += costBasis;
+                decimal totalValue = 0;
+                decimal totalCost = 0;
+                decimal bestReturn = decimal.MinValue;
+                decimal worstReturn = decimal.MaxValue;
+                string bestStock = null;
+                string worstStock = null;
 
-                var returnPercent = ((currentValue - costBasis) / costBasis) * 100;
-
-                _logger.LogInformation(
-                    "{Symbol}: CurrentValue=${CurrentValue}, CostBasis=${CostBasis}, Return={Return}%",
-                    stock.StockSymbol,
-                    currentValue,
-                    costBasis,
-                    returnPercent);
-
-                // Update best performer
-                if (returnPercent > bestReturn)
+                foreach (var stock in activeStocks)
                 {
-                    bestReturn = returnPercent;
-                    bestStock = stock.StockSymbol;
+                    var activeShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                    var currentPrice = realTimePrices.TryGetValue(stock.StockSymbol, out decimal price) && price > 0
+                        ? price
+                        : stock.CurrentPrice;
+
+                    if (currentPrice <= 0 || stock.PurchasePrice <= 0)
+                    {
+                        _logger.LogWarning("Invalid price data for {Symbol}: CurrentPrice={CurrentPrice}, PurchasePrice={PurchasePrice}",
+                            stock.StockSymbol, currentPrice, stock.PurchasePrice);
+                        continue;
+                    }
+
+                    var currentValue = activeShares * currentPrice;
+                    var costBasis = activeShares * stock.PurchasePrice;
+
+                    totalValue += currentValue;
+                    totalCost += costBasis;
+
+                    if (costBasis > 0)
+                    {
+                        var returnPercent = ((currentValue - costBasis) / costBasis) * 100;
+
+                        if (returnPercent > bestReturn)
+                        {
+                            bestReturn = returnPercent;
+                            bestStock = stock.StockSymbol;
+                        }
+
+                        if (returnPercent < worstReturn)
+                        {
+                            worstReturn = returnPercent;
+                            worstStock = stock.StockSymbol;
+                        }
+                    }
                 }
 
-                // Update worst performer
-                if (returnPercent < worstReturn)
+                metrics.TotalValue = totalValue;
+                metrics.TotalCost = totalCost;
+                metrics.TotalGain = totalValue - totalCost;
+                metrics.TotalPerformance = totalCost > 0 ? (metrics.TotalGain / totalCost) * 100 : 0;
+                metrics.TotalStocks = activeStocks.Count;
+
+                if (bestStock != null)
                 {
-                    worstReturn = returnPercent;
-                    worstStock = stock.StockSymbol;
+                    metrics.BestPerformingStock = bestStock;
+                    metrics.BestPerformingStockReturn = bestReturn;
+                    metrics.WorstPerformingStock = worstStock;
+                    metrics.WorstPerformingStockReturn = worstReturn;
                 }
+
+                var sectors = companyDetails.Values
+                    .Where(d => !string.IsNullOrEmpty(d.Industry))
+                    .Select(d => d.Industry)
+                    .Distinct()
+                    .ToList();
+
+                metrics.UniqueSectors = sectors.Count;
             }
-
-            // Set the calculated values
-            metrics.TotalValue = totalValue;
-            metrics.TotalCost = totalCost;
-            metrics.TotalGain = totalValue - totalCost;
-            metrics.TotalPerformance = totalCost > 0 ? (metrics.TotalGain / totalCost) * 100 : 0;
-
-            // Set the performance metrics
-            if (bestStock != null)
+            catch (Exception ex)
             {
-                metrics.BestPerformingStock = bestStock;
-                metrics.BestPerformingStockReturn = bestReturn;
-                metrics.WorstPerformingStock = worstStock;
-                metrics.WorstPerformingStockReturn = worstReturn;
+                _logger.LogError(ex, "Error calculating portfolio metrics");
             }
-            else
-            {
-                _logger.LogWarning("No valid performance metrics calculated");
-                metrics.BestPerformingStock = "N/A";
-                metrics.WorstPerformingStock = "N/A";
-                metrics.BestPerformingStockReturn = 0;
-                metrics.WorstPerformingStockReturn = 0;
-            }
-
-            // Calculate stock counts
-            metrics.TotalStocks = activeStocks.Count;
-
-            // Calculate sector diversity
-            var sectors = companyDetails.Values
-                .Where(d => !string.IsNullOrEmpty(d.Industry))
-                .Select(d => d.Industry)
-                .Distinct()
-                .ToList();
-
-            metrics.UniqueSectors = sectors.Count;
-
-            _logger.LogInformation(
-                "Final Portfolio Metrics:\n" +
-                "Total Value: ${TotalValue}\n" +
-                "Total Cost: ${TotalCost}\n" +
-                "Total Gain: ${TotalGain}\n" +
-                "Total Performance: {TotalPerformance}%\n" +
-                "Best Performer: {Best} ({BestReturn}%)\n" +
-                "Worst Performer: {Worst} ({WorstReturn}%)\n" +
-                "Active Stocks: {StockCount}\n" +
-                "Unique Sectors: {SectorCount}",
-                totalValue,
-                totalCost,
-                metrics.TotalGain,
-                metrics.TotalPerformance,
-                metrics.BestPerformingStock,
-                metrics.BestPerformingStockReturn,
-                metrics.WorstPerformingStock,
-                metrics.WorstPerformingStockReturn,
-                metrics.TotalStocks,
-                metrics.UniqueSectors);
 
             return metrics;
         }
 
         private Dictionary<string, decimal> CalculateSectorDistribution(
-            List<AppUserStock> userStocks,
-            Dictionary<string, CompanyDetails> companyDetails)
+        List<AppUserStock> userStocks,
+        Dictionary<string, CompanyDetails> companyDetails)
         {
-            return userStocks
-                .Where(s => companyDetails.ContainsKey(s.StockSymbol))
-                .GroupBy(s => companyDetails[s.StockSymbol].Industry ?? "Unknown")
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Sum(s =>
-                        (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * s.CurrentPrice)
-                );
+            try
+            {
+                return userStocks
+                    .Where(s =>
+                        !string.IsNullOrWhiteSpace(s.StockSymbol) &&
+                        companyDetails.ContainsKey(s.StockSymbol) &&
+                        (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0)
+                    .GroupBy(s => companyDetails[s.StockSymbol].Industry ?? "Other")
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(s =>
+                            (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) *
+                            (s.CurrentPrice > 0 ? s.CurrentPrice : s.PurchasePrice))
+                    );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating sector distribution");
+                return new Dictionary<string, decimal>();
+            }
         }
 
         private Dictionary<string, List<PerformancePoint>> CalculatePerformanceData(
-    List<AppUserStock> userStocks,
-    Dictionary<string, List<StockDataPoint>> historicalData)
+        List<AppUserStock> userStocks,
+        Dictionary<string, List<StockDataPoint>> historicalData)
         {
-            var performanceData = new Dictionary<string, List<PerformancePoint>>();
-
-            // Guard clause for empty datasets
-            if (!userStocks.Any() || !historicalData.Any())
+            try
             {
-                return performanceData;
-            }
+                var performanceData = new Dictionary<string, List<PerformancePoint>>();
 
-            foreach (var stock in userStocks.Where(s =>
-                (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0)) // Only include stocks with active shares
-            {
-                if (historicalData.TryGetValue(stock.StockSymbol, out var stockHistory) &&
-                    stockHistory != null &&
-                    stockHistory.Any())
+                foreach (var stock in userStocks.Where(s =>
+                    !string.IsNullOrWhiteSpace(s.StockSymbol) &&
+                    (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0))
                 {
-                    var points = stockHistory
-                        .Where(h => h.Close > 0) // Only include points with valid prices
-                        .Select(h => new PerformancePoint
-                        {
-                            Date = h.Date,
-                            Value = h.Close,
-                            PercentageChange = ((h.Close - stock.PurchasePrice) / stock.PurchasePrice) * 100
-                        })
-                        .ToList();
-
-                    if (points.Any()) // Only add if we have valid points
+                    if (historicalData.TryGetValue(stock.StockSymbol, out var stockHistory) &&
+                        stockHistory != null &&
+                        stockHistory.Any())
                     {
-                        performanceData[stock.StockSymbol] = points;
+                        var points = stockHistory
+                            .Where(h => h.Close > 0)
+                            .Select(h => new PerformancePoint
+                            {
+                                Date = h.Date,
+                                Value = h.Close,
+                                PercentageChange = stock.PurchasePrice > 0
+                                    ? ((h.Close - stock.PurchasePrice) / stock.PurchasePrice) * 100
+                                    : 0
+                            })
+                            .Where(p => !double.IsInfinity((double)p.PercentageChange))
+                            .ToList();
+
+                        if (points.Any())
+                        {
+                            performanceData[stock.StockSymbol] = points;
+                        }
                     }
                 }
-            }
 
-            return performanceData;
+                return performanceData;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating performance data");
+                return new Dictionary<string, List<PerformancePoint>>();
+            }
         }
         [HttpGet]
         public async Task<IActionResult> GetHistoricalPrice(string stockSymbol, DateTime date)
