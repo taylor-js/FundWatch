@@ -35,7 +35,8 @@ namespace FundWatch.Services
                 try
                 {
                     await UpdateCacheAsync(stoppingToken);
-                    await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                    // Increased cache update interval to reduce API calls
+                    await Task.Delay(TimeSpan.FromHours(4), stoppingToken);
                 }
                 catch (Exception ex)
                 {
@@ -51,55 +52,79 @@ namespace FundWatch.Services
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var stockService = scope.ServiceProvider.GetRequiredService<StockService>();
 
-            // Get all unique stock symbols from active positions
+            // Get all unique stock symbols from active positions with a single query
             var symbols = await context.UserStocks
-                .Where(s => (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0)
+                .Where(s => s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0) > 0)
                 .Select(s => s.StockSymbol)
                 .Distinct()
                 .ToListAsync(stoppingToken);
 
             if (!symbols.Any()) return;
 
-            // Update cache in batches
-            foreach (var batch in symbols.Chunk(5))
+            // Process all data types in parallel
+            var tasks = new[]
             {
-                try
+                UpdatePriceCache(stockService, symbols, stoppingToken),
+                UpdateCompanyDetailsCache(stockService, symbols, stoppingToken),
+                UpdateHistoryCache(stockService, symbols, stoppingToken)
+            };
+
+            await Task.WhenAll(tasks);
+        }
+        private async Task UpdatePriceCache(StockService stockService, List<string> symbols, CancellationToken stoppingToken)
+        {
+            try
+            {
+                var prices = await stockService.GetRealTimePricesAsync(symbols);
+                foreach (var (symbol, price) in prices)
                 {
-                    var prices = await stockService.GetRealTimePricesAsync(batch.ToList());
-                    var details = await stockService.GetCompanyDetailsAsync(batch.ToList());
-                    // Only fetch 90 days of historical data for the dashboard
-                    var history = await stockService.GetRealTimeDataAsync(batch.ToList(), 90);
-
-                    foreach (var symbol in batch)
-                    {
-                        var cacheOptions = new MemoryCacheEntryOptions()
-                            .SetAbsoluteExpiration(TimeSpan.FromMinutes(15))
-                            .SetSlidingExpiration(TimeSpan.FromMinutes(5));
-
-                        if (prices.TryGetValue(symbol, out var price))
-                        {
-                            _cache.Set($"Price_{symbol}", price, cacheOptions);
-                        }
-
-                        if (details.TryGetValue(symbol, out var detail))
-                        {
-                            _cache.Set($"Details_{symbol}", detail, cacheOptions);
-                        }
-
-                        if (history.TryGetValue(symbol, out var data))
-                        {
-                            _cache.Set($"History_{symbol}", data, cacheOptions);
-                        }
-                    }
-
-                    _logger.LogInformation("Updated cache for batch of {Count} symbols", batch.Count());
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(15))
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(5));
+                    _cache.Set($"Price_{symbol}", price, cacheOptions);
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating price cache");
+            }
+        }
+
+        private async Task UpdateCompanyDetailsCache(StockService stockService, List<string> symbols, CancellationToken stoppingToken)
+        {
+            try
+            {
+                var details = await stockService.GetCompanyDetailsAsync(symbols);
+                foreach (var (symbol, detail) in details)
                 {
-                    _logger.LogError(ex, "Error updating cache for batch");
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(24)) // Company details change less frequently
+                        .SetSlidingExpiration(TimeSpan.FromHours(1));
+                    _cache.Set($"Details_{symbol}", detail, cacheOptions);
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating company details cache");
+            }
+        }
 
-                await Task.Delay(200, stoppingToken); // Rate limiting between batches
+        private async Task UpdateHistoryCache(StockService stockService, List<string> symbols, CancellationToken stoppingToken)
+        {
+            try
+            {
+                var history = await stockService.GetRealTimeDataAsync(symbols, 90);
+                foreach (var (symbol, data) in history)
+                {
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(4))
+                        .SetSlidingExpiration(TimeSpan.FromHours(1));
+                    _cache.Set($"History_{symbol}", data, cacheOptions);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating history cache");
             }
         }
     }

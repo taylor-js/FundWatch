@@ -326,7 +326,6 @@ C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.IO.FileSystem.Watcher.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.IO.IsolatedStorage.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.IO.MemoryMappedFiles.dll
-C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.IO.Pipelines.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.IO.Pipes.AccessControl.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.IO.Pipes.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.IO.UnmanagedMemoryStream.dll
@@ -407,7 +406,6 @@ C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.Text.Encoding.Extensions.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.Text.Encodings.Web.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.Text.RegularExpressions.dll
-C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.Threading.Channels.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.Threading.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.Threading.Overlapped.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\refs\System.Threading.RateLimiting.dll
@@ -591,3 +589,8 @@ C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\runtimes\wi
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\Syncfusion.Blazor.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\Syncfusion.ExcelExport.Net.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\Syncfusion.PdfExport.Net.dll
+C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\Alpaca.Markets.dll
+C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\Polly.dll
+C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\Polly.Core.dll
+C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\System.IO.Pipelines.dll
+C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\bin\Debug\net8.0\System.Threading.Channels.dll

@@ -25,18 +25,23 @@ namespace FundWatch.Areas.Identity.Pages.Account
 
         public async Task<IActionResult> OnPost(string returnUrl = null)
         {
-            await _signInManager.SignOutAsync();
-            _logger.LogInformation("User logged out.");
+            _logger.LogInformation("Logout initiated.");
+            try
+            {
+                await _signInManager.SignOutAsync();
+                _logger.LogInformation("User successfully logged out.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during logout.");
+                // You can also return an error view or handle the exception in another way
+                return RedirectToPage("/Identity/Account/Logout");
+            }
             if (returnUrl != null)
             {
                 return LocalRedirect(returnUrl);
             }
-            else
-            {
-                // This needs to be a redirect so that the browser performs a new
-                // request and the identity for the user gets updated.
-                return RedirectToPage();
-            }
+            return RedirectToPage("/Index");
         }
     }
 }

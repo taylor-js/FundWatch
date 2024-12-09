@@ -20,9 +20,19 @@ namespace FundWatch.Controllers
 
         public IActionResult Index()
         {
+            if (User.Identity?.IsAuthenticated ?? false)
+            {
+                _logger.LogInformation("User authenticated: {UserID}", _userManager.GetUserId(User));
+            }
+            else
+            {
+                _logger.LogWarning("User not authenticated.");
+            }
+
             ViewData["UserID"] = _userManager.GetUserId(this.User);
             return View();
         }
+
 
         public IActionResult Privacy()
         {

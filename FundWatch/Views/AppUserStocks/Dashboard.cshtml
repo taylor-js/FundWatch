@@ -164,10 +164,10 @@
                             .YName("Value")
                             .Type(AccumulationType.Pie)
                             .DataLabel(dl => dl
-                                .Visible(true)
-                                .Name("${point.x}: ${point.y}")
-                                .Position(AccumulationLabelPosition.Outside)
-                                .ConnectorStyle(style => style.Color("#FFFFFF"))
+                            .Visible(true)
+                            .Name("${point.x}: ${point.y}")
+                            .Position(AccumulationLabelPosition.Outside)
+                            .ConnectorStyle(style => style.Color("#FFFFFF"))
                             .Font(font => font.Color("#FFFFFF"))
                             )
                             .Add();
@@ -176,7 +176,6 @@
                         .Visible(true)
                         .Position(LegendPosition.Right)
                         )
-                        //.Title("Sector Allocation")
                         .Render()
                         )
                 </div>
@@ -277,6 +276,37 @@
 
 @section Scripts {
     <script>
+        function initializeStockChart() {
+            const stockChart = document.getElementById('stockChart');
+            if (stockChart && stockChart.ej2_instances && stockChart.ej2_instances[0]) {
+                stockChart.ej2_instances[0].refresh();
+            }
+        }
+        function tooltipRender(args) {
+            if (args.series.xName === 'Date') {
+                var value = new Date(args.point.x);
+                args.text = value.toLocaleDateString() + ' : $' + args.point.y.toFixed(2);
+            }
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+
+        function formatPercentage(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'percent',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value / 100);
+        }
+
+        // Grid functionality
         function getCurrentPrice(field, data) {
             return data.CurrentPrice || 0;
         }
@@ -285,12 +315,7 @@
             if (!props || !props.NumberOfSharesPurchased) return '$0.00';
             const shares = props.NumberOfSharesPurchased - (props.NumberOfSharesSold || 0);
             const value = shares * (props.CurrentPrice || 0);
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(value);
+            return formatCurrency(value);
         }
 
         function getPerformanceTemplate(props) {
@@ -300,39 +325,29 @@
             const costBasis = shares * props.PurchasePrice;
             const performance = costBasis !== 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0;
 
-            const formatted = new Intl.NumberFormat('en-US', {
-                style: 'percent',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(performance / 100);
-
             const className = performance >= 0 ? 'text-success' : 'text-danger';
             return `<span class="${className}">${performance.toFixed(2)}%</span>`;
         }
 
-        function chartLoad(args) {
-            args.chart.theme = 'Material';
-        }
-
-        // Color cells based on performance
         function colorPerformanceCells() {
-            const cells = document.querySelectorAll('.performance-cell');
-            cells.forEach(cell => {
+            document.querySelectorAll('.performance-cell').forEach(cell => {
                 const value = parseFloat(cell.textContent);
-                if (value > 0) {
-                    cell.classList.add('positive');
-                } else if (value < 0) {
-                    cell.classList.add('negative');
+                if (!isNaN(value)) {
+                    cell.classList.add(value > 0 ? 'positive' : 'negative');
                 }
             });
         }
 
-        // Initialize after the grid renders
+        // Chart functions
+        function chartLoad(args) {
+            args.chart.theme = 'Material';
+        }
+
+        // Initialization
         window.addEventListener('load', function () {
             colorPerformanceCells();
-        });
-        window.addEventListener('load', function () {
-            var grid = document.getElementById('holdingsGrid').ej2_instances[0];
+
+            const grid = document.getElementById('holdingsGrid')?.ej2_instances?.[0];
             if (grid) {
                 grid.refreshHeader();
                 grid.refresh();

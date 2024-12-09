@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Syncfusion.Blazor;
+using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,13 +43,15 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     services.AddHttpClient();
     services.AddHttpClient("PolygonApi", client =>
     {
-        client.BaseAddress = new Uri("https://api.polygon.io");
-        var apiKey = configuration["PolygonApi:ApiKey"];
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+        client.BaseAddress = new Uri(configuration["PolygonApi:BaseUrl"]);
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     });
 
     // Core Services
-    services.AddMemoryCache();
+    services.AddMemoryCache(options =>
+    {
+        options.ExpirationScanFrequency = TimeSpan.FromMinutes(5);
+    });
     services.AddLogging();
     services.AddScoped<StockService>();
     services.AddHostedService<StockDataBackgroundService>();
@@ -71,7 +74,11 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
             context.HttpContext.Response.Redirect("/Identity/Account/Login");
             return Task.CompletedTask;
         };
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensure HTTPS is being used
+        options.Cookie.SameSite = SameSiteMode.Lax; // Change to 'Lax' if 'Strict' causes issues
     });
+
 
     // Syncfusion Configuration
     Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(
@@ -117,6 +124,11 @@ void ConfigureApp(WebApplication app)
     app.MapControllerRoute(
         name: "AppWatchlist",
         pattern: "{controller=AppWatchlist}/{action=Index}/{id?}");
+
+    app.MapControllerRoute(
+        name: "Identity_Area",
+        pattern: "Identity/{**catchall}",
+        defaults: new { area = "Identity" });
 
     app.MapRazorPages();
 }

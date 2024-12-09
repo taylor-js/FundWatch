@@ -64,158 +64,133 @@ namespace FundWatch.Controllers
 
         private async Task<PortfolioDashboardViewModel> PrepareDashboardViewModel(string userId)
         {
-            if (string.IsNullOrEmpty(userId))
+            var userStocks = await _context.UserStocks
+                .Where(u => u.UserId == userId &&
+                            (u.NumberOfSharesPurchased - (u.NumberOfSharesSold ?? 0)) > 0)
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!userStocks.Any())
+                return new PortfolioDashboardViewModel();
+
+            var symbols = userStocks.Select(s => s.StockSymbol.Trim().ToUpper())
+                .Distinct()
+                .ToList();
+
+            var historicalData = await _stockService.GetRealTimeDataAsync(symbols, 90);
+            var cachedPrices = await GetCachedPrices(symbols);
+            var cachedDetails = await GetCachedCompanyDetails(symbols);
+
+            var viewModel = new PortfolioDashboardViewModel
             {
-                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+                UserStocks = userStocks,
+                PortfolioMetrics = CalculatePortfolioMetrics(userStocks, cachedPrices, cachedDetails),
+                SectorDistribution = CalculateSectorDistribution(userStocks, cachedDetails),
+                PerformanceData = CalculatePerformanceData(userStocks, historicalData),
+                HistoricalData = historicalData, // Populate HistoricalData here
+                CompanyDetails = cachedDetails
+            };
+
+            return viewModel;
+        }
+
+
+        private DateTime GetNextTradingDay()
+        {
+            var tomorrow = DateTime.UtcNow.AddDays(1).Date;
+            while (tomorrow.DayOfWeek == DayOfWeek.Saturday || tomorrow.DayOfWeek == DayOfWeek.Sunday)
+            {
+                tomorrow = tomorrow.AddDays(1);
+            }
+            return tomorrow.AddHours(13).AddMinutes(30); // 9:30 AM Eastern Time
+        }
+
+        private async Task<Dictionary<string, decimal>> GetCachedPrices(List<string> symbols)
+        {
+            var result = new Dictionary<string, decimal>();
+            var uncachedSymbols = new List<string>();
+
+            foreach (var symbol in symbols)
+            {
+                // Change cache key to match the StockService
+                if (_cache.TryGetValue($"DailyClosingPrice_{symbol}", out decimal price))
+                {
+                    result[symbol] = price;
+                }
+                else
+                {
+                    uncachedSymbols.Add(symbol);
+                }
             }
 
-            await _semaphore.WaitAsync();
-            try
+            if (uncachedSymbols.Any())
             {
-                // Get user's stocks
-                var userStocks = await _context.UserStocks
-                    .Where(u => u.UserId == userId)
-                    .AsNoTracking()
-                    .ToListAsync();
-
-                _logger.LogInformation("Found {Count} stocks for user {UserId}", userStocks.Count, userId);
-
-                if (!userStocks.Any())
+                var prices = await _stockService.GetRealTimePricesAsync(uncachedSymbols);
+                foreach (var (symbol, price) in prices)
                 {
-                    return new PortfolioDashboardViewModel
-                    {
-                        UserStocks = new List<AppUserStock>(),
-                        PortfolioMetrics = new PortfolioMetrics(),
-                        SectorDistribution = new Dictionary<string, decimal>(),
-                        PerformanceData = new Dictionary<string, List<PerformancePoint>>(),
-                        CompanyDetails = new Dictionary<string, CompanyDetails>()
-                    };
+                    result[symbol] = price;
                 }
-
-                // Get valid stock symbols
-                var stockSymbols = userStocks
-                    .Where(s => !string.IsNullOrWhiteSpace(s.StockSymbol))
-                    .Select(s => s.StockSymbol.Trim().ToUpper())
-                    .Distinct()
-                    .ToList();
-
-                // Start all data fetching tasks
-                var realTimePricesTask = _stockService.GetRealTimePricesAsync(stockSymbols);
-                var companyDetailsTask = _stockService.GetCompanyDetailsAsync(stockSymbols);
-                var historicalDataTask = _stockService.GetRealTimeDataAsync(stockSymbols, 1825);
-
-                // Default dictionaries in case of failure
-                Dictionary<string, decimal> realTimePrices;
-                Dictionary<string, CompanyDetails> companyDetails;
-                Dictionary<string, List<StockDataPoint>> historicalData;
-
-                try
-                {
-                    await Task.WhenAll(realTimePricesTask, companyDetailsTask, historicalDataTask);
-
-                    realTimePrices = await realTimePricesTask;
-                    companyDetails = await companyDetailsTask;
-                    historicalData = await historicalDataTask;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error fetching stock data for dashboard. Falling back to partial data.");
-
-                    // Handle partial completions
-                    realTimePrices = realTimePricesTask.IsCompleted ? await realTimePricesTask : new Dictionary<string, decimal>();
-                    companyDetails = companyDetailsTask.IsCompleted ? await companyDetailsTask : new Dictionary<string, CompanyDetails>();
-                    historicalData = historicalDataTask.IsCompleted ? await historicalDataTask : new Dictionary<string, List<StockDataPoint>>();
-                }
-
-                // Track stocks needing updates
-                var stocksToUpdate = new List<AppUserStock>();
-
-                foreach (var stock in userStocks)
-                {
-                    if (string.IsNullOrWhiteSpace(stock.StockSymbol))
-                        continue;
-
-                    decimal? newPrice = null;
-
-                    // Try to get real-time price first
-                    if (realTimePrices.TryGetValue(stock.StockSymbol, out decimal currentPrice) && currentPrice > 0)
-                    {
-                        newPrice = currentPrice;
-                    }
-                    // Fall back to historical data if real-time isn't available
-                    else if (historicalData.TryGetValue(stock.StockSymbol, out var dataPoints) &&
-                             dataPoints?.Any() == true)
-                    {
-                        var latestPrice = dataPoints.OrderByDescending(d => d.Date).First().Close;
-                        if (latestPrice > 0)
-                        {
-                            newPrice = latestPrice;
-                        }
-                    }
-
-                    // Update stock if we have a valid new price that's different from current
-                    if (newPrice.HasValue && Math.Abs(stock.CurrentPrice - newPrice.Value) > 0.001m)
-                    {
-                        stock.CurrentPrice = newPrice.Value;
-                        stocksToUpdate.Add(stock);
-                    }
-                }
-
-                // Save price updates if needed
-                if (stocksToUpdate.Any())
-                {
-                    try
-                    {
-                        using var transaction = await _context.Database.BeginTransactionAsync();
-                        try
-                        {
-                            _context.UserStocks.UpdateRange(stocksToUpdate);
-                            await _context.SaveChangesAsync();
-                            await transaction.CommitAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            await transaction.RollbackAsync();
-                            _logger.LogError(ex, "Failed to update stock prices. Rolling back changes.");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error during price update transaction");
-                    }
-                }
-
-                // Calculate portfolio metrics
-                var portfolioMetrics = CalculatePortfolioMetrics(userStocks, realTimePrices, companyDetails);
-                var sectorDistribution = CalculateSectorDistribution(userStocks, companyDetails);
-                var performanceData = CalculatePerformanceData(userStocks, historicalData);
-
-                // Log summary of calculations
-                _logger.LogInformation(
-                    "Dashboard prepared for user {UserId}. Metrics: Value=${Value}, Stocks={StockCount}, Sectors={SectorCount}",
-                    userId,
-                    portfolioMetrics.TotalValue,
-                    portfolioMetrics.TotalStocks,
-                    portfolioMetrics.UniqueSectors);
-
-                return new PortfolioDashboardViewModel
-                {
-                    UserStocks = userStocks,
-                    PortfolioMetrics = portfolioMetrics,
-                    SectorDistribution = sectorDistribution,
-                    PerformanceData = performanceData,
-                    CompanyDetails = companyDetails
-                };
             }
-            catch (Exception ex)
+
+            return result;
+        }
+
+        private async Task<Dictionary<string, CompanyDetails>> GetCachedCompanyDetails(List<string> symbols)
+        {
+            var result = new Dictionary<string, CompanyDetails>();
+            var uncachedSymbols = new List<string>();
+
+            foreach (var symbol in symbols)
             {
-                _logger.LogError(ex, "Critical error preparing dashboard for user {UserId}", userId);
-                throw;
+                if (_cache.TryGetValue($"Details_{symbol}", out CompanyDetails details))
+                {
+                    result[symbol] = details;
+                }
+                else
+                {
+                    uncachedSymbols.Add(symbol);
+                }
             }
-            finally
+
+            if (uncachedSymbols.Any())
             {
-                _semaphore.Release();
+                var details = await _stockService.GetCompanyDetailsAsync(uncachedSymbols);
+                foreach (var (symbol, detail) in details)
+                {
+                    result[symbol] = detail;
+                }
             }
+
+            return result;
+        }
+
+        private async Task<Dictionary<string, List<StockDataPoint>>> GetCachedHistoricalData(List<string> symbols)
+        {
+            var result = new Dictionary<string, List<StockDataPoint>>();
+            var uncachedSymbols = new List<string>();
+
+            foreach (var symbol in symbols)
+            {
+                if (_cache.TryGetValue($"History_{symbol}", out List<StockDataPoint> history))
+                {
+                    result[symbol] = history;
+                }
+                else
+                {
+                    uncachedSymbols.Add(symbol);
+                }
+            }
+
+            if (uncachedSymbols.Any())
+            {
+                var history = await _stockService.GetRealTimeDataAsync(uncachedSymbols, 90);
+                foreach (var (symbol, data) in history)
+                {
+                    result[symbol] = data;
+                }
+            }
+
+            return result;
         }
 
 
@@ -704,8 +679,8 @@ namespace FundWatch.Controllers
         }
 
         private Dictionary<string, List<PerformancePoint>> CalculatePerformanceData(
-        List<AppUserStock> userStocks,
-        Dictionary<string, List<StockDataPoint>> historicalData)
+    List<AppUserStock> userStocks,
+    Dictionary<string, List<StockDataPoint>> historicalData)
         {
             try
             {
@@ -715,10 +690,15 @@ namespace FundWatch.Controllers
                     !string.IsNullOrWhiteSpace(s.StockSymbol) &&
                     (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0))
                 {
+                    // Add some debug logging
+                    _logger.LogInformation($"Processing performance data for {stock.StockSymbol}");
+
                     if (historicalData.TryGetValue(stock.StockSymbol, out var stockHistory) &&
                         stockHistory != null &&
                         stockHistory.Any())
                     {
+                        _logger.LogInformation($"Found {stockHistory.Count} historical points for {stock.StockSymbol}");
+
                         var points = stockHistory
                             .Where(h => h.Close > 0)
                             .Select(h => new PerformancePoint
@@ -730,12 +710,22 @@ namespace FundWatch.Controllers
                                     : 0
                             })
                             .Where(p => !double.IsInfinity((double)p.PercentageChange))
+                            .OrderBy(p => p.Date)  // Make sure data is ordered by date
                             .ToList();
 
                         if (points.Any())
                         {
+                            _logger.LogInformation($"Added {points.Count} performance points for {stock.StockSymbol}");
                             performanceData[stock.StockSymbol] = points;
                         }
+                        else
+                        {
+                            _logger.LogWarning($"No valid performance points calculated for {stock.StockSymbol}");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"No historical data found for {stock.StockSymbol}");
                     }
                 }
 
@@ -748,26 +738,76 @@ namespace FundWatch.Controllers
             }
         }
         [HttpGet]
+        public async Task<IActionResult> GetDailyPriceUpdates()
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var stocks = await _context.UserStocks
+                    .Where(u => u.UserId == userId &&
+                               (u.NumberOfSharesPurchased - (u.NumberOfSharesSold ?? 0)) > 0)
+                    .Select(s => s.StockSymbol)
+                    .Distinct()
+                    .ToListAsync();
+
+                if (!stocks.Any())
+                    return Json(new { prices = new Dictionary<string, decimal>() });
+
+                var dailyPrices = await _stockService.GetRealTimePricesAsync(stocks);
+                return Json(new { prices = dailyPrices, timestamp = DateTime.UtcNow });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching daily price updates");
+                return StatusCode(500, "Error fetching price updates");
+            }
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetHistoricalPerformance()
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var stocks = await _context.UserStocks
+                    .Where(u => u.UserId == userId &&
+                               (u.NumberOfSharesPurchased - (u.NumberOfSharesSold ?? 0)) > 0)
+                    .ToListAsync();
+
+                if (!stocks.Any())
+                    return Json(new { performanceData = new Dictionary<string, List<PerformancePoint>>() });
+
+                var symbols = stocks.Select(s => s.StockSymbol).Distinct().ToList();
+                var historicalData = await _stockService.GetRealTimeDataAsync(symbols, 90);
+                var performanceData = CalculatePerformanceData(stocks, historicalData);
+
+                return Json(new { performanceData = performanceData });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching historical performance");
+                return StatusCode(500, "Error fetching performance data");
+            }
+        }
+        [HttpGet]
         public async Task<IActionResult> GetHistoricalPrice(string stockSymbol, DateTime date)
         {
             try
             {
                 _logger.LogInformation("Fetching historical price for symbol {Symbol} on date {Date}.", stockSymbol, date);
 
-                // If the date is today, try to get real-time price first
-                if (date.Date == DateTime.UtcNow.Date)
+                // If the date is today or yesterday, try to get latest closing price
+                if (date.Date >= DateTime.UtcNow.Date.AddDays(-1))
                 {
-                    var realTimePrices = await _stockService.GetRealTimePricesAsync(new List<string> { stockSymbol });
-                    if (realTimePrices.TryGetValue(stockSymbol, out decimal realTimePrice) && realTimePrice > 0)
+                    var dailyPrices = await _stockService.GetRealTimePricesAsync(new List<string> { stockSymbol });
+                    if (dailyPrices.TryGetValue(stockSymbol, out decimal dailyPrice) && dailyPrice > 0)
                     {
-                        return Json(new { success = true, price = realTimePrice });
+                        return Json(new { success = true, price = dailyPrice });
                     }
                 }
 
-                var data = await _stockService.GetRealTimeDataAsync(new List<string> { stockSymbol }, 1825);
+                var data = await _stockService.GetRealTimeDataAsync(new List<string> { stockSymbol }, 120); // Reduced from 1825 to 120 days
                 if (data.TryGetValue(stockSymbol, out var dataPoints) && dataPoints.Any())
                 {
-                    // Handle date mismatch due to timezone
                     var price = dataPoints.FirstOrDefault(dp => dp.Date.Date == date.Date)?.Close ?? 0;
 
                     if (price > 0)
