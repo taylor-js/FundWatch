@@ -1,6 +1,6 @@
 # FundWatch
 
-[FundWatch](https://fundwatch-c05997aeb186.herokuapp.com/) is a comprehensive stock tracking and simulation app designed to help investors and traders make informed decisions. Built using .NET Core, this application provides powerful tools to track your investments, analyze potential returns, and simulate various stock purchase scenarios.
+[FundWatch](https://www.fund-watch.net/) is a comprehensive stock tracking and simulation app designed to help investors and traders make informed decisions. Built using .NET Core, this application provides powerful tools to track your investments, analyze potential returns, and simulate various stock purchase scenarios.
 
 ## Features
 
