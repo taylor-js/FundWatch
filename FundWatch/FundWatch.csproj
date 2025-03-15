@@ -8,6 +8,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Data\Migrations\**" />
+    <Compile Remove="Migrations\**" />
+    <Content Remove="Data\Migrations\**" />
+    <Content Remove="Migrations\**" />
+    <EmbeddedResource Remove="Data\Migrations\**" />
+    <EmbeddedResource Remove="Migrations\**" />
+    <None Remove="Data\Migrations\**" />
+    <None Remove="Migrations\**" />
+    <TypeScriptCompile Remove="Data\Migrations\**" />
+    <TypeScriptCompile Remove="Migrations\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Areas\Identity\Data\ApplicationUser.cs" />
   </ItemGroup>
 
@@ -42,12 +55,6 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
     <PackageReference Include="Syncfusion.Blazor" Version="26.2.10" />
     <PackageReference Include="Syncfusion.EJ2.AspNet.Core" Version="26.2.10" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Data\Migrations\ApplicationDb\" />
-    <Folder Include="Data\Migrations\AuthDb\" />
-    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

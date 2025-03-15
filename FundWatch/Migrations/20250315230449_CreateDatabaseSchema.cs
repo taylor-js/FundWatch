@@ -3,14 +3,85 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FundWatch.Data.Migrations.AuthDb
+namespace FundWatch.Migrations
 {
     /// <inheritdoc />
-    public partial class IdentityMigration : Migration
+    public partial class CreateDatabaseSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "AppStockSimulations",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StockSymbol = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    SimulatedPurchaseDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SimulatedPurchasePrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    SimulatedNumberOfShares = table.Column<int>(type: "int", nullable: false),
+                    SimulatedCurrentPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppStockSimulations", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AppStockTransactions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StockSymbol = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    TransactionType = table.Column<string>(type: "nvarchar(4)", maxLength: 4, nullable: false),
+                    TransactionDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    PricePerShare = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    NumberOfShares = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppStockTransactions", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AppUserStocks",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StockSymbol = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    PurchasePrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DatePurchased = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    NumberOfSharesPurchased = table.Column<int>(type: "int", nullable: false),
+                    CurrentPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DateSold = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    NumberOfSharesSold = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppUserStocks", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AppWatchlists",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StockSymbol = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    AddedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppWatchlists", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -199,6 +270,18 @@ namespace FundWatch.Data.Migrations.AuthDb
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AppStockSimulations");
+
+            migrationBuilder.DropTable(
+                name: "AppStockTransactions");
+
+            migrationBuilder.DropTable(
+                name: "AppUserStocks");
+
+            migrationBuilder.DropTable(
+                name: "AppWatchlists");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 

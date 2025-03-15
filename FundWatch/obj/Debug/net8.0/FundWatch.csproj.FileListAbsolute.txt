@@ -613,7 +613,6 @@ C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\staticwebas
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.FundWatch.props
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.FundWatch.props
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\staticwebassets.pack.json
-C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\FundWatch.csproj.Up2Date
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\FundWatch.dll
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\refint\FundWatch.dll
