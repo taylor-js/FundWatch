@@ -22,9 +22,9 @@ app.Run();
 void ConfigureServices(IServiceCollection services, IConfiguration configuration)
 {
     // Database Configuration
-    var connectionString = configuration.GetConnectionString("HerokuPostgres");
-    services.AddDbContext<AuthDbContext>(options => options.UseNpgsql(connectionString));
-    services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+    services.AddDbContext<AuthDbContext>(options => options.UseSqlServer(connectionString));
+    services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
     // Identity Configuration
     services.AddDefaultIdentity<IdentityUser>(options =>

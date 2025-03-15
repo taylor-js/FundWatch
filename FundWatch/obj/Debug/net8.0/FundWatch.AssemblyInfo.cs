@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FundWatch")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+80715059d25d806979651d0a98809b35e666608d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f9e9df19843ee912ebac7842b5ae6859cff6e3f2")]
 [assembly: System.Reflection.AssemblyProductAttribute("FundWatch")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FundWatch")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

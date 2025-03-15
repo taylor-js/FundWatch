@@ -22,7 +22,7 @@
                 .PageSettings(page => page.PageSize(5))
                 .Columns(col =>
                 {
-                    col.Field("StockSymbol").HeaderText("Symbol").TextAlign(TextAlign.Left).Width(100).Add();
+                    col.Field("StockSymbol").HeaderText("Symbol").TextAlign(TextAlign.Center).Width(100).Add();
                     col.Field("CurrentPrice").HeaderText("Current Price").TextAlign(TextAlign.Right).Width(120)
                     .Format("C2").Add();
                     col.Field("NumberOfSharesPurchased").HeaderText("Shares").TextAlign(TextAlign.Right).Width(100).Add();

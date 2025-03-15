@@ -90,7 +90,7 @@ namespace FundWatch.Services
             }
         }
 
-        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int daysBack = 90)
+        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int daysBack = 90) // Change after Polygon.io plan upgrade
         {
             var result = new Dictionary<string, List<StockDataPoint>>();
             var today = DateTime.UtcNow.Date;

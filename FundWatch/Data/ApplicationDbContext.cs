@@ -31,7 +31,6 @@ namespace FundWatch.Models
             {
                 // Configure primary key with identity column
                 entity.Property(e => e.Id)
-                      .UseIdentityAlwaysColumn() // PostgreSQL specific configuration
                       .ValueGeneratedOnAdd();
 
                 // Configure the relationship with IdentityUser
@@ -52,7 +51,6 @@ namespace FundWatch.Models
             {
                 // Configure primary key with identity column
                 entity.Property(e => e.Id)
-                      .UseIdentityAlwaysColumn() // PostgreSQL specific configuration
                       .ValueGeneratedOnAdd();
 
                 // Configure the relationship with IdentityUser
@@ -73,7 +71,6 @@ namespace FundWatch.Models
             {
                 // Configure primary key with identity column
                 entity.Property(e => e.Id)
-                      .UseIdentityAlwaysColumn() // PostgreSQL specific configuration
                       .ValueGeneratedOnAdd();
 
                 // Configure the relationship with IdentityUser
@@ -91,7 +88,6 @@ namespace FundWatch.Models
             {
                 // Configure primary key with identity column
                 entity.Property(e => e.Id)
-                      .UseIdentityAlwaysColumn() // PostgreSQL specific configuration
                       .ValueGeneratedOnAdd();
 
                 // Configure the relationship with IdentityUser

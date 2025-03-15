@@ -2,7 +2,7 @@
   "Files": [
     {
       "Id": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\FundWatch.bundle.scp.css",
-      "PackagePath": "staticwebassets\\FundWatch.bundle.scp.css"
+      "PackagePath": "staticwebassets\\FundWatch.ey1x5lxbcr.bundle.scp.css"
     },
     {
       "Id": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\css\\site.css",
@@ -243,6 +243,10 @@
     {
       "Id": "C:\\Users\\taylo\\Documents\\GitHub\\FundWatch\\FundWatch\\wwwroot\\lib\\jquery\\dist\\jquery.min.map",
       "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.min.map"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.FundWatch.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
     },
     {
       "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.FundWatch.Microsoft.AspNetCore.StaticWebAssets.props",

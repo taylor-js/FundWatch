@@ -56,6 +56,5 @@ namespace FundWatch.Models
                 return costBasis > 0 ? ((TotalValue - costBasis) / costBasis) : 0;
             }
         }
-
     }
 }
