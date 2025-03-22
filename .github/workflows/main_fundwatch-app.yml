@@ -65,4 +65,3 @@ jobs:
           app-name: 'fundwatch-app'
           slot-name: 'Production'
           package: .
-          
