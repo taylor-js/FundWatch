@@ -148,6 +148,8 @@ namespace FundWatch.Services
                         ["limit"] = "120"
                     };
                     var url = $"/v2/aggs/ticker/{WebUtility.UrlEncode(symbol)}/range/1/day/{startDate:yyyy-MM-dd}/{endDate:yyyy-MM-dd}";
+
+                    // Ensure await is used
                     var response = await SendApiRequestAsync(url, queryParams);
 
                     if (response != null && response["results"] is JArray results)

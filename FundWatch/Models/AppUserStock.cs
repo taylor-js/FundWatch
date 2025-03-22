@@ -28,32 +28,45 @@ namespace FundWatch.Models
         public decimal PurchasePrice { get; set; }
 
         [Required]
-        public DateTime? DatePurchased { get; set; }
+        public DateTime DatePurchased { get; set; }
 
         [Required]
-        public int NumberOfSharesPurchased { get; set; } = 1;
+        public int NumberOfSharesPurchased { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal CurrentPrice { get; set; }
 
         public DateTime? DateSold { get; set; }
 
-        public int? NumberOfSharesSold { get; set; } = 0;
+        public int? NumberOfSharesSold { get; set; }
 
         [NotMapped]
-        public decimal ValueChange => (CurrentPrice - PurchasePrice) * NumberOfSharesPurchased;
+        public decimal ValueChange
+        {
+            get
+            {
+                var sharesOwned = NumberOfSharesPurchased - (NumberOfSharesSold ?? 0);
+                return (CurrentPrice - PurchasePrice) * sharesOwned;
+            }
+        }
 
         [NotMapped]
-        public decimal TotalValue => (NumberOfSharesPurchased - (NumberOfSharesSold ?? 0)) * CurrentPrice;
+        public decimal TotalValue
+        {
+            get
+            {
+                var sharesOwned = NumberOfSharesPurchased - (NumberOfSharesSold ?? 0);
+                return CurrentPrice * sharesOwned;
+            }
+        }
 
         [NotMapped]
         public decimal PerformancePercentage
         {
             get
             {
-                var shares = NumberOfSharesPurchased - (NumberOfSharesSold ?? 0);
-                var costBasis = shares * PurchasePrice;
-                return costBasis > 0 ? ((TotalValue - costBasis) / costBasis) : 0;
+                var costBasis = PurchasePrice * (NumberOfSharesPurchased - (NumberOfSharesSold ?? 0));
+                return costBasis != 0 ? ((TotalValue - costBasis) / costBasis) * 100 : 0;
             }
         }
     }

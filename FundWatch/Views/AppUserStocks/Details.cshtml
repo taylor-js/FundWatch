@@ -41,7 +41,7 @@
                             <h6 class="text-muted">Investment Details</h6>
                             <dl class="row">
                                 <dt class="col-sm-4">Purchase Date</dt>
-                                <dd class="col-sm-8">@Model.Stock.DatePurchased?.ToString("MMM dd, yyyy")</dd>
+                                <dd class="col-sm-8">@Model.Stock.DatePurchased.ToString("MMM dd, yyyy")</dd>
                                 <dt class="col-sm-4">Purchase Price</dt>
                                 <dd class="col-sm-8">@Model.Stock.PurchasePrice.ToString("C2", culture)</dd>
                                 <dt class="col-sm-4">Shares Owned</dt>

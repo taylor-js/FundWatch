@@ -619,3 +619,4 @@ C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\refint\Fund
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\FundWatch.pdb
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\FundWatch.genruntimeconfig.cache
 C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\ref\FundWatch.dll
+C:\Users\taylo\Documents\GitHub\FundWatch\FundWatch\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

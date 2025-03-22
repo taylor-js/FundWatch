@@ -1,3 +1,5 @@
+// File: FundWatch/Program.cs
+
 using FundWatch.Data;
 using FundWatch.Models;
 using FundWatch.Services;
@@ -23,6 +25,10 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
 {
     // Database Configuration
     var connectionString = configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        throw new InvalidOperationException("Database connection string is not configured.");
+    }
     services.AddDbContext<AuthDbContext>(options => options.UseSqlServer(connectionString));
     services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
@@ -40,12 +46,18 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     services.AddRazorPages();
 
     // HTTP and API Services
-    services.AddHttpClient();
+    var polygonApiKey = configuration["PolygonApi:ApiKey"];
+    if (string.IsNullOrEmpty(polygonApiKey))
+    {
+        throw new InvalidOperationException("Polygon API key is not configured.");
+    }
     services.AddHttpClient("PolygonApi", client =>
     {
         client.BaseAddress = new Uri(configuration["PolygonApi:BaseUrl"]);
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {polygonApiKey}");
     });
+
 
     // Core Services
     services.AddMemoryCache(options =>
@@ -55,6 +67,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     services.AddLogging();
     services.AddScoped<StockService>();
     services.AddHostedService<StockDataBackgroundService>();
+
     // Email Service (Mock for development)
     services.AddSingleton<IEmailSender, MockEmailSender>();
 
@@ -79,11 +92,13 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
         options.Cookie.SameSite = SameSiteMode.Lax; // Change to 'Lax' if 'Strict' causes issues
     });
 
-
     // Syncfusion Configuration
-    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(
-        "Mgo+DSMBMAY9C3t2U1hhQlJBfV5AQmBIYVp/TGpJfl96cVxMZVVBJAtUQF1hTX5bdERiWXtfc3BdT2FU"
-    );
+    var syncfusionLicenseKey = configuration["Syncfusion:LicenseKey"];
+    if (string.IsNullOrEmpty(syncfusionLicenseKey))
+    {
+        throw new InvalidOperationException("Syncfusion license key is not configured.");
+    }
+    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicenseKey);
     services.AddSyncfusionBlazor();
 }
 

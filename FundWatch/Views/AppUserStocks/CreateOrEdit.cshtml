@@ -62,7 +62,7 @@
                             .Format("MM/dd/yyyy")
                             .FloatLabelType(FloatLabelType.Always)
                             .Placeholder("Purchase Date")
-                            .Value(Model.DatePurchased ?? DateTime.Now)
+                            .Value(Model.DatePurchased)
                             .Render())
                         <span asp-validation-for="DatePurchased" class="text-danger"></span>
                     </div>

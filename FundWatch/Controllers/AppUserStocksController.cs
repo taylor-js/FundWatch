@@ -84,7 +84,7 @@ namespace FundWatch.Controllers
             var viewModel = new PortfolioDashboardViewModel
             {
                 UserStocks = userStocks,
-                PortfolioMetrics = CalculatePortfolioMetrics(userStocks, cachedPrices, cachedDetails),
+                PortfolioMetrics = await CalculatePortfolioMetrics(userStocks, cachedPrices, cachedDetails),
                 SectorDistribution = CalculateSectorDistribution(userStocks, cachedDetails),
                 PerformanceData = CalculatePerformanceData(userStocks, historicalData),
                 HistoricalData = historicalData, // Populate HistoricalData here
@@ -107,32 +107,34 @@ namespace FundWatch.Controllers
 
         private async Task<Dictionary<string, decimal>> GetCachedPrices(List<string> symbols)
         {
-            var result = new Dictionary<string, decimal>();
-            var uncachedSymbols = new List<string>();
+            var cachedPrices = new Dictionary<string, decimal>();
+            var symbolsToFetch = new List<string>();
 
             foreach (var symbol in symbols)
             {
-                // Change cache key to match the StockService
-                if (_cache.TryGetValue($"DailyClosingPrice_{symbol}", out decimal price))
+                var cacheKey = $"RealTimePrice_{symbol}";
+                if (_cache.TryGetValue(cacheKey, out decimal price))
                 {
-                    result[symbol] = price;
+                    cachedPrices[symbol] = price;
                 }
                 else
                 {
-                    uncachedSymbols.Add(symbol);
+                    symbolsToFetch.Add(symbol);
                 }
             }
 
-            if (uncachedSymbols.Any())
+            if (symbolsToFetch.Any())
             {
-                var prices = await _stockService.GetRealTimePricesAsync(uncachedSymbols);
-                foreach (var (symbol, price) in prices)
+                var freshPrices = await _stockService.GetRealTimePricesAsync(symbolsToFetch);
+                foreach (var kvp in freshPrices)
                 {
-                    result[symbol] = price;
+                    var cacheKey = $"RealTimePrice_{kvp.Key}";
+                    _cache.Set(cacheKey, kvp.Value, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                    cachedPrices[kvp.Key] = kvp.Value;
                 }
             }
 
-            return result;
+            return cachedPrices;
         }
 
         private async Task<Dictionary<string, CompanyDetails>> GetCachedCompanyDetails(List<string> symbols)
@@ -154,9 +156,15 @@ namespace FundWatch.Controllers
 
             if (uncachedSymbols.Any())
             {
-                var details = await _stockService.GetCompanyDetailsAsync(uncachedSymbols);
-                foreach (var (symbol, detail) in details)
+                var fetchedDetails = await _stockService.GetCompanyDetailsAsync(uncachedSymbols);
+                foreach (var (symbol, detail) in fetchedDetails)
                 {
+                    // Cache the company details with appropriate expiration
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(24))
+                        .SetSlidingExpiration(TimeSpan.FromHours(1));
+                    _cache.Set($"Details_{symbol}", detail, cacheOptions);
+
                     result[symbol] = detail;
                 }
             }
@@ -203,7 +211,7 @@ namespace FundWatch.Controllers
                 .ToListAsync();
 
             var symbols = stocks.Select(s => s.StockSymbol).ToList();
-            var companyDetails = await _stockService.GetCompanyDetailsAsync(symbols);
+            var companyDetails = await GetCachedCompanyDetails(symbols);
 
             return View(new StockListViewModel
             {
@@ -328,32 +336,31 @@ namespace FundWatch.Controllers
 
             if (appUserStock.DateSold.HasValue)
             {
-                if (!appUserStock.DatePurchased.HasValue ||
-                    appUserStock.DateSold.Value < appUserStock.DatePurchased.Value)
+                if (appUserStock.DateSold.HasValue &&
+                    appUserStock.DateSold.Value < appUserStock.DatePurchased)
                 {
                     ModelState.AddModelError("DateSold", "Sale date cannot be before purchase date");
                     return View(appUserStock);
                 }
 
+
                 if (appUserStock.NumberOfSharesSold.HasValue &&
                     appUserStock.NumberOfSharesSold.Value > appUserStock.NumberOfSharesPurchased)
                 {
-                    ModelState.AddModelError("NumberOfSharesSold",
-                        "Cannot sell more shares than purchased");
+                    ModelState.AddModelError("NumberOfSharesSold", "Cannot sell more shares than purchased");
                     return View(appUserStock);
                 }
             }
 
+
             try
             {
                 // Normalize dates to UTC
-                appUserStock.DatePurchased = appUserStock.DatePurchased.HasValue
-                    ? DateTime.SpecifyKind(appUserStock.DatePurchased.Value.Date, DateTimeKind.Utc)
-                    : null;
-
+                appUserStock.DatePurchased = DateTime.SpecifyKind(appUserStock.DatePurchased.Date, DateTimeKind.Utc);
                 appUserStock.DateSold = appUserStock.DateSold.HasValue
                     ? DateTime.SpecifyKind(appUserStock.DateSold.Value.Date, DateTimeKind.Utc)
-                    : null;
+                    : (DateTime?)null;
+
 
                 appUserStock.StockSymbol = appUserStock.StockSymbol.Trim().ToUpper();
 
@@ -558,10 +565,10 @@ namespace FundWatch.Controllers
             }
         }
 
-        private PortfolioMetrics CalculatePortfolioMetrics(
-        List<AppUserStock> userStocks,
-        Dictionary<string, decimal> realTimePrices,
-        Dictionary<string, CompanyDetails> companyDetails)
+        private async Task<PortfolioMetrics> CalculatePortfolioMetrics(
+    List<AppUserStock> userStocks,
+    Dictionary<string, decimal> realTimePrices,
+    Dictionary<string, CompanyDetails> companyDetails)
         {
             var metrics = new PortfolioMetrics();
 
@@ -569,8 +576,7 @@ namespace FundWatch.Controllers
             {
                 var activeStocks = userStocks.Where(s =>
                     !string.IsNullOrWhiteSpace(s.StockSymbol) &&
-                    (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0 &&
-                    s.CurrentPrice > 0).ToList();
+                    (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0).ToList();
 
                 if (!activeStocks.Any())
                 {
@@ -579,6 +585,7 @@ namespace FundWatch.Controllers
 
                 decimal totalValue = 0;
                 decimal totalCost = 0;
+                decimal totalGain = 0;
                 decimal bestReturn = decimal.MinValue;
                 decimal worstReturn = decimal.MaxValue;
                 string bestStock = null;
@@ -587,6 +594,8 @@ namespace FundWatch.Controllers
                 foreach (var stock in activeStocks)
                 {
                     var activeShares = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+
+                    // Get current price, defaulting to stored current price if real-time price is unavailable
                     var currentPrice = realTimePrices.TryGetValue(stock.StockSymbol, out decimal price) && price > 0
                         ? price
                         : stock.CurrentPrice;
@@ -603,8 +612,10 @@ namespace FundWatch.Controllers
 
                     totalValue += currentValue;
                     totalCost += costBasis;
+                    totalGain += currentValue - costBasis;
 
-                    if (costBasis > 0)
+                    // Avoid division by zero by checking if costBasis is not zero
+                    if (costBasis != 0)
                     {
                         var returnPercent = ((currentValue - costBasis) / costBasis) * 100;
 
@@ -620,12 +631,17 @@ namespace FundWatch.Controllers
                             worstStock = stock.StockSymbol;
                         }
                     }
+                    else
+                    {
+                        _logger.LogWarning("Cost basis is zero for stock {Symbol}. Skipping performance calculation.", stock.StockSymbol);
+                    }
                 }
 
+                // Avoid division by zero when calculating total portfolio performance
                 metrics.TotalValue = totalValue;
                 metrics.TotalCost = totalCost;
-                metrics.TotalGain = totalValue - totalCost;
-                metrics.TotalPerformance = totalCost > 0 ? (metrics.TotalGain / totalCost) * 100 : 0;
+                metrics.TotalGain = totalGain;
+                metrics.TotalPerformance = totalCost != 0 ? (totalGain / totalCost) * 100 : 0;
                 metrics.TotalStocks = activeStocks.Count;
 
                 if (bestStock != null)
@@ -639,10 +655,9 @@ namespace FundWatch.Controllers
                 var sectors = companyDetails.Values
                     .Where(d => !string.IsNullOrEmpty(d.Industry))
                     .Select(d => d.Industry)
-                    .Distinct()
-                    .ToList();
+                    .Distinct();
 
-                metrics.UniqueSectors = sectors.Count;
+                metrics.UniqueSectors = sectors.Count();
             }
             catch (Exception ex)
             {
@@ -768,19 +783,29 @@ namespace FundWatch.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
-                var stocks = await _context.UserStocks
-                    .Where(u => u.UserId == userId &&
-                               (u.NumberOfSharesPurchased - (u.NumberOfSharesSold ?? 0)) > 0)
-                    .ToListAsync();
+                var cacheKey = $"HistoricalPerformance_{userId}";
 
-                if (!stocks.Any())
-                    return Json(new { performanceData = new Dictionary<string, List<PerformancePoint>>() });
+                if (!_cache.TryGetValue(cacheKey, out Dictionary<string, List<PerformancePoint>> performanceData))
+                {
+                    var stocks = await _context.UserStocks
+                        .Where(u => u.UserId == userId &&
+                                   (u.NumberOfSharesPurchased - (u.NumberOfSharesSold ?? 0)) > 0)
+                        .ToListAsync();
 
-                var symbols = stocks.Select(s => s.StockSymbol).Distinct().ToList();
-                var historicalData = await _stockService.GetRealTimeDataAsync(symbols, 90);
-                var performanceData = CalculatePerformanceData(stocks, historicalData);
+                    if (!stocks.Any())
+                        return Json(new { performanceData = new Dictionary<string, List<PerformancePoint>>() });
 
-                return Json(new { performanceData = performanceData });
+                    var symbols = stocks.Select(s => s.StockSymbol).Distinct().ToList();
+                    var historicalData = await _stockService.GetRealTimeDataAsync(symbols, 90);
+                    performanceData = CalculatePerformanceData(stocks, historicalData);
+
+                    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+
+                    _cache.Set(cacheKey, performanceData, cacheEntryOptions);
+                }
+
+                return Json(new { performanceData });
             }
             catch (Exception ex)
             {
@@ -794,33 +819,41 @@ namespace FundWatch.Controllers
             try
             {
                 _logger.LogInformation("Fetching historical price for symbol {Symbol} on date {Date}.", stockSymbol, date);
+                var cacheKey = $"HistoricalPrice_{stockSymbol}_{date:yyyyMMdd}";
 
-                // If the date is today or yesterday, try to get latest closing price
-                if (date.Date >= DateTime.UtcNow.Date.AddDays(-1))
+                if (!_cache.TryGetValue(cacheKey, out decimal price))
                 {
-                    var dailyPrices = await _stockService.GetRealTimePricesAsync(new List<string> { stockSymbol });
-                    if (dailyPrices.TryGetValue(stockSymbol, out decimal dailyPrice) && dailyPrice > 0)
+                    if (date.Date >= DateTime.UtcNow.Date.AddDays(-1))
                     {
-                        return Json(new { success = true, price = dailyPrice });
-                    }
-                }
-
-                var data = await _stockService.GetRealTimeDataAsync(new List<string> { stockSymbol }, 120); // Reduced from 1825 to 120 days
-                if (data.TryGetValue(stockSymbol, out var dataPoints) && dataPoints.Any())
-                {
-                    var price = dataPoints.FirstOrDefault(dp => dp.Date.Date == date.Date)?.Close ?? 0;
-
-                    if (price > 0)
-                    {
-                        return Json(new { success = true, price });
+                        var dailyPrices = await GetCachedPrices(new List<string> { stockSymbol });
+                        if (dailyPrices.TryGetValue(stockSymbol, out price) && price > 0)
+                        {
+                            _cache.Set(cacheKey, price, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                            return Json(new { success = true, price });
+                        }
                     }
 
-                    _logger.LogWarning("No matching data found for symbol {Symbol} on date {Date}.", stockSymbol, date);
-                    return Json(new { success = false, message = "No data found for the given date." });
-                }
+                    var data = await _stockService.GetRealTimeDataAsync(new List<string> { stockSymbol }, 120);
+                    if (data.TryGetValue(stockSymbol, out var dataPoints) && dataPoints.Any())
+                    {
+                        price = dataPoints.FirstOrDefault(dp => dp.Date.Date == date.Date)?.Close ?? 0;
+                        if (price > 0)
+                        {
+                            _cache.Set(cacheKey, price, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                            return Json(new { success = true, price });
+                        }
 
-                _logger.LogWarning("No data points found for symbol {Symbol}.", stockSymbol);
-                return Json(new { success = false, message = "No data available." });
+                        _logger.LogWarning("No matching data found for symbol {Symbol} on date {Date}.", stockSymbol, date);
+                        return Json(new { success = false, message = "No data found for the given date." });
+                    }
+
+                    _logger.LogWarning("No data points found for symbol {Symbol}.", stockSymbol);
+                    return Json(new { success = false, message = "No data available." });
+                }
+                else
+                {
+                    return Json(new { success = true, price });
+                }
             }
             catch (Exception ex)
             {
