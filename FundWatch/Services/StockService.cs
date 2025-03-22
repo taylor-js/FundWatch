@@ -307,7 +307,9 @@ namespace FundWatch.Services
             {
                 return new Dictionary<string, CompanyDetails>();
             }
+
             var details = new Dictionary<string, CompanyDetails>();
+
             foreach (var symbol in symbols)
             {
                 try
@@ -318,26 +320,54 @@ namespace FundWatch.Services
                         details[symbol] = cachedDetails;
                         continue;
                     }
+
                     var url = $"/v3/reference/tickers/{symbol}";
+                    _logger.LogInformation("Fetching details for {Symbol} from {Url}", symbol, url);
+
                     var response = await SendApiRequestAsync(url);
-                    if (response == null) continue;
+                    if (response == null)
+                    {
+                        _logger.LogWarning("No response received for {Symbol}", symbol);
+                        continue;
+                    }
+
+                    // Debug log the raw JSON
+                    _logger.LogDebug("Raw JSON for {Symbol}: {Json}", symbol, response.ToString());
+
                     var result = response["results"];
                     if (result != null)
                     {
+                        // Create a new CompanyDetails with safe null handling
                         var companyDetails = new CompanyDetails
                         {
-                            Name = result["name"]?.ToString(),
-                            Description = result["description"]?.ToString(),
-                            Industry = result["sic_description"]?.ToString(),
-                            MarketCap = result["market_cap"]?.Value<decimal>() ?? 0,
-                            Website = result["homepage_url"]?.ToString(),
-                            Employees = result["total_employees"]?.Value<int>() ?? 0
+                            Name = SafeGetString(result, "name"),
+                            Description = SafeGetString(result, "description"),
+                            Industry = SafeGetString(result, "sic_description"),
+                            MarketCap = SafeGetDecimal(result, "market_cap"),
+                            Website = SafeGetString(result, "homepage_url"),
+                            Employees = SafeGetInt(result, "total_employees")
                         };
+
+                        _logger.LogInformation("Fetched company details for {Symbol}: {@CompanyDetails}",
+                            symbol, new
+                            {
+                                companyDetails.Name,
+                                HasDescription = !string.IsNullOrEmpty(companyDetails.Description),
+                                HasIndustry = !string.IsNullOrEmpty(companyDetails.Industry),
+                                HasMarketCap = companyDetails.MarketCap > 0,
+                                HasWebsite = !string.IsNullOrEmpty(companyDetails.Website),
+                                HasEmployees = companyDetails.Employees > 0
+                            });
+
                         details[symbol] = companyDetails;
 
                         var cacheOptions = new MemoryCacheEntryOptions()
                             .SetAbsoluteExpiration(TimeSpan.FromHours(24));
                         _cache.Set(cacheKey, companyDetails, cacheOptions);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No results found in response for {Symbol}", symbol);
                     }
                 }
                 catch (Exception ex)
@@ -345,8 +375,61 @@ namespace FundWatch.Services
                     _logger.LogError(ex, "Error fetching company details for {Symbol}", symbol);
                 }
             }
+
             return details;
         }
+
+        // Safe helper method to get string values
+        private string SafeGetString(JToken token, string propertyName)
+        {
+            try
+            {
+                if (token[propertyName] == null || token[propertyName].Type == JTokenType.Null)
+                    return string.Empty;
+
+                return token[propertyName].ToString();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error getting string value for {PropertyName}", propertyName);
+                return string.Empty;
+            }
+        }
+
+        // Safe helper method to get decimal values
+        private decimal SafeGetDecimal(JToken token, string propertyName)
+        {
+            try
+            {
+                if (token[propertyName] == null || token[propertyName].Type == JTokenType.Null)
+                    return 0;
+
+                return token[propertyName].Value<decimal>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error getting decimal value for {PropertyName}", propertyName);
+                return 0;
+            }
+        }
+
+        // Safe helper method to get integer values
+        private int SafeGetInt(JToken token, string propertyName)
+        {
+            try
+            {
+                if (token[propertyName] == null || token[propertyName].Type == JTokenType.Null)
+                    return 0;
+
+                return token[propertyName].Value<int>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error getting integer value for {PropertyName}", propertyName);
+                return 0;
+            }
+        }
+
 
         private async Task<JObject> SendApiRequestAsync(string endpoint, Dictionary<string, string> queryParams = null)
         {

@@ -224,27 +224,46 @@ namespace FundWatch.Controllers
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
+            {
+                _logger.LogWarning("Details action called with null id");
                 return NotFound();
+            }
 
             var userId = _userManager.GetUserId(User);
+            _logger.LogInformation("Fetching details for stock with id {StockId} for user {UserId}", id, userId);
+
             var stock = await _context.UserStocks
                 .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
 
             if (stock == null)
-                return NotFound();
-
-            var companyDetails = await _stockService.GetCompanyDetailsAsync(new List<string> { stock.StockSymbol });
-            var historicalData = await _stockService.GetRealTimeDataAsync(new List<string> { stock.StockSymbol }, 365);
-
-            var viewModel = new Models.ViewModels.StockDetailsViewModel
             {
-                Stock = stock,
-                CompanyDetails = companyDetails[stock.StockSymbol],
-                HistoricalData = historicalData[stock.StockSymbol]
-            };
+                _logger.LogWarning("Stock with id {StockId} not found for user {UserId}", id, userId);
+                return NotFound();
+            }
 
-            return View(viewModel);
+            try
+            {
+                var companyDetails = await _stockService.GetCompanyDetailsAsync(new List<string> { stock.StockSymbol });
+                var historicalData = await _stockService.GetRealTimeDataAsync(new List<string> { stock.StockSymbol }, 365);
+
+                var viewModel = new Models.ViewModels.StockDetailsViewModel
+                {
+                    Stock = stock,
+                    CompanyDetails = companyDetails[stock.StockSymbol],
+                    HistoricalData = historicalData[stock.StockSymbol]
+                };
+
+                _logger.LogInformation("Successfully fetched details for stock with id {StockId} for user {UserId}", id, userId);
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching details for stock with id {StockId} for user {UserId}", id, userId);
+                return StatusCode(500, "Internal server error");
+            }
         }
+
+
 
         [HttpGet]
         public async Task<IActionResult> CreateOrEdit(int id = 0)
