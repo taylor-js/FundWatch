@@ -93,13 +93,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     });
 
     // Syncfusion Configuration
-    var syncfusionLicenseKey = configuration["Syncfusion:LicenseKey"];
-    if (string.IsNullOrEmpty(syncfusionLicenseKey))
-    {
-        throw new InvalidOperationException("Syncfusion license key is not configured.");
-    }
-    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicenseKey);
-    services.AddSyncfusionBlazor();
+    var directLicenseKey = "Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcc3VURWVdWE11WUA=";
+    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(directLicenseKey);
 }
 
 void ConfigureApp(WebApplication app)

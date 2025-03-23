@@ -54,7 +54,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.4" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
     <PackageReference Include="Syncfusion.Blazor" Version="26.2.10" />
-    <PackageReference Include="Syncfusion.EJ2.AspNet.Core" Version="26.2.10" />
+    <PackageReference Include="Syncfusion.EJ2.AspNet.Core" Version="28.2.12" />
   </ItemGroup>
 
 </Project>
