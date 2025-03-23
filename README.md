@@ -1,42 +1,80 @@
 # FundWatch
 
-[FundWatch](https://www.fund-watch.net/) is a comprehensive stock tracking and simulation app designed to help investors and traders make informed decisions. Built using .NET Core, this application provides powerful tools to track your investments, analyze potential returns, and simulate various stock purchase scenarios.
+[FundWatch](https://www.fund-watch.net/) is a comprehensive stock tracking and portfolio management application that helps users monitor investments and simulate trading strategies.
 
 ## Features
 
-- **Stock Tracking**: Monitor key details like stock symbols, purchase price, date purchased, number of shares, current price, date sold, and value changes.
-- **Portfolio Simulation**: Run simulations to see how different purchase dates and strategies could impact your portfolio's performance.
-- **Paper Portfolio**: Create and manage a paper portfolio to test strategies without risking real money.
-- **Historical Analysis**: Analyze how much you would have made if you bought a stock on a specific date and sold it on another.
-- **User-Friendly Interface**: Intuitive design for easy navigation and detailed insights into your investments.
+- **Stock Portfolio Tracking**: Monitor your investments with detailed metrics including purchase price, current value, and performance statistics
+- **Stock Data Integration**: Leverages Polygon.io API to fetch real-time and historical stock data
+- **Performance Analytics**: Visual charts and metrics showing portfolio performance over time
+- **Transaction History**: Track purchases and sales with comprehensive history views
+- **Watchlist Management**: Keep track of potential investment opportunities
+- **Simulation Tools**: Test different investment strategies with historical data
+
+## Technology Stack
+
+- **Backend**: ASP.NET Core MVC (.NET 8)
+- **Database**: Microsoft SQL Server (migrated from PostgreSQL)
+- **Frontend**:
+  - HTML5, CSS3, JavaScript
+  - Syncfusion UI components
+  - Bootstrap for responsive design
+- **Authentication**: ASP.NET Core Identity
+- **External APIs**: Polygon.io Stock API
+- **Cloud Infrastructure**:
+  - Microsoft Azure App Service
+  - Azure SQL Database
+  - Cloudflare for DNS, SSL, and security
 
 ## Getting Started
 
 ### Prerequisites
 
-- .NET Core SDK 3.1 or higher
-- SQL Server or PostgreSQL (for data storage)
-- Git (for version control)
+- .NET SDK 8.0 or later
+- SQL Server (local or cloud instance)
+- Visual Studio 2022 or Visual Studio Code
+- Polygon.io API key
 
-### Installation
+### Local Development Setup
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/FundWatch.git
+   ```sh
+   git clone https://github.com/taylor-js/FundWatch.git
    cd FundWatch
    ```
-2. Set up the database:
-   - Update the connection string in appsettings.json to point to your SQL Server or PostgreSQL instance.
-   - Run the initial migrations to set up the database schema:
-   ```bash
-   dotnet ef database update
+
+2. Set up user secrets for connection strings and API keys:
+   ```sh
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=FundWatch;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;"
+   dotnet user-secrets set "PolygonApi:ApiKey" "YOUR_POLYGON_API_KEY"
+   dotnet user-secrets set "Syncfusion:LicenseKey" "YOUR_SYNCFUSION_LICENSE_KEY"
    ```
-3. Run the application:
-   ```bash
+
+3. Apply database migrations:
+   ```sh
+   dotnet ef database update --context ApplicationDbContext
+   dotnet ef database update --context AuthDbContext
+   ```
+
+4. Run the application:
+   ```sh
    dotnet run
    ```
-4. Open your browser and navigate to http://localhost:5000 to start using FundWatch.
 
-# Contributing
+5. Open your browser and navigate to [http://localhost:5147](http://localhost:5147)
 
-Contributions are welcome! If you'd like to contribute, please fork the repository, create a new branch, and submit a pull request. Make sure to follow the coding standards and include detailed documentation for any new features.
+### Polygon.io API Integration
+
+FundWatch utilizes several Polygon.io API endpoints:
+
+- `/v2/aggs/ticker/{symbol}/range/{multiplier}/{timespan}/{from}/{to}` - For historical price data
+- `/v3/reference/tickers/{symbol}` - For company details
+- `/v2/snapshot/locale/us/markets/stocks/tickers/{symbol}` - For real-time quotes
+
+### Deployment
+
+The application is deployed on Microsoft Azure using GitHub Actions for CI/CD:
+
+- Every commit to the main branch triggers an automated build and deployment
+- Azure SQL Database is used for data storage
+- Cloudflare provides additional security and performance optimizations
