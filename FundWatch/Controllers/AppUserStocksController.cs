@@ -81,18 +81,25 @@ namespace FundWatch.Controllers
             var cachedPrices = await GetCachedPrices(symbols);
             var cachedDetails = await GetCachedCompanyDetails(symbols);
 
+            foreach (var stock in userStocks)
+            {
+                _logger.LogInformation("Stock: {StockSymbol}, CurrentPrice: {CurrentPrice}, PurchasePrice: {PurchasePrice}, PerformancePercentage: {PerformancePercentage}",
+                    stock.StockSymbol, stock.CurrentPrice, stock.PurchasePrice, stock.PerformancePercentage);
+            }
+
             var viewModel = new PortfolioDashboardViewModel
             {
                 UserStocks = userStocks,
                 PortfolioMetrics = await CalculatePortfolioMetrics(userStocks, cachedPrices, cachedDetails),
                 SectorDistribution = CalculateSectorDistribution(userStocks, cachedDetails),
                 PerformanceData = CalculatePerformanceData(userStocks, historicalData),
-                HistoricalData = historicalData, // Populate HistoricalData here
+                HistoricalData = historicalData,
                 CompanyDetails = cachedDetails
             };
 
             return viewModel;
         }
+
 
 
         private DateTime GetNextTradingDay()

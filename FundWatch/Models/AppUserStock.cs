@@ -65,8 +65,10 @@ namespace FundWatch.Models
         {
             get
             {
-                var costBasis = PurchasePrice * (NumberOfSharesPurchased - (NumberOfSharesSold ?? 0));
-                return costBasis != 0 ? ((TotalValue - costBasis) / costBasis) * 100 : 0;
+                var sharesOwned = NumberOfSharesPurchased - (NumberOfSharesSold ?? 0);
+                var costBasis = PurchasePrice * sharesOwned;
+                var totalValue = CurrentPrice * sharesOwned;
+                return costBasis != 0 ? ((totalValue - costBasis) / costBasis) : 0;
             }
         }
     }
