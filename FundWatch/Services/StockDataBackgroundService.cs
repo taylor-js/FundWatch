@@ -113,7 +113,7 @@ namespace FundWatch.Services
         {
             try
             {
-                var history = await stockService.GetRealTimeDataAsync(symbols, 90);
+                var history = await stockService.GetRealTimeDataAsync(symbols, 1825); // 5 years
                 foreach (var (symbol, data) in history)
                 {
                     var cacheOptions = new MemoryCacheEntryOptions()

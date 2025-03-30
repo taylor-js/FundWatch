@@ -96,7 +96,6 @@
                                     double hue = (i * goldenRatio * 360) % 360;
                                     return $"hsl({hue}, 70%, 50%)";
                                 };
-
                                 int index = 0;
                                 foreach (var stock in Model.PerformanceData.OrderBy(kvp => kvp.Key))  // Sort by symbol for consistent colors
                                 {
@@ -109,7 +108,6 @@
                                     .Opacity(1)
                                     .Fill(getColor(index, Model.PerformanceData.Count))
                                     .Add();
-
                                     index++;
                                 }
                             })
@@ -125,6 +123,8 @@
                             .Enable(true)
                             .Format("${series.name}: ${point.y}")
                             .Shared(true)
+                            .TextStyle(style => style.Color("#ffffff"))
+                            .Border(border => border.Width(0))
                             )
                             .Crosshair(ch => ch
                             .Enable(true)
@@ -132,7 +132,24 @@
                             .PrimaryYAxis(py => py
                             .LabelFormat("${value}")
                             )
+                            .PrimaryXAxis(px => px
+                            .ValueType(Syncfusion.EJ2.Charts.ValueType.DateTime)
+                            .Minimum(DateTime.Now.AddYears(-5))
+                            .Maximum(DateTime.Now)
+                            )
                             .EnablePeriodSelector(true)
+                            .Periods(p =>
+                            {
+                                p.Text("1M").Interval(1).IntervalType(RangeIntervalType.Months).Add();
+                                p.Text("3M").Interval(3).IntervalType(RangeIntervalType.Months).Add();
+                                p.Text("6M").Interval(6).IntervalType(RangeIntervalType.Months).Add();
+                                p.Text("1Y").Interval(1).IntervalType(RangeIntervalType.Years).Add();
+                                // Custom YTD calculation
+                                p.Text("YTD").Interval(DateTime.Now.DayOfYear).IntervalType(RangeIntervalType.Days).Add();
+                                p.Text("5Y").Interval(5).IntervalType(RangeIntervalType.Years).Selected(true).Add();
+                                // For "ALL", just use a very large interval that covers all your data
+                                p.Text("ALL").Interval(20).IntervalType(RangeIntervalType.Years).Add();
+                            })
                             .EnableSelector(true)
                             .Render()
                             )
@@ -279,9 +296,13 @@
         function initializeStockChart() {
             const stockChart = document.getElementById('stockChart');
             if (stockChart && stockChart.ej2_instances && stockChart.ej2_instances[0]) {
+                // Force the date range to be 5 years
+                stockChart.ej2_instances[0].primaryXAxis.minimum = new Date(new Date().setFullYear(new Date().getFullYear() - 5));
+                stockChart.ej2_instances[0].primaryXAxis.maximum = new Date();
                 stockChart.ej2_instances[0].refresh();
             }
         }
+
         function tooltipRender(args) {
             if (args.series.xName === 'Date') {
                 var value = new Date(args.point.x);
@@ -344,7 +365,10 @@
         }
 
         // Initialization
-        window.addEventListener('load', function () {
+        // Call this function when the page loads
+        window.addEventListener('load', function() {
+            initializeStockChart();
+            // Keep your existing event handlers
             colorPerformanceCells();
 
             const grid = document.getElementById('holdingsGrid')?.ej2_instances?.[0];

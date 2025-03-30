@@ -12,6 +12,7 @@ using System.Net;
 using System.Threading.RateLimiting;
 using Newtonsoft.Json;
 using Microsoft.CodeAnalysis.Elfie.Model;
+using System.Collections.Concurrent;
 
 namespace FundWatch.Services
 {
@@ -90,9 +91,9 @@ namespace FundWatch.Services
             }
         }
 
-        public async Task<Dictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int daysBack = 90) // Change after Polygon.io plan upgrade
+        public async Task<ConcurrentDictionary<string, List<StockDataPoint>>> GetRealTimeDataAsync(List<string> stockSymbols, int daysBack = 1825) // 5 years
         {
-            var result = new Dictionary<string, List<StockDataPoint>>();
+            var result = new ConcurrentDictionary<string, List<StockDataPoint>>();
             var today = DateTime.UtcNow.Date;
             var startDate = today.AddDays(-daysBack);
 
@@ -116,11 +117,36 @@ namespace FundWatch.Services
 
                     try
                     {
-                        var data = await FetchHistoricalDataAsync(symbol, startDate, today);
-                        if (data != null)
+                        // Break the time range into smaller chunks (1 year each) to handle API limitations
+                        var allData = new List<StockDataPoint>();
+                        var chunkSize = 365; // 1 year chunks
+
+                        for (var chunkStart = startDate; chunkStart < today; chunkStart = chunkStart.AddDays(chunkSize))
                         {
-                            result[symbol] = data;
-                            _cache.Set(cacheKey, data, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                            var chunkEnd = chunkStart.AddDays(chunkSize);
+                            if (chunkEnd > today)
+                                chunkEnd = today;
+
+                            _logger.LogInformation($"Fetching chunk for {symbol}: {chunkStart:yyyy-MM-dd} to {chunkEnd:yyyy-MM-dd}");
+
+                            var chunkData = await FetchHistoricalDataAsync(symbol, chunkStart, chunkEnd);
+                            if (chunkData != null && chunkData.Any())
+                            {
+                                allData.AddRange(chunkData);
+                            }
+
+                            // Add a small delay between chunks to avoid rate limiting
+                            await Task.Delay(500);
+                        }
+
+                        if (allData.Any())
+                        {
+                            // Ensure data is sorted by date (ascending)
+                            allData = allData.OrderBy(d => d.Date).ToList();
+                            result[symbol] = allData;
+                            _cache.Set(cacheKey, allData, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+
+                            _logger.LogInformation($"Collected total of {allData.Count} data points for {symbol}");
                         }
                     }
                     catch (Exception ex)
@@ -130,11 +156,12 @@ namespace FundWatch.Services
                 });
 
                 await Task.WhenAll(tasks);
-                await Task.Delay(1000); // Add delay between batches to prevent rate limits
             }
 
             return result;
         }
+
+
         private async Task<List<StockDataPoint>> FetchHistoricalDataAsync(string symbol, DateTime startDate, DateTime endDate)
         {
             for (int retry = 0; retry < MAX_RETRIES; retry++)
@@ -144,17 +171,21 @@ namespace FundWatch.Services
                     var queryParams = new Dictionary<string, string>
                     {
                         ["adjusted"] = "true",
-                        ["sort"] = "desc",
-                        ["limit"] = "120"
+                        ["sort"] = "asc",  // Changed from "desc" to "asc" to get oldest first
+                        ["limit"] = "5000" // API limit for maximum points
                     };
                     var url = $"/v2/aggs/ticker/{WebUtility.UrlEncode(symbol)}/range/1/day/{startDate:yyyy-MM-dd}/{endDate:yyyy-MM-dd}";
+
+                    _logger.LogInformation($"Fetching historical data for {symbol} from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
 
                     // Ensure await is used
                     var response = await SendApiRequestAsync(url, queryParams);
 
                     if (response != null && response["results"] is JArray results)
                     {
-                        return ProcessStockDataPoints(results);
+                        var dataPoints = ProcessStockDataPoints(results);
+                        _logger.LogInformation($"Received {dataPoints.Count} data points for {symbol}");
+                        return dataPoints;
                     }
                 }
                 catch (HttpRequestException ex) when (retry < MAX_RETRIES - 1)
@@ -165,7 +196,7 @@ namespace FundWatch.Services
             }
 
             _logger.LogError("Failed to fetch historical data for {Symbol} after {MaxRetries} retries", symbol, MAX_RETRIES);
-            return null;
+            return new List<StockDataPoint>(); // Return an empty list instead of null
         }
 
         public async Task<List<StockSymbolData>> GetAllStocksAsync(string searchTerm)
@@ -437,8 +468,6 @@ namespace FundWatch.Services
             {
                 try
                 {
-                    await _rateLimiter.WaitForAvailableSlotAsync(); // Wait for rate limiter
-
                     queryParams ??= new Dictionary<string, string>();
                     queryParams["apiKey"] = _apiKey;
 
@@ -446,13 +475,6 @@ namespace FundWatch.Services
                     var fullUrl = $"{endpoint}?{queryString}";
 
                     var response = await _httpClient.GetAsync(fullUrl);
-
-                    if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                    {
-                        _logger.LogWarning("Rate limit exceeded. Retry {Retry} after delay.", retry + 1);
-                        await Task.Delay(60000); // Wait 1 minute
-                        continue;
-                    }
 
                     response.EnsureSuccessStatusCode();
                     var content = await response.Content.ReadAsStringAsync();
@@ -467,9 +489,6 @@ namespace FundWatch.Services
             _logger.LogError("Failed to send API request to {Endpoint} after {MaxRetries} retries.", endpoint, MAX_RETRIES);
             return null;
         }
-
-
-
 
         private List<StockDataPoint> ProcessStockDataPoints(JArray results)
         {

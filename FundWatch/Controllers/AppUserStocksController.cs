@@ -77,7 +77,9 @@ namespace FundWatch.Controllers
                 .Distinct()
                 .ToList();
 
-            var historicalData = await _stockService.GetRealTimeDataAsync(symbols, 90);
+            var historicalDataConcurrent = await _stockService.GetRealTimeDataAsync(symbols, 1825); // 5 years
+            var historicalData = new Dictionary<string, List<StockDataPoint>>(historicalDataConcurrent); // Convert to Dictionary
+
             var cachedPrices = await GetCachedPrices(symbols);
             var cachedDetails = await GetCachedCompanyDetails(symbols);
 
@@ -99,7 +101,6 @@ namespace FundWatch.Controllers
 
             return viewModel;
         }
-
 
 
         private DateTime GetNextTradingDay()
@@ -198,7 +199,7 @@ namespace FundWatch.Controllers
 
             if (uncachedSymbols.Any())
             {
-                var history = await _stockService.GetRealTimeDataAsync(uncachedSymbols, 90);
+                var history = await _stockService.GetRealTimeDataAsync(uncachedSymbols, 1825);
                 foreach (var (symbol, data) in history)
                 {
                     result[symbol] = data;
@@ -251,7 +252,7 @@ namespace FundWatch.Controllers
             try
             {
                 var companyDetails = await _stockService.GetCompanyDetailsAsync(new List<string> { stock.StockSymbol });
-                var historicalData = await _stockService.GetRealTimeDataAsync(new List<string> { stock.StockSymbol }, 365);
+                var historicalData = await _stockService.GetRealTimeDataAsync(new List<string> { stock.StockSymbol }, 1825); // 5 years
 
                 var viewModel = new Models.ViewModels.StockDetailsViewModel
                 {
@@ -269,7 +270,6 @@ namespace FundWatch.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-
 
 
         [HttpGet]
@@ -822,7 +822,9 @@ namespace FundWatch.Controllers
                         return Json(new { performanceData = new Dictionary<string, List<PerformancePoint>>() });
 
                     var symbols = stocks.Select(s => s.StockSymbol).Distinct().ToList();
-                    var historicalData = await _stockService.GetRealTimeDataAsync(symbols, 90);
+                    var historicalDataConcurrent = await _stockService.GetRealTimeDataAsync(symbols, 1825);
+                    var historicalData = new Dictionary<string, List<StockDataPoint>>(historicalDataConcurrent); // Convert to Dictionary
+
                     performanceData = CalculatePerformanceData(stocks, historicalData);
 
                     var cacheEntryOptions = new MemoryCacheEntryOptions()
@@ -839,6 +841,7 @@ namespace FundWatch.Controllers
                 return StatusCode(500, "Error fetching performance data");
             }
         }
+
         [HttpGet]
         public async Task<IActionResult> GetHistoricalPrice(string stockSymbol, DateTime date)
         {
@@ -859,7 +862,9 @@ namespace FundWatch.Controllers
                         }
                     }
 
-                    var data = await _stockService.GetRealTimeDataAsync(new List<string> { stockSymbol }, 120);
+                    var dataConcurrent = await _stockService.GetRealTimeDataAsync(new List<string> { stockSymbol }, 1825);
+                    var data = new Dictionary<string, List<StockDataPoint>>(dataConcurrent); // Convert to Dictionary
+
                     if (data.TryGetValue(stockSymbol, out var dataPoints) && dataPoints.Any())
                     {
                         price = dataPoints.FirstOrDefault(dp => dp.Date.Date == date.Date)?.Close ?? 0;
@@ -887,5 +892,6 @@ namespace FundWatch.Controllers
                 return Json(new { success = false, message = "An error occurred while fetching price." });
             }
         }
+
     }
 }
