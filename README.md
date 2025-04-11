@@ -1,6 +1,6 @@
 # FundWatch
 
-[FundWatch](https://www.fund-watch.net/) is a comprehensive stock tracking and portfolio management application that helps users monitor investments and simulate trading strategies.
+[FundWatch](https://fundwatch-app-ekerhdeghghxcyg3.canadacentral-01.azurewebsites.net/) is a comprehensive stock tracking and portfolio management application that helps users monitor investments and simulate trading strategies.
 
 ## Features
 
