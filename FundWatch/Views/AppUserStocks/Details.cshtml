@@ -113,7 +113,7 @@
                     <h5 class="mb-0">Price History</h5>
                 </div>
                 <div class="card-body" style="height: 400px;">
-                    @(Html.EJS().Chart("priceHistoryChart")
+                    @(Html.EJS().StockChart("priceHistoryChart")
                         .PrimaryXAxis(px => px
                         .ValueType(Syncfusion.EJ2.Charts.ValueType.DateTime)
                         .LabelFormat("MM/dd/yyyy")
@@ -122,7 +122,7 @@
                         )
                         .PrimaryYAxis(py => py
                         .LabelFormat("${value}")
-                        .RangePadding(ChartRangePadding.None)
+                        .RangePadding(ChartRangePadding.Auto)
                         .LineStyle(ls => ls.Width(0))
                         .MajorTickLines(mt => mt.Width(0))
                         )
@@ -146,7 +146,27 @@
                         .Enable(true)
                         .LineType(LineType.Vertical)
                         )
-                        //.Title("Price History")
+                        .EnablePeriodSelector(true)
+                        .EnableSelector(false)
+                        .Periods(p =>
+                        {
+                            p.Text("1M").Interval(1).IntervalType(RangeIntervalType.Months).Add();
+                            p.Text("3M").Interval(3).IntervalType(RangeIntervalType.Months).Add();
+                            p.Text("6M").Interval(6).IntervalType(RangeIntervalType.Months).Add();
+                            p.Text("1Y").Interval(1).IntervalType(RangeIntervalType.Years).Add();
+                            // Custom YTD calculation
+                            p.Text("YTD").Interval(1).IntervalType(RangeIntervalType.Years).Add(); // Will be handled in JS
+                            p.Text("5Y").Interval(5).IntervalType(RangeIntervalType.Years).Selected(true).Add();
+                            p.Text("ALL").Interval(20).IntervalType(RangeIntervalType.Years).Add();
+                        })
+                        .ZoomSettings(z => z
+                            .EnableSelectionZooming(true)
+                            .EnableScrollbar(true)
+                            .EnablePan(true)
+                            .Mode(ZoomMode.X)
+                        )
+                        .ChartArea(ca => ca.Border(b => b.Width(0)))
+                        .Load("onDetailsChartLoad")
                         .Render()
                         )
                 </div>
@@ -199,6 +219,112 @@
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+        });
+        
+        // Global reference to chart
+        let detailsChart;
+        
+        // Store chart data and extremes
+        let candleData = [];
+        let allMinHigh = Number.MAX_VALUE;
+        let allMaxLow = Number.MIN_VALUE;
+        let allMinDate = null;
+        let allMaxDate = null;
+        
+        // Handle chart initialization
+        function onDetailsChartLoad(args) {
+            detailsChart = args.stockChart;
+            
+            // Get all candlestick data
+            if (detailsChart.series && detailsChart.series[0] && detailsChart.series[0].dataSource) {
+                candleData = detailsChart.series[0].dataSource;
+                
+                // Sort data by date to ensure proper limits
+                candleData.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+                
+                // Find global min/max dates
+                if (candleData.length > 0) {
+                    allMinDate = new Date(candleData[0].Date);
+                    allMaxDate = new Date(candleData[candleData.length - 1].Date);
+                }
+                
+                // Find global min/max price values
+                candleData.forEach(point => {
+                    if (point.High !== undefined && point.Low !== undefined) {
+                        allMinHigh = Math.min(allMinHigh, point.Low);
+                        allMaxLow = Math.max(allMaxLow, point.High);
+                    }
+                });
+            }
+            
+            // Handle YTD period specially
+            detailsChart.stockEvents.periodChanged = function(args) {
+                if (!args || !args.text) return;
+                
+                const now = new Date();
+                let minDate, maxDate;
+                
+                if (args.text === "1M") {
+                    minDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                } else if (args.text === "3M") {
+                    minDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+                } else if (args.text === "6M") {
+                    minDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+                } else if (args.text === "1Y") {
+                    minDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                } else if (args.text === "YTD") {
+                    minDate = new Date(now.getFullYear(), 0, 1); // January 1st of current year
+                } else if (args.text === "5Y") {
+                    minDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+                } else if (args.text === "ALL") {
+                    minDate = allMinDate;
+                }
+                
+                maxDate = now;
+                
+                // Apply the date range after Syncfusion's internal processing
+                setTimeout(() => {
+                    detailsChart.primaryXAxis.minimum = minDate;
+                    detailsChart.primaryXAxis.maximum = maxDate || now;
+                    
+                    // Calculate Y-axis range based on visible data
+                    updateYAxisRange(minDate, maxDate || now);
+                    
+                    detailsChart.refresh();
+                }, 100);
+            };
+        }
+        
+        // Update Y-axis range based on visible data points
+        function updateYAxisRange(startDate, endDate) {
+            if (!detailsChart || !candleData.length) return;
+            
+            let minY = Number.MAX_VALUE;
+            let maxY = Number.MIN_VALUE;
+            
+            // Find min/max values in the visible range
+            const visibleData = candleData.filter(point => {
+                const date = new Date(point.Date);
+                return date >= startDate && date <= endDate;
+            });
+            
+            if (visibleData.length > 0) {
+                visibleData.forEach(point => {
+                    if (point.High !== undefined && point.Low !== undefined) {
+                        minY = Math.min(minY, point.Low);
+                        maxY = Math.max(maxY, point.High);
+                    }
+                });
+                
+                // Apply padding to y-axis range (10% padding)
+                if (minY !== Number.MAX_VALUE && maxY !== Number.MIN_VALUE) {
+                    const range = maxY - minY;
+                    const padding = range * 0.1;
+                    
+                    detailsChart.primaryYAxis.minimum = Math.max(0, minY - padding);
+                    detailsChart.primaryYAxis.maximum = maxY + padding;
+                }
+            }
+        }
     </script>
 }
