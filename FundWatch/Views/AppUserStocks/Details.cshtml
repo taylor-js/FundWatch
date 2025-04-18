@@ -112,7 +112,7 @@
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">Price History</h5>
                 </div>
-                <div class="card-body" style="height: 400px;">
+                <div class="card-body" style="height: 450px; padding-bottom: 30px;">
                     @(Html.EJS().StockChart("priceHistoryChart")
                         .PrimaryXAxis(px => px
                         .ValueType(Syncfusion.EJ2.Charts.ValueType.DateTime)
@@ -166,6 +166,7 @@
                             .Mode(ZoomMode.X)
                         )
                         .ChartArea(ca => ca.Border(b => b.Width(0)))
+                        .Margin(m => m.Bottom(30)) // Add bottom margin for x-axis
                         .Load("onDetailsChartLoad")
                         .Render()
                         )
@@ -209,6 +210,12 @@
 
         .badge {
             font-size: 0.9rem;
+        }
+        
+        /* Ensure chart x-axis is visible */
+        #priceHistoryChart {
+            margin-bottom: 20px;
+            height: calc(100% - 20px) !important;
         }
     </style>
 }
