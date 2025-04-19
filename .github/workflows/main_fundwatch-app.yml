@@ -60,7 +60,7 @@ jobs:
 
       - name: Restart Azure Web App
         run: |
-          az webapp restart --name fundwatch-app --resource-group fundwatch-app_group
+          az webapp restart --name fundwatch-app --resource-group FundWatch
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
