@@ -350,8 +350,37 @@ namespace FundWatch.Controllers
 
             if (appUserStock.PurchasePrice <= 0)
             {
-                ModelState.AddModelError("PurchasePrice", "Purchase price must be greater than zero");
-                return View(appUserStock);
+                // Double-check price data on server-side to ensure we have valid data
+                try
+                {
+                    if (!string.IsNullOrEmpty(appUserStock.StockSymbol) && appUserStock.DatePurchased != default)
+                    {
+                        var purchaseDate = appUserStock.DatePurchased.ToString("yyyy-MM-dd");
+                        var priceData = await _stockService.GetHistoricalPriceAsync(appUserStock.StockSymbol, appUserStock.DatePurchased);
+                        if (priceData > 0)
+                        {
+                            appUserStock.PurchasePrice = priceData;
+                            _logger.LogInformation("Updated purchase price from API for {Symbol}: {Price}", 
+                                appUserStock.StockSymbol, priceData);
+                        }
+                        else
+                        {
+                            ModelState.AddModelError("PurchasePrice", "Purchase price must be greater than zero");
+                            return View(appUserStock);
+                        }
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("PurchasePrice", "Purchase price must be greater than zero");
+                        return View(appUserStock);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error fetching price data for {Symbol}", appUserStock.StockSymbol);
+                    ModelState.AddModelError("PurchasePrice", "Purchase price must be greater than zero");
+                    return View(appUserStock);
+                }
             }
 
             if (appUserStock.NumberOfSharesPurchased <= 0)
@@ -362,13 +391,11 @@ namespace FundWatch.Controllers
 
             if (appUserStock.DateSold.HasValue)
             {
-                if (appUserStock.DateSold.HasValue &&
-                    appUserStock.DateSold.Value < appUserStock.DatePurchased)
+                if (appUserStock.DateSold.Value < appUserStock.DatePurchased)
                 {
                     ModelState.AddModelError("DateSold", "Sale date cannot be before purchase date");
                     return View(appUserStock);
                 }
-
 
                 if (appUserStock.NumberOfSharesSold.HasValue &&
                     appUserStock.NumberOfSharesSold.Value > appUserStock.NumberOfSharesPurchased)

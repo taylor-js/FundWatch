@@ -18,6 +18,47 @@ namespace FundWatch.Services
 {
     public class StockService
     {
+        // Method to get historical price for a specific date (used by form)
+        public async Task<decimal> GetHistoricalPriceAsync(string symbol, DateTime date)
+        {
+            try
+            {
+                var data = await GetRealTimeDataAsync(new List<string> { symbol }, 1825);
+                
+                if (data.TryGetValue(symbol, out var dataPoints) && dataPoints.Any())
+                {
+                    var pricePoint = dataPoints.FirstOrDefault(dp => dp.Date.Date == date.Date);
+                    if (pricePoint != null && pricePoint.Close > 0)
+                    {
+                        return pricePoint.Close;
+                    }
+                    
+                    // If exact date not found, find closest preceding date
+                    var closestPoint = dataPoints
+                        .Where(dp => dp.Date.Date <= date.Date && dp.Close > 0)
+                        .OrderByDescending(dp => dp.Date)
+                        .FirstOrDefault();
+                        
+                    if (closestPoint != null)
+                    {
+                        return closestPoint.Close;
+                    }
+                }
+                
+                // Fallback to current price if historical not available
+                var prices = await GetRealTimePricesAsync(new List<string> { symbol });
+                if (prices.TryGetValue(symbol, out decimal price) && price > 0)
+                {
+                    return price;
+                }
+                
+                return 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
         private readonly HttpClient _httpClient;
         private readonly ILogger<StockService> _logger;
         private readonly IMemoryCache _cache;

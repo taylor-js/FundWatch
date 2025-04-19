@@ -140,7 +140,15 @@
             var dateSoldPicker = document.getElementById('DateSold').ej2_instances[0];
             var purchasePriceInput = document.getElementById('PurchasePrice').ej2_instances[0];
             var currentPriceInput = document.getElementById('CurrentPrice').ej2_instances[0];
-
+            var submitButton = document.getElementById('submitButton');
+            
+            // Track API requests in progress
+            var pendingRequests = 0;
+            var formSubmitted = false;
+            
+            // Disable submit button initially
+            submitButton.disabled = true;
+            
             // Configure the filtering
             dropdownList.filtering = function (e) {
                 e.preventDefaultAction = true;
@@ -149,7 +157,8 @@
                     dropdownList.dataSource = [];
                     return;
                 }
-
+                
+                incrementPendingRequests();
                 fetch('/AppUserStocks/SearchStocks?term=' + encodeURIComponent(e.text))
                     .then(response => response.json())
                     .then(data => {
@@ -162,28 +171,48 @@
                         } else {
                             dropdownList.dataSource = [];
                         }
+                        decrementPendingRequests();
                     })
                     .catch(error => {
                         console.error('Error fetching stocks:', error);
                         dropdownList.dataSource = [];
+                        decrementPendingRequests();
                     });
             };
 
             function updatePrices() {
                 const symbol = dropdownList.value;
                 if (!symbol) return;
+                
+                // Disable submit button while fetching data
+                submitButton.disabled = true;
+
+                // Track completion of both API requests
+                let purchasePriceLoaded = false;
+                let currentPriceLoaded = false;
 
                 // Update purchase price
                 if (datePurchasedPicker.value) {
                     const purchaseDate = moment(datePurchasedPicker.value).format('YYYY-MM-DD');
+                    incrementPendingRequests();
                     fetch(`/AppUserStocks/GetHistoricalPrice?stockSymbol=${encodeURIComponent(symbol)}&date=${purchaseDate}`)
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
                                 purchasePriceInput.value = data.price;
                             }
+                            purchasePriceLoaded = true;
+                            checkAllPricesLoaded();
+                            decrementPendingRequests();
                         })
-                        .catch(error => console.error('Error fetching purchase price:', error));
+                        .catch(error => {
+                            console.error('Error fetching purchase price:', error);
+                            purchasePriceLoaded = true;
+                            checkAllPricesLoaded();
+                            decrementPendingRequests();
+                        });
+                } else {
+                    purchasePriceLoaded = true;
                 }
 
                 // Update current/sale price based on sale date or current date
@@ -191,20 +220,38 @@
                     moment(dateSoldPicker.value).format('YYYY-MM-DD') :
                     moment().format('YYYY-MM-DD');
 
+                incrementPendingRequests();
                 fetch(`/AppUserStocks/GetHistoricalPrice?stockSymbol=${encodeURIComponent(symbol)}&date=${saleDate}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
                             currentPriceInput.value = data.price;
                         }
+                        currentPriceLoaded = true;
+                        checkAllPricesLoaded();
+                        decrementPendingRequests();
                     })
-                    .catch(error => console.error('Error fetching current/sale price:', error));
+                    .catch(error => {
+                        console.error('Error fetching current/sale price:', error);
+                        currentPriceLoaded = true;
+                        checkAllPricesLoaded();
+                        decrementPendingRequests();
+                    });
+                
+                function checkAllPricesLoaded() {
+                    if (purchasePriceLoaded && currentPriceLoaded) {
+                        // Re-enable submit button only when both prices are loaded
+                        submitButton.disabled = false;
+                    }
+                }
             }
 
             // Update prices when stock is selected
             dropdownList.change = function (e) {
                 if (e.value) {
                     updatePrices();
+                } else {
+                    submitButton.disabled = true;
                 }
             };
 
@@ -233,13 +280,48 @@
                 datePurchasedPicker.max = today;
                 dateSoldPicker.max = today;
             }
+            
+            // Track API requests to prevent premature form submission
+            function incrementPendingRequests() {
+                pendingRequests++;
+                submitButton.disabled = true;
+            }
+            
+            function decrementPendingRequests() {
+                pendingRequests--;
+                if (pendingRequests <= 0) {
+                    pendingRequests = 0;
+                    // Only enable if we have valid data
+                    if (dropdownList.value && purchasePriceInput.value > 0) {
+                        submitButton.disabled = false;
+                    }
+                    
+                    // If form was submitted while requests were pending, submit now
+                    if (formSubmitted) {
+                        document.querySelector('form').submit();
+                    }
+                }
+            }
+            
+            // Prevent form submission while API requests are in progress
+            document.querySelector('form').addEventListener('submit', function(e) {
+                if (pendingRequests > 0) {
+                    e.preventDefault();
+                    formSubmitted = true;
+                    return false;
+                }
+                return true;
+            });
 
             // Initial validation and price update
             validateDates();
+            
             // Add slight delay to ensure dropdown is fully initialized
             setTimeout(() => {
                 if (dropdownList.value) {
                     updatePrices();
+                } else {
+                    submitButton.disabled = true;
                 }
             }, 100);
         });
