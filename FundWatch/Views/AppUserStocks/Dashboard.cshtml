@@ -1,4 +1,4 @@
-﻿@model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
+@model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
 @using FundWatch.Models
 @using Syncfusion.EJ2
 @using Syncfusion.EJ2.Charts
@@ -9,6 +9,8 @@
 }
 
 <div class="container-fluid mt-4 mb-4">
+    <!-- Global loading indicator removed since we're using component-specific loading -->
+
     <!-- Portfolio Overview Cards -->
     <div class="row mb-4 gy-4">
         <div class="col-sm-6 col-md-3">
@@ -147,8 +149,6 @@
                                 .EnablePan(true)
                                 .Mode(ZoomMode.X)
                             )
-                            .SeriesRender("onSeriesRender")
-                            .Load("onChartLoad")
                             .Render()
                             )
                     }
@@ -203,7 +203,6 @@
                             .Add();
                         })
                         .EnableSmartLabels(true)
-                        .TooltipRender("sectorTooltipRender")
                         .Tooltip(tt => tt
                             .Enable(true)
                             .Format("${point.x}: $${point.y}")
@@ -271,7 +270,6 @@
                     @(Html.EJS().Chart("topHoldingsChart")
                         .Width("100%")
                         .Height("100%")
-                        .TooltipRender("holdingsChartTooltipRender")
                         .PrimaryXAxis(px => px
                             .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
                             .Title("Stock")
@@ -307,7 +305,6 @@
                         .Tooltip(tt => tt
                             .Enable(true)
                         )
-                        .ChartMouseClick("holdingsChartClick")
                         .Background("#333333")
                         .Margin(m => m.Left(10).Right(10).Top(10).Bottom(10))
                         .LegendSettings(lg => lg
@@ -437,53 +434,6 @@
                                     border: { width: 0 }
                                 }
                             });
-                            
-                            // Simple tooltip handler that uses a direct text approach
-                            riskChart.tooltip.render = function() {
-                                // We'll use the riskData directly instead of trying to extract from the event args
-                                var stockData = @Html.Raw(Json.Serialize(riskData));
-                                
-                                return function(args) {
-                                    if (!args.point) return;
-                                    
-                                    // Find the matching data point
-                                    var dataPoint = null;
-                                    for (var i = 0; i < stockData.length; i++) {
-                                        if (Math.abs(stockData[i].x - args.point.x) < 0.01 && 
-                                            Math.abs(stockData[i].y - args.point.y) < 0.01) {
-                                            dataPoint = stockData[i];
-                                            break;
-                                        }
-                                    }
-                                    
-                                    var symbol = dataPoint ? dataPoint.name : "Stock";
-                                    
-                                    args.text = '<b>' + symbol + '</b><br/>Performance: ' + args.point.x.toFixed(2) + '%<br/>Volatility Score: ' + 
-                                        args.point.y.toFixed(2) + '<br/>Position Size: $' + (args.point.size * 1000).toFixed(2);
-                                };
-                            }();
-                            
-                            // Also set a tooltipRender handler just to be sure
-                            riskChart.tooltipRender = function(args) {
-                                if (!args.point) return;
-                                
-                                // Use a more reliable lookup method based on coordinate matching
-                                var dataSource = riskChart.series[0].dataSource;
-                                var dataPoint = null;
-                                
-                                for (var i = 0; i < dataSource.length; i++) {
-                                    if (Math.abs(dataSource[i].x - args.point.x) < 0.01 && 
-                                        Math.abs(dataSource[i].y - args.point.y) < 0.01) {
-                                        dataPoint = dataSource[i];
-                                        break;
-                                    }
-                                }
-                                
-                                var symbol = dataPoint ? dataPoint.name : "Stock";
-                                
-                                args.text = '<b>' + symbol + '</b><br/>Performance: ' + args.point.x.toFixed(2) + '%<br/>Volatility Score: ' + 
-                                    args.point.y.toFixed(2) + '<br/>Position Size: $' + (args.point.size * 1000).toFixed(2);
-                            };
                             
                             // Render the chart
                             riskChart.appendTo('#riskAnalysisChart');
@@ -633,181 +583,7 @@
         // Global reference to chart
         let stockChart;
         
-        // For storing original data range values
-        let allDataMinValue = Number.MAX_VALUE;
-        let allDataMaxValue = Number.MIN_VALUE;
-        let allDataMinDate = null;
-        let allDataMaxDate = null;
-        let chartData = {};
-        
-        // Initialize all charts with correct scaling
-        function onChartLoad(args) {
-            stockChart = args.stockChart;
-            
-            // Store all data points to calculate global min/max values
-            aggregateAllData();
-            
-            // Handle YTD period specially
-            stockChart.stockEvents.periodChanged = function(args) {
-                if (args.text === "YTD") {
-                    // Calculate YTD range
-                    const now = new Date();
-                    const startOfYear = new Date(now.getFullYear(), 0, 1);
-                    
-                    // Apply YTD range
-                    setTimeout(() => {
-                        stockChart.primaryXAxis.minimum = startOfYear;
-                        stockChart.primaryXAxis.maximum = now;
-                        updateYAxisRange(startOfYear, now);
-                        stockChart.refresh();
-                    }, 100);
-                }
-                else if (args.text === "ALL") {
-                    setTimeout(() => {
-                        stockChart.primaryXAxis.minimum = allDataMinDate;
-                        stockChart.primaryXAxis.maximum = new Date();
-                        stockChart.primaryYAxis.minimum = Math.max(0, allDataMinValue * 0.9);
-                        stockChart.primaryYAxis.maximum = allDataMaxValue * 1.1;
-                        stockChart.refresh();
-                    }, 100);
-                }
-                else {
-                    // For other periods, adjust y-axis after SyncFusion's built-in handling
-                    setTimeout(() => {
-                        if (stockChart.primaryXAxis.minimum && stockChart.primaryXAxis.maximum) {
-                            updateYAxisRange(stockChart.primaryXAxis.minimum, stockChart.primaryXAxis.maximum);
-                            stockChart.refresh();
-                        }
-                    }, 100);
-                }
-            };
-        }
-        
-        
-        // Custom tooltip for sector chart
-        function sectorTooltipRender(args) {
-            if (args.point) {
-                args.text = args.point.x + ": $" + args.point.y.toFixed(2);
-            }
-        }
-        
-        // Custom tooltip for risk analysis chart
-        function riskChartTooltipRender(args) {
-            if (args.point) {
-                if (args.point.x && !isNaN(parseFloat(args.point.x))) {
-                    // Simple fallback if only coordinates are available
-                    args.text = "Performance: " + parseFloat(args.point.x).toFixed(2) + "%<br>Volatility: " + parseFloat(args.point.y).toFixed(2);
-                    return;
-                }
-            }
-        }
-        
-        // Custom tooltip for holdings chart
-        function holdingsChartTooltipRender(args) {
-            try {
-                if (args.point) {
-                    const symbol = args.point.x || "Stock";
-                    const value = args.point.y || 0;
-                    const pct = Math.round((value / @holdingsTotalValue) * 100);
-                    args.text = symbol + "<br>Value: $" + value.toFixed(2) + "<br>Portfolio: " + pct + "%";
-                }
-            } catch (e) {
-                args.text = "Stock: " + args.point.x + "<br>Value: $" + args.point.y;
-            }
-        }
-        
-        // Handle chart clicks for top holdings
-        function holdingsChartClick(args) {
-            if (args.point && args.point.x) {
-                // Could implement navigation to stock details here
-                console.log(`Clicked on ${args.point.x} with value ${args.point.y}`);
-            }
-        }
-        
-        // Collect and process all chart data
-        function aggregateAllData() {
-            if (!stockChart) return;
-            
-            allDataMinValue = Number.MAX_VALUE;
-            allDataMaxValue = Number.MIN_VALUE;
-            
-            stockChart.series.forEach(series => {
-                if (!series.dataSource || !series.dataSource.length) return;
-                
-                // Store data by symbol for quick access
-                chartData[series.name] = series.dataSource;
-                
-                // Find global min/max dates
-                series.dataSource.sort((a, b) => new Date(a.Date) - new Date(b.Date));
-                
-                const firstDate = new Date(series.dataSource[0].Date);
-                const lastDate = new Date(series.dataSource[series.dataSource.length - 1].Date);
-                
-                if (!allDataMinDate || firstDate < allDataMinDate) {
-                    allDataMinDate = firstDate;
-                }
-                
-                if (!allDataMaxDate || lastDate > allDataMaxDate) {
-                    allDataMaxDate = lastDate;
-                }
-                
-                // Find global min/max values
-                series.dataSource.forEach(point => {
-                    if (point.Value !== undefined && point.Value !== null) {
-                        allDataMinValue = Math.min(allDataMinValue, point.Value);
-                        allDataMaxValue = Math.max(allDataMaxValue, point.Value);
-                    }
-                });
-            });
-        }
-        
-        // Update Y-axis based on visible range
-        function updateYAxisRange(startDate, endDate) {
-            if (!stockChart || !startDate || !endDate) return;
-            
-            let minValue = Number.MAX_VALUE;
-            let maxValue = Number.MIN_VALUE;
-            
-            // Calculate min/max values only for the visible range
-            Object.values(chartData).forEach(dataPoints => {
-                const visibleData = dataPoints.filter(point => {
-                    const date = new Date(point.Date);
-                    return date >= startDate && date <= endDate;
-                });
-                
-                visibleData.forEach(point => {
-                    if (point.Value !== undefined && point.Value !== null) {
-                        minValue = Math.min(minValue, point.Value);
-                        maxValue = Math.max(maxValue, point.Value);
-                    }
-                });
-            });
-            
-            // Add padding to the range (10%)
-            if (minValue !== Number.MAX_VALUE && maxValue !== Number.MIN_VALUE) {
-                const range = maxValue - minValue;
-                const padding = range * 0.1;
-                
-                stockChart.primaryYAxis.minimum = Math.max(0, minValue - padding);
-                stockChart.primaryYAxis.maximum = maxValue + padding;
-            }
-        }
-        
-        // Handle initial series rendering
-        function onSeriesRender(args) {
-            // Make sure we don't override series colors
-            if (args.series.fill && !args.fill) {
-                args.fill = args.series.fill;
-            }
-        }
-        
-        function tooltipRender(args) {
-            if (args.series.xName === 'Date') {
-                var value = new Date(args.point.x);
-                args.text = value.toLocaleDateString() + ' : $' + args.point.y.toFixed(2);
-            }
-        }
-
+        // Format utility functions
         function formatCurrency(value) {
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
@@ -859,6 +635,7 @@
 
         // Initialization
         window.addEventListener('load', function() {
+            // Initialize UI elements
             colorPerformanceCells();
 
             const grid = document.getElementById('holdingsGrid')?.ej2_instances?.[0];
@@ -866,6 +643,9 @@
                 grid.refreshHeader();
                 grid.refresh();
             }
+            
+            // Initialize stock chart if it exists
+            stockChart = document.getElementById('stockChart')?.ej2_instances?.[0];
         });
     </script>
 }

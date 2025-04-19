@@ -65,7 +65,7 @@ namespace FundWatch.Services
         private readonly string _apiKey;
         private const int MAX_BATCH_SIZE = 5;
         private const int MAX_RETRIES = 3;
-        private const int CACHE_DURATION_MINUTES = 15;
+        private const int CACHE_DURATION_MINUTES = 60; // Increased from 15 minutes to 1 hour
         private readonly RateLimitingHandler _rateLimiter; // Add this field
 
         public StockService(
@@ -86,8 +86,8 @@ namespace FundWatch.Services
         {
             private readonly SemaphoreSlim _semaphore;
             private readonly Queue<DateTime> _requestTimestamps;
-            private const int MAX_REQUESTS_PER_MINUTE = 2; // More conservative limit
-            private const int DELAY_BETWEEN_REQUESTS_MS = 3000; // 1.5 seconds between requests
+            private const int MAX_REQUESTS_PER_MINUTE = 5; // Increased from 2
+            private const int DELAY_BETWEEN_REQUESTS_MS = 500; // Reduced from 3000
 
             public RateLimitingHandler()
             {
@@ -185,7 +185,7 @@ namespace FundWatch.Services
                             // Ensure data is sorted by date (ascending)
                             allData = allData.OrderBy(d => d.Date).ToList();
                             result[symbol] = allData;
-                            _cache.Set(cacheKey, allData, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                            _cache.Set(cacheKey, allData, TimeSpan.FromHours(24)); // Cache historical data for 24 hours
 
                             _logger.LogInformation($"Collected total of {allData.Count} data points for {symbol}");
                         }
@@ -345,8 +345,10 @@ namespace FundWatch.Services
                             // Cache until next trading day (roughly)
                             var cacheOptions = new MemoryCacheEntryOptions()
                                 .SetAbsoluteExpiration(GetNextTradingDay())
-                                .SetSlidingExpiration(TimeSpan.FromHours(8)); // Add sliding expiration
+                                .SetSlidingExpiration(TimeSpan.FromHours(12)); // Increased from 8 hours
                             _cache.Set(cacheKey, price, cacheOptions);
+                            // Cache with a consistent key format across the app
+                            _cache.Set($"Price_{symbol}", price, cacheOptions);
                         }
                     }
                 }

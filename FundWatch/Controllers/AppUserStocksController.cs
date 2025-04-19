@@ -64,6 +64,10 @@ namespace FundWatch.Controllers
 
         private async Task<PortfolioDashboardViewModel> PrepareDashboardViewModel(string userId)
         {
+            // Start with a stopwatch to track performance
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            
+            // Get user stocks data first
             var userStocks = await _context.UserStocks
                 .Where(u => u.UserId == userId &&
                             (u.NumberOfSharesPurchased - (u.NumberOfSharesSold ?? 0)) > 0)
@@ -76,28 +80,68 @@ namespace FundWatch.Controllers
             var symbols = userStocks.Select(s => s.StockSymbol.Trim().ToUpper())
                 .Distinct()
                 .ToList();
+                
+            _logger.LogInformation("Preparing dashboard for user {UserId} with {SymbolCount} symbols", userId, symbols.Count);
 
-            var historicalDataConcurrent = await _stockService.GetRealTimeDataAsync(symbols, 1825); // 5 years
-            var historicalData = new Dictionary<string, List<StockDataPoint>>(historicalDataConcurrent); // Convert to Dictionary
-
-            var cachedPrices = await GetCachedPrices(symbols);
-            var cachedDetails = await GetCachedCompanyDetails(symbols);
-
-            foreach (var stock in userStocks)
+            // Initialize the view model with stocks data
+            var viewModel = new PortfolioDashboardViewModel { UserStocks = userStocks };
+            
+            try
             {
-                _logger.LogInformation("Stock: {StockSymbol}, CurrentPrice: {CurrentPrice}, PurchasePrice: {PurchasePrice}, PerformancePercentage: {PerformancePercentage}",
-                    stock.StockSymbol, stock.CurrentPrice, stock.PurchasePrice, stock.PerformancePercentage);
+                // Fetch all required data in parallel
+                var pricesTask = GetCachedPrices(symbols);
+                var detailsTask = GetCachedCompanyDetails(symbols);
+                var historicalDataTask = GetCachedHistoricalData(symbols);
+
+                await Task.WhenAll(pricesTask, detailsTask, historicalDataTask);
+
+                var cachedPrices = await pricesTask;
+                var cachedDetails = await detailsTask;
+                var historicalData = await historicalDataTask;
+                
+                // Calculate basic metrics first
+                viewModel.PortfolioMetrics = await CalculatePortfolioMetrics(userStocks, cachedPrices, cachedDetails);
+                viewModel.SectorDistribution = CalculateSectorDistribution(userStocks, cachedDetails);
+                viewModel.CompanyDetails = cachedDetails;
+
+                // Calculate performance data - this is what feeds the chart
+                var performanceData = CalculatePerformanceData(userStocks, historicalData);
+                
+                // Verify that performance data contains valid entries
+                int validSeriesCount = 0;
+                foreach (var series in performanceData)
+                {
+                    if (series.Value != null && series.Value.Count > 0)
+                    {
+                        validSeriesCount++;
+                        _logger.LogInformation("Series {Symbol} has {Count} data points", 
+                            series.Key, series.Value.Count);
+                    }
+                }
+                
+                if (validSeriesCount == 0)
+                {
+                    _logger.LogWarning("No valid performance data was calculated for dashboard");
+                }
+                else
+                {
+                    _logger.LogInformation("Generated {Count} valid data series for chart", validSeriesCount);
+                }
+                
+                viewModel.PerformanceData = performanceData;
+                viewModel.HistoricalData = historicalData;
+                
+                // Cache the performance data separately with longer duration
+                var performanceDataCacheKey = $"PerformanceData_{userId}";
+                _cache.Set(performanceDataCacheKey, performanceData, TimeSpan.FromHours(1));
             }
-
-            var viewModel = new PortfolioDashboardViewModel
+            catch (Exception ex)
             {
-                UserStocks = userStocks,
-                PortfolioMetrics = await CalculatePortfolioMetrics(userStocks, cachedPrices, cachedDetails),
-                SectorDistribution = CalculateSectorDistribution(userStocks, cachedDetails),
-                PerformanceData = CalculatePerformanceData(userStocks, historicalData),
-                HistoricalData = historicalData,
-                CompanyDetails = cachedDetails
-            };
+                _logger.LogError(ex, "Error preparing dashboard data");
+            }
+            
+            sw.Stop();
+            _logger.LogInformation("Dashboard preparation completed in {ElapsedMs}ms", sw.ElapsedMilliseconds);
 
             return viewModel;
         }
@@ -120,12 +164,21 @@ namespace FundWatch.Controllers
 
             foreach (var symbol in symbols)
             {
-                var cacheKey = $"RealTimePrice_{symbol}";
-                if (_cache.TryGetValue(cacheKey, out decimal price))
+                // Check both cache key formats for compatibility
+                var cacheKeys = new[] { $"RealTimePrice_{symbol}", $"Price_{symbol}", $"DailyClosingPrice_{symbol}" };
+                bool found = false;
+                
+                foreach (var cacheKey in cacheKeys)
                 {
-                    cachedPrices[symbol] = price;
+                    if (_cache.TryGetValue(cacheKey, out decimal price))
+                    {
+                        cachedPrices[symbol] = price;
+                        found = true;
+                        break;
+                    }
                 }
-                else
+                
+                if (!found)
                 {
                     symbolsToFetch.Add(symbol);
                 }
@@ -136,8 +189,9 @@ namespace FundWatch.Controllers
                 var freshPrices = await _stockService.GetRealTimePricesAsync(symbolsToFetch);
                 foreach (var kvp in freshPrices)
                 {
-                    var cacheKey = $"RealTimePrice_{kvp.Key}";
-                    _cache.Set(cacheKey, kvp.Value, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                    // Use consistent cache keys
+                    var cacheKey = $"Price_{kvp.Key}";
+                    _cache.Set(cacheKey, kvp.Value, TimeSpan.FromHours(4)); // Increased cache duration
                     cachedPrices[kvp.Key] = kvp.Value;
                 }
             }
@@ -199,10 +253,19 @@ namespace FundWatch.Controllers
 
             if (uncachedSymbols.Any())
             {
-                var history = await _stockService.GetRealTimeDataAsync(uncachedSymbols, 1825);
-                foreach (var (symbol, data) in history)
+                // Process in smaller batches to avoid overloading
+                const int batchSize = 3;
+                for (int i = 0; i < uncachedSymbols.Count; i += batchSize)
                 {
-                    result[symbol] = data;
+                    var batch = uncachedSymbols.Skip(i).Take(batchSize).ToList();
+                    var history = await _stockService.GetRealTimeDataAsync(batch, 1825);
+                    
+                    foreach (var (symbol, data) in history)
+                    {
+                        result[symbol] = data;
+                        // Cache for 24 hours
+                        _cache.Set($"History_{symbol}", data, TimeSpan.FromHours(24));
+                    }
                 }
             }
 
@@ -838,26 +901,55 @@ namespace FundWatch.Controllers
                 var userId = _userManager.GetUserId(User);
                 var cacheKey = $"HistoricalPerformance_{userId}";
 
-                if (!_cache.TryGetValue(cacheKey, out Dictionary<string, List<PerformancePoint>> performanceData))
+                Dictionary<string, List<PerformancePoint>> performanceData;
+                bool fromCache = _cache.TryGetValue(cacheKey, out performanceData);
+
+                if (!fromCache)
                 {
+                    _logger.LogInformation("Cache miss for historical performance data, fetching from service");
+                    
                     var stocks = await _context.UserStocks
                         .Where(u => u.UserId == userId &&
                                    (u.NumberOfSharesPurchased - (u.NumberOfSharesSold ?? 0)) > 0)
                         .ToListAsync();
 
                     if (!stocks.Any())
+                    {
+                        _logger.LogWarning("No stocks found for user {UserId}", userId);
                         return Json(new { performanceData = new Dictionary<string, List<PerformancePoint>>() });
+                    }
 
                     var symbols = stocks.Select(s => s.StockSymbol).Distinct().ToList();
+                    _logger.LogInformation("Fetching historical data for {Count} symbols", symbols.Count);
+                    
                     var historicalDataConcurrent = await _stockService.GetRealTimeDataAsync(symbols, 1825);
-                    var historicalData = new Dictionary<string, List<StockDataPoint>>(historicalDataConcurrent); // Convert to Dictionary
+                    var historicalData = new Dictionary<string, List<StockDataPoint>>(historicalDataConcurrent);
+
+                    // Check if we got valid data
+                    bool hasValidData = historicalData.Values.Any(list => list != null && list.Count > 0);
+                    
+                    if (!hasValidData)
+                    {
+                        _logger.LogWarning("No valid historical data returned from service");
+                        return Json(new { performanceData = new Dictionary<string, List<PerformancePoint>>() });
+                    }
 
                     performanceData = CalculatePerformanceData(stocks, historicalData);
+                    
+                    // Log what we're caching
+                    foreach (var kvp in performanceData)
+                    {
+                        _logger.LogInformation("Symbol {Symbol}: {Count} data points", kvp.Key, kvp.Value?.Count ?? 0);
+                    }
 
                     var cacheEntryOptions = new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                        .SetAbsoluteExpiration(TimeSpan.FromHours(4)); // Increased from minutes to hours
 
                     _cache.Set(cacheKey, performanceData, cacheEntryOptions);
+                }
+                else
+                {
+                    _logger.LogInformation("Using cached historical performance data for user {UserId}", userId);
                 }
 
                 return Json(new { performanceData });
