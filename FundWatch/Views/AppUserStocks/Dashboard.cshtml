@@ -355,10 +355,15 @@
                                 double baseVolatility = Math.Abs((double)s.PerformancePercentage * 100) * 0.7;
                                 double volatility = baseVolatility + (random.NextDouble() * 5); // Add some randomness
                                 
+                                // Calculate position size and create formatted string
+                                double positionSize = (double)(s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * (double)s.CurrentPrice;
+                                string formattedSize = "$" + positionSize.ToString("N2");
+                                
                                 return new {
                                     x = (double)s.PerformancePercentage * 100, // Performance converted to double
                                     y = Math.Round(volatility, 2),     // Volatility (distinct from performance)
-                                    size = (double)(s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * (double)s.CurrentPrice / 1000,
+                                    size = positionSize / 1000,
+                                    formattedSize = formattedSize,
                                     name = s.StockSymbol,
                                     symbol = s.StockSymbol,
                                     ticker = s.StockSymbol,
@@ -376,6 +381,10 @@
                     <!-- Simple script to create risk analysis chart -->
                     <script type="text/javascript">
                         document.addEventListener('DOMContentLoaded', function() {
+                            // Create direct access to risk data
+                            var riskChartData = @Html.Raw(Json.Serialize(riskData));
+                            console.log("Risk data:", riskChartData);
+                            
                             // Create chart
                             var riskChart = new ej.charts.Chart({
                                 width: '100%',
@@ -405,20 +414,47 @@
                                 // Series configuration
                                 series: [{
                                     type: 'Bubble',
-                                    dataSource: @Html.Raw(Json.Serialize(riskData)),
+                                    dataSource: riskChartData,
                                     xName: 'x',
                                     yName: 'y',
                                     size: 'size',
                                     name: 'Stock Performance',
                                     fill: '#4361EE',
                                     opacity: 0.7,
-                                    border: { width: 2, color: '#FFFFFF' }
+                                    border: { width: 2, color: '#FFFFFF' },
+                                    marker: {
+                                        dataLabel: {
+                                            visible: true,
+                                            name: 'symbol',
+                                            font: { 
+                                                color: '#FFFFFF',
+                                                fontWeight: 'bold' 
+                                            }
+                                        }
+                                    }
                                 }],
                                 // Tooltip configuration
                                 tooltip: {
                                     enable: true,
-                                    format: 'Performance: ${point.x}%<br/>Volatility: ${point.y}<br/>Position Size: $${(point.size * 1000).toFixed(2)}',
+                                    format: 'Performance: ${point.x}%<br/>Volatility: ${point.y}',
                                     textStyle: { color: '#FFFFFF' }
+                                },
+                                tooltipRender: function(args) {
+                                    // Since we know our index, get the original data point
+                                    let dataIndex = args.pointIndex;
+                                    let dataPoint = riskChartData[dataIndex];
+                                    
+                                    // Build tooltip using the original data
+                                    if (dataPoint) {
+                                        let content = '<div style="padding: 5px;">';
+                                        content += '<div style="font-weight: bold; margin-bottom: 4px;">' + dataPoint.symbol + '</div>';
+                                        content += '<div>Performance: ' + dataPoint.x.toFixed(2) + '%</div>';
+                                        content += '<div>Volatility: ' + dataPoint.y + '</div>';
+                                        content += '<div>Position Size: $' + (dataPoint.size * 1000).toFixed(2) + '</div>';
+                                        content += '</div>';
+                                        
+                                        args.text = content;
+                                    }
                                 },
                                 // Legend configuration
                                 legendSettings: {
