@@ -6,13 +6,12 @@
 @{
     ViewData["Title"] = "Stock Portfolio Dashboard";
     var culture = new System.Globalization.CultureInfo("en-US");
-
 }
 
 <div class="container-fluid mt-4 mb-4">
     <!-- Portfolio Overview Cards -->
-    <div class="row mb-4">
-        <div class="col-sm-6 col-md-3 mb-4">
+    <div class="row mb-4 gy-4">
+        <div class="col-sm-6 col-md-3">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">Total Portfolio Value</h5>
@@ -26,7 +25,7 @@
             </div>
         </div>
 
-        <div class="col-sm-6 col-md-3 mb-4">
+        <div class="col-sm-6 col-md-3">
             <div class="card shadow">
                 <div class="card-header bg-success text-white">
                     <h5 class="card-title mb-0">Portfolio Diversity</h5>
@@ -38,7 +37,7 @@
             </div>
         </div>
 
-        <div class="col-sm-6 col-md-3 mb-4">
+        <div class="col-sm-6 col-md-3">
             <div class="card shadow">
                 <div class="card-header bg-info text-white">
                     <h5 class="card-title mb-0">Best Performer</h5>
@@ -52,7 +51,7 @@
             </div>
         </div>
 
-        <div class="col-sm-6 col-md-3 mb-4">
+        <div class="col-sm-6 col-md-3">
             <div class="card shadow">
                 <div class="card-header bg-danger text-white">
                     <h5 class="card-title mb-0">Worst Performer</h5>
@@ -80,16 +79,6 @@
                     </div>
                     @if (Model.PerformanceData != null && Model.PerformanceData.Any())
                     {
-                        @* <div class="small text-muted mb-2">
-                            <strong>Debug Info:</strong>
-                            <ul>
-                                @foreach (var stock in Model.PerformanceData)
-                                {
-                                    <li>@stock.Key: @stock.Value.Count points (@stock.Value.First().Date.ToString("d") - @stock.Value.Last().Date.ToString("d"))</li>
-                                }
-                            </ul>
-                        </div> *@
-
                         @(Html.EJS().StockChart("stockChart")
                             .Series(sr =>
                             {
@@ -174,7 +163,7 @@
         </div>
     </div>
 
-    <div class="row mb-4">
+    <div class="row mb-4 gy-4">
         <!-- Sector Distribution -->
         <div class="col-md-6">
             <div class="card shadow">
@@ -347,7 +336,7 @@
     </div>
     
     <!-- New Row: Additional Financial Charts -->
-    <div class="row mb-4">
+    <div class="row mb-4 gy-4">
         <!-- Portfolio Allocation Chart -->
         <div class="col-md-6">
             <div class="card shadow">

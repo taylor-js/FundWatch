@@ -210,16 +210,12 @@ body {
 }
 
 .card {
-    transition: transform .2s, box-shadow .2s;
     border: none;
     border-radius: 0.5rem;
     overflow: hidden;
 }
 
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23) !important;
-}
+/* Removed hover transform effect */
 
 .card-header {
     border-bottom: none;
@@ -256,16 +252,12 @@ body {
 }
 
 .card {
-    transition: transform .2s, box-shadow .2s;
     border: none;
     border-radius: 0.5rem;
     overflow: hidden;
 }
 
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23) !important;
-}
+/* Removed hover transform effect */
 
 .card-header {
     border-bottom: none;
