@@ -58,6 +58,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_CF8A4166AD6F47B8B7D23A02C5FEBBB4 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0C077BA8494240328A277DF3DB3EF9D7 }}
 
+      - name: Restart Azure Web App
+        run: |
+          az webapp restart --name fundwatch-app --resource-group fundwatch-app_group
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
