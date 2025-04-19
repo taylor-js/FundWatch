@@ -61,6 +61,8 @@ jobs:
       - name: Restart Azure Web App
         run: |
           az webapp restart --name fundwatch-app --resource-group FundWatch
+          echo "Waiting for 30 seconds after restart to ensure app is fully restarted..."
+          sleep 30
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
