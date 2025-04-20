@@ -382,7 +382,7 @@
                     <script type="text/javascript">
                         document.addEventListener('DOMContentLoaded', function() {
                             // Create direct access to risk data
-                            var riskChartData = @Html.Raw(Json.Serialize(riskData));
+                            var riskChartData = JSON.parse('@Html.Raw(Json.Serialize(riskData))');
                             console.log("Risk data:", riskChartData);
                             
                             // Create chart
