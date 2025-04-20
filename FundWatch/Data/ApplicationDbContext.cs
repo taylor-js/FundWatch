@@ -39,7 +39,7 @@ namespace FundWatch.Models
                 //      .HasForeignKey(us => us.UserId)
                 //      .OnDelete(DeleteBehavior.Cascade);
 
-                // Configure decimal precision for PostgreSQL
+                // Configure decimal precision
                 entity.Property(e => e.PurchasePrice)
                       .HasColumnType("decimal(18,2)");
 
@@ -59,7 +59,7 @@ namespace FundWatch.Models
                 //      .HasForeignKey(ss => ss.UserId)
                 //      .OnDelete(DeleteBehavior.Cascade);
 
-                // Configure decimal precision for PostgreSQL
+                // Configure decimal precision
                 entity.Property(e => e.SimulatedPurchasePrice)
                       .HasColumnType("decimal(18,2)");
 
@@ -79,7 +79,7 @@ namespace FundWatch.Models
                 //      .HasForeignKey(st => st.UserId)
                 //      .OnDelete(DeleteBehavior.Cascade);
 
-                // Configure decimal precision for PostgreSQL
+                // Configure decimal precision
                 entity.Property(e => e.PricePerShare)
                       .HasColumnType("decimal(18,2)");
             });

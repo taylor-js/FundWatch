@@ -206,7 +206,7 @@ namespace FundWatch.Controllers
 
             foreach (var symbol in symbols)
             {
-                if (_cache.TryGetValue($"Details_{symbol}", out CompanyDetails details))
+                if (_cache.TryGetValue($"Details_{symbol}", out CompanyDetails? details) && details != null)
                 {
                     result[symbol] = details;
                 }
@@ -241,7 +241,7 @@ namespace FundWatch.Controllers
 
             foreach (var symbol in symbols)
             {
-                if (_cache.TryGetValue($"History_{symbol}", out List<StockDataPoint> history))
+                if (_cache.TryGetValue($"History_{symbol}", out List<StockDataPoint>? history) && history != null)
                 {
                     result[symbol] = history;
                 }
@@ -366,7 +366,7 @@ namespace FundWatch.Controllers
                 }
 
                 var stockDetails = await _stockService.GetAllStocksAsync(appUserStock.StockSymbol);
-                var initialStock = stockDetails.FirstOrDefault();
+                var initialStock = stockDetails?.FirstOrDefault();
 
                 if (initialStock != null)
                 {
@@ -656,7 +656,7 @@ namespace FundWatch.Controllers
             try
             {
                 var cacheKey = $"SearchStocks_{term.Trim().ToUpper()}";
-                if (_cache.TryGetValue(cacheKey, out List<StockSymbolData> cachedStocks))
+                if (_cache.TryGetValue(cacheKey, out List<StockSymbolData>? cachedStocks) && cachedStocks != null)
                 {
                     return Json(new { success = true, stocks = cachedStocks });
                 }
@@ -681,7 +681,7 @@ namespace FundWatch.Controllers
             }
         }
 
-        private async Task<PortfolioMetrics> CalculatePortfolioMetrics(
+        private Task<PortfolioMetrics> CalculatePortfolioMetrics(
     List<AppUserStock> userStocks,
     Dictionary<string, decimal> realTimePrices,
     Dictionary<string, CompanyDetails> companyDetails)
@@ -696,7 +696,7 @@ namespace FundWatch.Controllers
 
                 if (!activeStocks.Any())
                 {
-                    return metrics;
+                    return Task.FromResult(metrics);
                 }
 
                 decimal totalValue = 0;
@@ -704,8 +704,8 @@ namespace FundWatch.Controllers
                 decimal totalGain = 0;
                 decimal bestReturn = decimal.MinValue;
                 decimal worstReturn = decimal.MaxValue;
-                string bestStock = null;
-                string worstStock = null;
+                string? bestStock = null;
+                string? worstStock = null;
 
                 foreach (var stock in activeStocks)
                 {
@@ -764,7 +764,7 @@ namespace FundWatch.Controllers
                 {
                     metrics.BestPerformingStock = bestStock;
                     metrics.BestPerformingStockReturn = bestReturn;
-                    metrics.WorstPerformingStock = worstStock;
+                    metrics.WorstPerformingStock = worstStock ?? string.Empty;
                     metrics.WorstPerformingStockReturn = worstReturn;
                 }
 
@@ -780,7 +780,7 @@ namespace FundWatch.Controllers
                 _logger.LogError(ex, "Error calculating portfolio metrics");
             }
 
-            return metrics;
+            return Task.FromResult(metrics);
         }
 
         private Dictionary<string, decimal> CalculateSectorDistribution(
@@ -822,13 +822,13 @@ namespace FundWatch.Controllers
                     (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0))
                 {
                     // Add some debug logging
-                    _logger.LogInformation($"Processing performance data for {stock.StockSymbol}");
+                    _logger.LogInformation("Processing performance data for {Symbol}", stock.StockSymbol);
 
                     if (historicalData.TryGetValue(stock.StockSymbol, out var stockHistory) &&
                         stockHistory != null &&
                         stockHistory.Any())
                     {
-                        _logger.LogInformation($"Found {stockHistory.Count} historical points for {stock.StockSymbol}");
+                        _logger.LogInformation("Found {Count} historical points for {Symbol}", stockHistory.Count, stock.StockSymbol);
 
                         var points = stockHistory
                             .Where(h => h.Close > 0)
@@ -846,17 +846,17 @@ namespace FundWatch.Controllers
 
                         if (points.Any())
                         {
-                            _logger.LogInformation($"Added {points.Count} performance points for {stock.StockSymbol}");
+                            _logger.LogInformation("Added {Count} performance points for {Symbol}", points.Count, stock.StockSymbol);
                             performanceData[stock.StockSymbol] = points;
                         }
                         else
                         {
-                            _logger.LogWarning($"No valid performance points calculated for {stock.StockSymbol}");
+                            _logger.LogWarning("No valid performance points calculated for {Symbol}", stock.StockSymbol);
                         }
                     }
                     else
                     {
-                        _logger.LogWarning($"No historical data found for {stock.StockSymbol}");
+                        _logger.LogWarning("No historical data found for {Symbol}", stock.StockSymbol);
                     }
                 }
 
@@ -901,7 +901,7 @@ namespace FundWatch.Controllers
                 var userId = _userManager.GetUserId(User);
                 var cacheKey = $"HistoricalPerformance_{userId}";
 
-                Dictionary<string, List<PerformancePoint>> performanceData;
+                Dictionary<string, List<PerformancePoint>>? performanceData = null;
                 bool fromCache = _cache.TryGetValue(cacheKey, out performanceData);
 
                 if (!fromCache)

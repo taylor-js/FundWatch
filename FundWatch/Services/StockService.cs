@@ -25,7 +25,7 @@ namespace FundWatch.Services
             {
                 var data = await GetRealTimeDataAsync(new List<string> { symbol }, 1825);
                 
-                if (data.TryGetValue(symbol, out var dataPoints) && dataPoints.Any())
+                if (data.TryGetValue(symbol, out var dataPoints) && dataPoints != null && dataPoints.Any())
                 {
                     var pricePoint = dataPoints.FirstOrDefault(dp => dp.Date.Date == date.Date);
                     if (pricePoint != null && pricePoint.Close > 0)
@@ -150,7 +150,7 @@ namespace FundWatch.Services
                 var tasks = batch.Select(async symbol =>
                 {
                     var cacheKey = $"HistoricalData_{symbol}_{daysBack}";
-                    if (_cache.TryGetValue(cacheKey, out List<StockDataPoint> cachedData))
+                    if (_cache.TryGetValue(cacheKey, out List<StockDataPoint>? cachedData) && cachedData != null)
                     {
                         result[symbol] = cachedData;
                         return;
@@ -217,7 +217,7 @@ namespace FundWatch.Services
                     };
                     var url = $"/v2/aggs/ticker/{WebUtility.UrlEncode(symbol)}/range/1/day/{startDate:yyyy-MM-dd}/{endDate:yyyy-MM-dd}";
 
-                    _logger.LogInformation($"Fetching historical data for {symbol} from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+                    _logger.LogInformation("Fetching historical data for {Symbol} from {StartDate} to {EndDate}", symbol, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
 
                     // Ensure await is used
                     var response = await SendApiRequestAsync(url, queryParams);
@@ -251,7 +251,7 @@ namespace FundWatch.Services
 
                 // Check cache first
                 var cacheKey = $"StockSymbols_{searchTerm}";
-                if (_cache.TryGetValue(cacheKey, out List<StockSymbolData> cachedStocks))
+                if (_cache.TryGetValue(cacheKey, out List<StockSymbolData>? cachedStocks) && cachedStocks != null)
                 {
                     return cachedStocks;
                 }
@@ -259,8 +259,7 @@ namespace FundWatch.Services
                 var allStocks = new List<StockSymbolData>();
                 var uniqueStocks = new HashSet<string>();
 
-                // Only make one request initially
-                var url = "/v3/reference/tickers";
+                // Define API endpoint for stock tickers
                 var queryParams = new Dictionary<string, string>
                 {
                     ["search"] = searchTerm,
@@ -288,7 +287,7 @@ namespace FundWatch.Services
                         allStocks.Add(new StockSymbolData
                         {
                             Symbol = symbol,
-                            Name = name
+                            Name = name ?? string.Empty
                         });
                     }
                 }
@@ -389,7 +388,7 @@ namespace FundWatch.Services
                 try
                 {
                     var cacheKey = $"CompanyDetails_{symbol}";
-                    if (_cache.TryGetValue(cacheKey, out CompanyDetails cachedDetails))
+                    if (_cache.TryGetValue(cacheKey, out CompanyDetails? cachedDetails) && cachedDetails != null)
                     {
                         details[symbol] = cachedDetails;
                         continue;
@@ -454,14 +453,14 @@ namespace FundWatch.Services
         }
 
         // Safe helper method to get string values
-        private string SafeGetString(JToken token, string propertyName)
+        private string SafeGetString(JToken? token, string propertyName)
         {
             try
             {
-                if (token[propertyName] == null || token[propertyName].Type == JTokenType.Null)
+                if (token == null || token[propertyName] == null || token[propertyName]?.Type == JTokenType.Null)
                     return string.Empty;
 
-                return token[propertyName].ToString();
+                return token[propertyName]?.ToString() ?? string.Empty;
             }
             catch (Exception ex)
             {
@@ -471,14 +470,14 @@ namespace FundWatch.Services
         }
 
         // Safe helper method to get decimal values
-        private decimal SafeGetDecimal(JToken token, string propertyName)
+        private decimal SafeGetDecimal(JToken? token, string propertyName)
         {
             try
             {
-                if (token[propertyName] == null || token[propertyName].Type == JTokenType.Null)
+                if (token == null || token[propertyName] == null || token[propertyName]?.Type == JTokenType.Null)
                     return 0;
 
-                return token[propertyName].Value<decimal>();
+                return token[propertyName]?.Value<decimal>() ?? 0;
             }
             catch (Exception ex)
             {
@@ -488,14 +487,14 @@ namespace FundWatch.Services
         }
 
         // Safe helper method to get integer values
-        private int SafeGetInt(JToken token, string propertyName)
+        private int SafeGetInt(JToken? token, string propertyName)
         {
             try
             {
-                if (token[propertyName] == null || token[propertyName].Type == JTokenType.Null)
+                if (token == null || token[propertyName] == null || token[propertyName]?.Type == JTokenType.Null)
                     return 0;
 
-                return token[propertyName].Value<int>();
+                return token[propertyName]?.Value<int>() ?? 0;
             }
             catch (Exception ex)
             {
@@ -505,7 +504,7 @@ namespace FundWatch.Services
         }
 
 
-        private async Task<JObject> SendApiRequestAsync(string endpoint, Dictionary<string, string> queryParams = null)
+        private async Task<JObject?> SendApiRequestAsync(string endpoint, Dictionary<string, string>? queryParams = null)
         {
             for (int retry = 0; retry < MAX_RETRIES; retry++)
             {
@@ -535,15 +534,18 @@ namespace FundWatch.Services
 
         private List<StockDataPoint> ProcessStockDataPoints(JArray results)
         {
-            return results.Select(item => new StockDataPoint
-            {
-                Date = DateTimeOffset.FromUnixTimeMilliseconds(item["t"].Value<long>()).UtcDateTime,
-                Open = item["o"].Value<decimal>(),
-                High = item["h"].Value<decimal>(),
-                Low = item["l"].Value<decimal>(),
-                Close = item["c"].Value<decimal>(),
-                Volume = item["v"].Value<long>()
-            }).ToList();
+            return results.Select(item => {
+                if (item == null) return null;
+                return new StockDataPoint
+                {
+                    Date = DateTimeOffset.FromUnixTimeMilliseconds(item["t"]?.Value<long>() ?? 0).UtcDateTime,
+                    Open = item["o"]?.Value<decimal>() ?? 0,
+                    High = item["h"]?.Value<decimal>() ?? 0,
+                    Low = item["l"]?.Value<decimal>() ?? 0,
+                    Close = item["c"]?.Value<decimal>() ?? 0,
+                    Volume = item["v"]?.Value<long>() ?? 0
+                };
+            }).Where(item => item != null).ToList()!;
         }
 
         private List<StockSymbolData> ProcessStockSymbols(JArray results)
@@ -553,11 +555,15 @@ namespace FundWatch.Services
 
             foreach (var result in results)
             {
-                stocks.Add(new StockSymbolData
-                {
-                    Symbol = result["ticker"]?.ToString(),
-                    Name = result["name"]?.ToString()
-                });
+                var symbol = result["ticker"]?.ToString();
+                var name = result["name"]?.ToString();
+                if (symbol != null) {
+                    stocks.Add(new StockSymbolData
+                    {
+                        Symbol = symbol,
+                        Name = name ?? string.Empty
+                    });
+                }
             }
             return stocks;
         }

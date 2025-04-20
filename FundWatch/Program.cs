@@ -53,7 +53,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     }
     services.AddHttpClient("PolygonApi", client =>
     {
-        client.BaseAddress = new Uri(configuration["PolygonApi:BaseUrl"]);
+        client.BaseAddress = new Uri(configuration["PolygonApi:BaseUrl"] ?? "https://api.polygon.io");
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {polygonApiKey}");
     });
