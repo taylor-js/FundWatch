@@ -395,6 +395,8 @@ namespace FundWatch.Controllers
         {
             if (!ModelState.IsValid)
             {
+                // Preserve the stock information
+                await PreserveStockInformation(appUserStock);
                 return View(appUserStock);
             }
 
@@ -408,6 +410,19 @@ namespace FundWatch.Controllers
             if (string.IsNullOrWhiteSpace(appUserStock.StockSymbol))
             {
                 ModelState.AddModelError("StockSymbol", "Stock symbol is required");
+                return View(appUserStock);
+            }
+            
+            // Check if shares purchased equals shares sold
+            if (appUserStock.NumberOfSharesSold.HasValue && 
+                appUserStock.NumberOfSharesPurchased == appUserStock.NumberOfSharesSold.Value)
+            {
+                ModelState.AddModelError("NumberOfSharesSold", "Shares purchased equals shares sold. No data will be plotted.");
+                TempData["EqualShares"] = "true";
+                
+                // Preserve the stock information
+                await PreserveStockInformation(appUserStock);
+                
                 return View(appUserStock);
             }
 
@@ -429,12 +444,14 @@ namespace FundWatch.Controllers
                         else
                         {
                             ModelState.AddModelError("PurchasePrice", "Purchase price must be greater than zero");
+                            await PreserveStockInformation(appUserStock);
                             return View(appUserStock);
                         }
                     }
                     else
                     {
                         ModelState.AddModelError("PurchasePrice", "Purchase price must be greater than zero");
+                        await PreserveStockInformation(appUserStock);
                         return View(appUserStock);
                     }
                 }
@@ -442,6 +459,7 @@ namespace FundWatch.Controllers
                 {
                     _logger.LogError(ex, "Error fetching price data for {Symbol}", appUserStock.StockSymbol);
                     ModelState.AddModelError("PurchasePrice", "Purchase price must be greater than zero");
+                    await PreserveStockInformation(appUserStock);
                     return View(appUserStock);
                 }
             }
@@ -449,6 +467,7 @@ namespace FundWatch.Controllers
             if (appUserStock.NumberOfSharesPurchased <= 0)
             {
                 ModelState.AddModelError("NumberOfSharesPurchased", "Number of shares must be greater than zero");
+                await PreserveStockInformation(appUserStock);
                 return View(appUserStock);
             }
 
@@ -457,6 +476,7 @@ namespace FundWatch.Controllers
                 if (appUserStock.DateSold.Value < appUserStock.DatePurchased)
                 {
                     ModelState.AddModelError("DateSold", "Sale date cannot be before purchase date");
+                    await PreserveStockInformation(appUserStock);
                     return View(appUserStock);
                 }
 
@@ -464,6 +484,7 @@ namespace FundWatch.Controllers
                     appUserStock.NumberOfSharesSold.Value > appUserStock.NumberOfSharesPurchased)
                 {
                     ModelState.AddModelError("NumberOfSharesSold", "Cannot sell more shares than purchased");
+                    await PreserveStockInformation(appUserStock);
                     return View(appUserStock);
                 }
             }
@@ -487,6 +508,18 @@ namespace FundWatch.Controllers
                     {
                         // Create new stock position
                         appUserStock.UserId = userId;
+
+                        // Check if the stock already exists for this user
+                        var existingStock = await _context.UserStocks
+                            .FirstOrDefaultAsync(s => s.UserId == userId && s.StockSymbol == appUserStock.StockSymbol);
+                        
+                        if (existingStock != null)
+                        {
+                            // Stock already exists, set error message for client-side handling
+                            TempData["DuplicateStock"] = "true";
+                            TempData["ExistingStockId"] = existingStock.Id.ToString();
+                            return View(appUserStock);
+                        }
 
                         // Get current price
                         var currentPrices = await _stockService.GetRealTimePricesAsync(
@@ -548,6 +581,7 @@ namespace FundWatch.Controllers
             {
                 _logger.LogError(ex, "Error saving stock position for user {UserId}", userId);
                 ModelState.AddModelError("", "An error occurred while saving the stock position.");
+                await PreserveStockInformation(appUserStock);
                 return View(appUserStock);
             }
         }
@@ -962,6 +996,38 @@ namespace FundWatch.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> CheckStockExists(string stockSymbol)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(stockSymbol))
+                {
+                    return Json(new { exists = false });
+                }
+
+                var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { exists = false });
+                }
+
+                var symbol = stockSymbol.Trim().ToUpper();
+                var existingStock = await _context.UserStocks
+                    .FirstOrDefaultAsync(s => s.UserId == userId && s.StockSymbol == symbol);
+
+                return Json(new { 
+                    exists = existingStock != null, 
+                    stockId = existingStock?.Id ?? 0 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking if stock exists: {Symbol}", stockSymbol);
+                return Json(new { exists = false });
+            }
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetHistoricalPrice(string stockSymbol, DateTime date)
         {
             try
@@ -1011,6 +1077,37 @@ namespace FundWatch.Controllers
                 return Json(new { success = false, message = "An error occurred while fetching price." });
             }
         }
-
+        
+        // Helper method to preserve stock information in ViewBag when form validation fails
+        private async Task PreserveStockInformation(AppUserStock appUserStock)
+        {
+            if (!string.IsNullOrWhiteSpace(appUserStock.StockSymbol))
+            {
+                try
+                {
+                    var stockDetails = await _stockService.GetAllStocksAsync(appUserStock.StockSymbol);
+                    var initialStock = stockDetails?.FirstOrDefault();
+                    
+                    if (initialStock != null)
+                    {
+                        ViewBag.InitialStock = new List<object>
+                        {
+                            new
+                            {
+                                symbol = initialStock.Symbol,
+                                display = $"{initialStock.Symbol} - {initialStock.Name}",
+                                fullName = initialStock.Name
+                            }
+                        };
+                        
+                        _logger.LogInformation("Preserved stock information for {Symbol} in ViewBag", appUserStock.StockSymbol);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error preserving stock information for {Symbol}", appUserStock.StockSymbol);
+                }
+            }
+        }
     }
 }

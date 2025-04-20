@@ -25,14 +25,18 @@
                                 <dt class="col-sm-4">Name</dt>
                                 <dd class="col-sm-8">@Model.CompanyDetails.Name</dd>
                                 <dt class="col-sm-4">Market Cap</dt>
-                                <dd class="col-sm-8">@Model.CompanyDetails.MarketCap.ToString("C0", culture)</dd>
+                                <dd class="col-sm-8">@(Model.CompanyDetails.MarketCap > 0 ? Model.CompanyDetails.MarketCap.ToString("C0", culture) : "N/A")</dd>
                                 <dt class="col-sm-4">Employees</dt>
-                                <dd class="col-sm-8">@Model.CompanyDetails.Employees.ToString("N0", culture)</dd>
+                                <dd class="col-sm-8">@(Model.CompanyDetails.Employees > 0 ? Model.CompanyDetails.Employees.ToString("N0", culture) : "N/A")</dd>
                                 <dt class="col-sm-4">Website</dt>
                                 <dd class="col-sm-8">
                                     @if (!string.IsNullOrEmpty(Model.CompanyDetails.Website))
                                     {
                                         <a href="@Model.CompanyDetails.Website" target="_blank">Visit Website</a>
+                                    }
+                                    else
+                                    {
+                                        <span>N/A</span>
                                     }
                                 </dd>
                             </dl>

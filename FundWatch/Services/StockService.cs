@@ -280,8 +280,9 @@ namespace FundWatch.Services
                     var symbol = result["ticker"]?.ToString();
                     var name = result["name"]?.ToString();
 
-                    if (!string.IsNullOrEmpty(symbol) &&
-                        symbol.StartsWith(searchTerm, StringComparison.OrdinalIgnoreCase) &&
+                    if (!string.IsNullOrEmpty(symbol) && !string.IsNullOrEmpty(name) &&
+                        (symbol.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || 
+                         name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
                         uniqueStocks.Add(symbol))
                     {
                         allStocks.Add(new StockSymbolData

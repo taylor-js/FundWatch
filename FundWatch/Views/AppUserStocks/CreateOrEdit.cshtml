@@ -27,10 +27,10 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         @(Html.EJS().DropDownList("StockSymbol")
-                            .Placeholder("Stock Symbol")
+                            .Placeholder("Stock Symbol or Company Name")
                             .FloatLabelType(FloatLabelType.Always)
                             .AllowFiltering(true)
-                            .FilterBarPlaceholder("Search stocks...")
+                            .FilterBarPlaceholder("Search by symbol or company name...")
                             .FilterType(FilterType.Contains)
                             .PopupHeight("300px")
                             .CssClass("e-outline")
@@ -132,19 +132,39 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
+    <script type="text/javascript">
+        // Store server-side data in JavaScript variables
+        var hasDuplicateStock = JSON.parse('@Json.Serialize(TempData["DuplicateStock"] != null && TempData["ExistingStockId"] != null)');
+        var hasEqualShares = JSON.parse('@Json.Serialize(TempData["EqualShares"] != null)');
+        var existingStockId = "@(TempData["ExistingStockId"]?.ToString() ?? "")";
+        
+        document.addEventListener("DOMContentLoaded", function() {
             // Get the dropdown instance
-            var dropdownList = document.getElementById('StockSymbol').ej2_instances[0];
-            var datePurchasedPicker = document.getElementById('DatePurchased').ej2_instances[0];
-            var dateSoldPicker = document.getElementById('DateSold').ej2_instances[0];
-            var purchasePriceInput = document.getElementById('PurchasePrice').ej2_instances[0];
-            var currentPriceInput = document.getElementById('CurrentPrice').ej2_instances[0];
-            var submitButton = document.getElementById('submitButton');
+            var dropdownList = document.getElementById("StockSymbol").ej2_instances[0];
+            var datePurchasedPicker = document.getElementById("DatePurchased").ej2_instances[0];
+            var dateSoldPicker = document.getElementById("DateSold").ej2_instances[0];
+            var purchasePriceInput = document.getElementById("PurchasePrice").ej2_instances[0];
+            var currentPriceInput = document.getElementById("CurrentPrice").ej2_instances[0];
+            var submitButton = document.getElementById("submitButton");
             
             // Track API requests in progress
             var pendingRequests = 0;
             var formSubmitted = false;
+            
+            // Handle server-side warnings with pure JavaScript
+            if (hasDuplicateStock) {
+                setTimeout(function() {
+                    if (confirm("This stock already exists in your portfolio. Would you like to view and edit the existing record?")) {
+                        window.location.href = "/AppUserStocks/Details/" + existingStockId;
+                    }
+                }, 100);
+            }
+            
+            if (hasEqualShares) {
+                setTimeout(function() {
+                    alert("When shares purchased equals shares sold, no data will be plotted. Please adjust your values.");
+                }, 100);
+            }
             
             // Disable submit button initially
             submitButton.disabled = true;
@@ -163,10 +183,19 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success && Array.isArray(data.stocks)) {
-                            const stocks = data.stocks.map(stock => ({
-                                symbol: stock.symbol,
-                                display: `${stock.symbol} - ${stock.name}`,
-                            }));
+                            const stocks = data.stocks.map(function(stock) {
+                                // Highlight the matching text in both symbol and name
+                                let displayText = stock.symbol;
+                                if (stock.name) {
+                                    displayText += " - " + stock.name;
+                                }
+                                return {
+                                    symbol: stock.symbol,
+                                    display: displayText,
+                                    // Store full data for reference
+                                    fullName: stock.name
+                                };
+                            });
                             dropdownList.dataSource = stocks;
                         } else {
                             dropdownList.dataSource = [];
@@ -246,14 +275,7 @@
                 }
             }
 
-            // Update prices when stock is selected
-            dropdownList.change = function (e) {
-                if (e.value) {
-                    updatePrices();
-                } else {
-                    submitButton.disabled = true;
-                }
-            };
+            // This will be replaced by the stock existence check
 
             // Date change handlers
             datePurchasedPicker.change = function () {
@@ -264,6 +286,7 @@
             dateSoldPicker.change = function () {
                 validateDates();
                 updatePrices();
+                validateShares(); // Also validate shares when date sold changes
             };
 
             function validateDates() {
@@ -303,8 +326,59 @@
                 }
             }
             
+            // Validate number of shares sold vs purchased
+            var sharesPurchasedInput = document.getElementById('NumberOfSharesPurchased').ej2_instances[0];
+            var sharesSoldInput = document.getElementById('NumberOfSharesSold').ej2_instances[0];
+            
+            sharesSoldInput.change = function() {
+                validateShares();
+            };
+            
+            sharesPurchasedInput.change = function() {
+                validateShares();
+            };
+            
+            function validateShares() {
+                if (sharesSoldInput.value && sharesPurchasedInput.value && 
+                    sharesSoldInput.value === sharesPurchasedInput.value) {
+                    alert("Warning: When shares purchased equals shares sold, no data will be plotted on the charts. Please adjust your values if you want to see this position in your dashboard.");
+                }
+            }
+            
+            // Check if stock already exists for this user
+            dropdownList.change = function (e) {
+                if (e.value) {
+                    // Check if stock exists
+                    fetch(`/AppUserStocks/CheckStockExists?stockSymbol=${encodeURIComponent(e.value)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.exists) {
+                                if (confirm(`You already have a position for ${e.value}. Would you like to view and edit that position instead?`)) {
+                                    window.location.href = `/AppUserStocks/Details/${data.stockId}`;
+                                    return;
+                                }
+                            }
+                            updatePrices();
+                        })
+                        .catch(error => {
+                            console.error('Error checking stock existence:', error);
+                            updatePrices();
+                        });
+                } else {
+                    submitButton.disabled = true;
+                }
+            };
+            
             // Prevent form submission while API requests are in progress
             document.querySelector('form').addEventListener('submit', function(e) {
+                // First check if shares purchased equals shares sold
+                if (sharesSoldInput.value && sharesPurchasedInput.value && 
+                    sharesSoldInput.value === sharesPurchasedInput.value) {
+                    e.preventDefault();
+                    alert("When shares purchased equals shares sold, no data will be plotted. Please adjust your values.");
+                    return false;
+                }
+                
                 if (pendingRequests > 0) {
                     e.preventDefault();
                     formSubmitted = true;
