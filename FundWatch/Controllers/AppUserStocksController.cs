@@ -365,19 +365,56 @@ namespace FundWatch.Controllers
                     return NotFound();
                 }
 
-                var stockDetails = await _stockService.GetAllStocksAsync(appUserStock.StockSymbol);
-                var initialStock = stockDetails?.FirstOrDefault();
+                try
+                {
+                    // Get an exact match for this stock symbol
+                    var initialStock = await _stockService.GetExactStockAsync(appUserStock.StockSymbol);
 
-                if (initialStock != null)
-                {
-                    ViewBag.InitialStock = new List<object>
-                {
-                    new
+                    if (initialStock != null)
                     {
-                        symbol = initialStock.Symbol,
-                        display = $"{initialStock.Symbol} - {initialStock.Name}"
+                        ViewBag.InitialStock = new List<object>
+                        {
+                            new
+                            {
+                                symbol = initialStock.Symbol,
+                                display = $"{initialStock.Symbol} - {initialStock.Name}",
+                                fullName = initialStock.Name
+                            }
+                        };
+                        
+                        // Log to confirm data is correctly passed
+                        _logger.LogInformation("Setting InitialStock for edit: Symbol={Symbol}, Name={Name}", 
+                            initialStock.Symbol, initialStock.Name);
                     }
-                };
+                    else
+                    {
+                        // Fallback: If we can't get stock details, at least populate with the symbol
+                        ViewBag.InitialStock = new List<object>
+                        {
+                            new
+                            {
+                                symbol = appUserStock.StockSymbol,
+                                display = appUserStock.StockSymbol,
+                                fullName = string.Empty
+                            }
+                        };
+                        
+                        _logger.LogWarning("Using fallback stock data for {Symbol}", appUserStock.StockSymbol);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error getting stock details for {Symbol}", appUserStock.StockSymbol);
+                    // Still provide a fallback
+                    ViewBag.InitialStock = new List<object>
+                    {
+                        new
+                        {
+                            symbol = appUserStock.StockSymbol,
+                            display = appUserStock.StockSymbol,
+                            fullName = string.Empty
+                        }
+                    };
                 }
 
                 return View(appUserStock);
@@ -1085,8 +1122,8 @@ namespace FundWatch.Controllers
             {
                 try
                 {
-                    var stockDetails = await _stockService.GetAllStocksAsync(appUserStock.StockSymbol);
-                    var initialStock = stockDetails?.FirstOrDefault();
+                    // Use the exact match method for more accurate results
+                    var initialStock = await _stockService.GetExactStockAsync(appUserStock.StockSymbol);
                     
                     if (initialStock != null)
                     {
@@ -1102,10 +1139,35 @@ namespace FundWatch.Controllers
                         
                         _logger.LogInformation("Preserved stock information for {Symbol} in ViewBag", appUserStock.StockSymbol);
                     }
+                    else
+                    {
+                        // Fallback: If no exact match found, still preserve the symbol
+                        ViewBag.InitialStock = new List<object>
+                        {
+                            new
+                            {
+                                symbol = appUserStock.StockSymbol,
+                                display = appUserStock.StockSymbol,
+                                fullName = string.Empty
+                            }
+                        };
+                        _logger.LogWarning("No stock details found for {Symbol}, using fallback", appUserStock.StockSymbol);
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error preserving stock information for {Symbol}", appUserStock.StockSymbol);
+                    
+                    // Still provide a fallback
+                    ViewBag.InitialStock = new List<object>
+                    {
+                        new
+                        {
+                            symbol = appUserStock.StockSymbol,
+                            display = appUserStock.StockSymbol,
+                            fullName = string.Empty
+                        }
+                    };
                 }
             }
         }

@@ -6,6 +6,12 @@
 @{
     ViewData["Title"] = Model.Id == 0 ? "Create" : "Edit";
     var stockSymbols = ViewBag.StockSymbols as List<StockSymbolData>;
+    
+    // Check if we have initial stock data from ViewBag
+    var hasInitialStock = ViewBag.InitialStock != null;
+    
+    // Debug info for troubleshooting
+    var debugInfo = $"Model.Id: {Model.Id}, Model.StockSymbol: {Model.StockSymbol}, HasInitialStock: {hasInitialStock}";
 }
 
 <div class="container mt-4 mb-4">
@@ -41,7 +47,11 @@
                             })
                             .DataSource(ViewBag.InitialStock ?? new List<object>())
                             .Value(Model.StockSymbol)
+                            .ShowClearButton(false)
                             .Render())
+                            
+                        <!-- Hidden debug info (comment out in production) -->
+                        <div class="d-none">@debugInfo</div>
                         <span asp-validation-for="StockSymbol" class="text-danger"></span>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -146,6 +156,41 @@
             var purchasePriceInput = document.getElementById("PurchasePrice").ej2_instances[0];
             var currentPriceInput = document.getElementById("CurrentPrice").ej2_instances[0];
             var submitButton = document.getElementById("submitButton");
+            
+            // If we're in edit mode, ensure the stock symbol is displayed
+            var modelId = @Model.Id;
+            var stockSymbol = "@Model.StockSymbol";
+            
+            console.log("Model.Id: " + modelId + ", StockSymbol: " + stockSymbol);
+            
+            // For edit mode, ensure the value is set
+            if (modelId > 0 && stockSymbol && dropdownList) {
+                // Make sure dropdown has the value set
+                setTimeout(function() {
+                    // If initialStock exists in ViewBag but dropdown isn't showing it
+                    if (dropdownList.value === stockSymbol && (!dropdownList.text || dropdownList.text.trim() === "")) {
+                        console.log("Forcing dropdown display for: " + stockSymbol);
+                        // Check if we have dataSource with display text
+                        var ds = dropdownList.dataSource;
+                        if (ds && ds.length > 0 && ds[0].display) {
+                            // Use display from dataSource
+                            dropdownList.text = ds[0].display;
+                        } else {
+                            // Fallback to just the symbol
+                            dropdownList.text = stockSymbol;
+                        }
+                        
+                        // Force UI refresh
+                        dropdownList.dataBind();
+                        
+                        // Update the input visually
+                        var input = document.querySelector("#StockSymbol_hidden");
+                        if (input) {
+                            input.value = stockSymbol;
+                        }
+                    }
+                }, 300);
+            }
             
             // Track API requests in progress
             var pendingRequests = 0;

@@ -240,6 +240,71 @@ namespace FundWatch.Services
             return new List<StockDataPoint>(); // Return an empty list instead of null
         }
 
+        public async Task<StockSymbolData> GetExactStockAsync(string symbol)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(symbol))
+                {
+                    return null;
+                }
+                
+                // First check cache for an exact match
+                var cacheKey = $"ExactStock_{symbol.Trim().ToUpper()}";
+                if (_cache.TryGetValue(cacheKey, out StockSymbolData cachedStock) && cachedStock != null)
+                {
+                    return cachedStock;
+                }
+                
+                // Use the search endpoint with the exact symbol
+                var stocks = await GetAllStocksAsync(symbol);
+                
+                // Find exact match
+                var exactMatch = stocks.FirstOrDefault(s => 
+                    string.Equals(s.Symbol, symbol, StringComparison.OrdinalIgnoreCase));
+                    
+                if (exactMatch != null)
+                {
+                    // Set exact match flag
+                    exactMatch.ExactMatch = true;
+                    
+                    // Cache the exact match
+                    _cache.Set(cacheKey, exactMatch, TimeSpan.FromHours(24));
+                    return exactMatch;
+                }
+                
+                // If no exact match, we'll try to get any stock with this symbol
+                var queryParams = new Dictionary<string, string>
+                {
+                    ["ticker"] = symbol,
+                    ["active"] = "true"
+                };
+                
+                var response = await SendApiRequestAsync("/v3/reference/tickers", queryParams);
+                
+                if (response != null && response["results"] is JArray results && results.Any())
+                {
+                    var result = results.First();
+                    var stock = new StockSymbolData
+                    {
+                        Symbol = result["ticker"]?.ToString(),
+                        Name = result["name"]?.ToString() ?? string.Empty,
+                        ExactMatch = true
+                    };
+                    
+                    _cache.Set(cacheKey, stock, TimeSpan.FromHours(24));
+                    return stock;
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching exact stock for symbol: {Symbol}", symbol);
+                return null;
+            }
+        }
+        
         public async Task<List<StockSymbolData>> GetAllStocksAsync(string searchTerm)
         {
             try
@@ -280,15 +345,29 @@ namespace FundWatch.Services
                     var symbol = result["ticker"]?.ToString();
                     var name = result["name"]?.ToString();
 
-                    if (!string.IsNullOrEmpty(symbol) && !string.IsNullOrEmpty(name) &&
-                        (symbol.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || 
-                         name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
-                        uniqueStocks.Add(symbol))
+                    bool matchesSearch = false;
+                    
+                    if (string.Equals(symbol, searchTerm, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Exact symbol match gets highest priority
+                        matchesSearch = true;
+                    }
+                    else if (!string.IsNullOrEmpty(symbol) && !string.IsNullOrEmpty(name) &&
+                             (symbol.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || 
+                              name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        // Partial match in symbol or name
+                        matchesSearch = true;
+                    }
+                    
+                    if (matchesSearch && !string.IsNullOrEmpty(symbol) && uniqueStocks.Add(symbol))
                     {
                         allStocks.Add(new StockSymbolData
                         {
                             Symbol = symbol,
-                            Name = name ?? string.Empty
+                            Name = name ?? string.Empty,
+                            // Track if this was an exact match
+                            ExactMatch = string.Equals(symbol, searchTerm, StringComparison.OrdinalIgnoreCase)
                         });
                     }
                 }
@@ -296,7 +375,8 @@ namespace FundWatch.Services
                 // Cache the results
                 _cache.Set(cacheKey, allStocks, TimeSpan.FromHours(24));
 
-                return allStocks.OrderBy(s => s.Symbol).ToList();
+                // Sort exact matches first, then alphabetically
+                return allStocks.OrderByDescending(s => s.ExactMatch).ThenBy(s => s.Symbol).ToList();
             }
             catch (Exception ex)
             {

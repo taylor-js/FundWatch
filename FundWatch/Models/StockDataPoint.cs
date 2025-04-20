@@ -16,6 +16,7 @@ namespace FundWatch.Models
     {
         public string Symbol { get; set; }
         public string Name { get; set; }
+        public bool ExactMatch { get; set; }
     }
 
     public class CompanyDetails
