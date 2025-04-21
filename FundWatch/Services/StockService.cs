@@ -240,7 +240,7 @@ namespace FundWatch.Services
             return new List<StockDataPoint>(); // Return an empty list instead of null
         }
 
-        public async Task<StockSymbolData> GetExactStockAsync(string symbol)
+        public async Task<StockSymbolData?> GetExactStockAsync(string symbol)
         {
             try
             {
@@ -251,7 +251,7 @@ namespace FundWatch.Services
                 
                 // First check cache for an exact match
                 var cacheKey = $"ExactStock_{symbol.Trim().ToUpper()}";
-                if (_cache.TryGetValue(cacheKey, out StockSymbolData cachedStock) && cachedStock != null)
+                if (_cache.TryGetValue(cacheKey, out StockSymbolData? cachedStock) && cachedStock != null)
                 {
                     return cachedStock;
                 }
@@ -287,7 +287,7 @@ namespace FundWatch.Services
                     var result = results.First();
                     var stock = new StockSymbolData
                     {
-                        Symbol = result["ticker"]?.ToString(),
+                        Symbol = result["ticker"]?.ToString() ?? string.Empty,
                         Name = result["name"]?.ToString() ?? string.Empty,
                         ExactMatch = true
                     };

@@ -53,6 +53,22 @@ html, body {
     width: 50%;
 }
 
+/* Login form specific styles */
+.login-logout-card form {
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+}
+
+/* Login button must be visible */
+#login-submit, 
+button[type="submit"] {
+    display: block !important;
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
 .login-logout-card a.nav-link {
     font-size: 1rem;
     color: #495057;
@@ -62,6 +78,12 @@ html, body {
 
 .login-logout-card .card-body {
     padding: 10px 20px;
+    height: auto !important;
+    min-height: auto !important;
+    background-color: #333333;
+    display: block !important;
+    flex: none !important;
+    overflow: visible !important;
 }
 
 /* Base styles for the body */
@@ -203,19 +225,26 @@ body {
 /* Dashboard card styling */
 .performance-cell.positive {
     color: #28a745;
+    font-weight: 500;
 }
 
 .performance-cell.negative {
     color: #dc3545;
+    font-weight: 500;
 }
 
 .card {
     border: none;
     border-radius: 0.5rem;
     overflow: hidden;
+    /* No transition for no hover effect */
 }
 
-/* Removed hover transform effect */
+/* Remove hover transform effect */
+.card:hover {
+    transform: none !important;
+    box-shadow: 0 6px 10px rgba(0,0,0,0.15) !important;
+}
 
 .card-header {
     border-bottom: none;
@@ -230,56 +259,858 @@ body {
 }
 
 /* Enhanced chart styles */
-.e-chart, .e-accumulation {
+.e-chart, .e-accumulation, .e-stockchart {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    border-radius: 0.25rem;
+    border-radius: 0.5rem !important;
     overflow: hidden;
+    background-color: #333333 !important;
+    padding: 5px !important;
 }
 
-.e-bubble-tooltip, .e-tooltip-wrap {
-    border-radius: 4px !important;
+.e-bubble-tooltip, .e-tooltip-wrap, .e-chart-tooltip {
+    border-radius: 6px !important;
     box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23) !important;
     padding: 8px !important;
+    background-color: rgba(53, 56, 58, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Dashboard card styling */
-.performance-cell.positive {
-    color: #28a745;
+/* Add common styling for chart tooltips */
+.e-chart-tooltip *, .e-tooltip-wrap *, .e-bubble-tooltip * {
+    color: #FFFFFF !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 12px !important;
 }
 
-.performance-cell.negative {
-    color: #dc3545;
+/* Add border radius to all chart containers */
+.e-chart, .e-accumulation, .e-stockchart, #riskAnalysisChart, #rollingReturnsChart, #drawdownChart {
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
-.card {
-    border: none;
-    border-radius: 0.5rem;
+/* Mobile responsive styles for Highcharts */
+@media (max-width: 767.98px) {
+    #rollingReturnsChart, #drawdownChart {
+        height: 350px !important;
+    }
+}
+
+/* Dashboard Tab Navigation */
+.nav-tabs {
+    border-bottom: 1px solid #444;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+    scrollbar-width: none;
+}
+
+.nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-tabs .nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.nav-tabs .nav-link {
+    color: #b0c4de; /* Light steel blue - matching body text */
+    background-color: #292929; /* Dark gray background */
+    border-color: #444 #444 #333;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    padding: 0.75rem 1.25rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+    .nav-tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+}
+
+.nav-tabs .nav-link.active {
+    color: #1e90ff; /* Dodger blue - matching navbar links */
+    background-color: #333; /* Matching card background color */
+    border-color: #444 #444 #333;
+    border-top: 2px solid #007bff;
+}
+
+.nav-tabs .nav-link:hover:not(.active) {
+    color: #fff;
+    background-color: #383838;
+    border-color: #555 #555 #444;
+}
+
+/* Floating action button styling */
+#addStockButton {
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+#addStockButton:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.25);
+}
+
+/* Analytics tab - Equal height cards */
+.equal-height-cards .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.equal-height-cards .col-md-6 {
+    display: flex;
+    flex-direction: column;
+}
+
+.equal-height-cards .card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.equal-height-cards .card-body {
+    flex: 1;
+}
+
+/* Dashboard charts */
+.circular-chart {
+    width: 100%;
+    height: 100%;
+}
+
+.circle-bg {
+    opacity: 0.2;
+}
+
+.circle {
+    transition: stroke-dasharray 1s ease;
+}
+
+.text-success .circle {
+    stroke: #28a745;
+}
+
+.text-primary .circle {
+    stroke: #007bff;
+}
+
+.text-warning .circle {
+    stroke: #ffc107;
+}
+
+.text-danger .circle {
+    stroke: #dc3545;
+}
+
+/* Fixed chart sizing to prevent resize on tab switch or page refresh */
+/* Fixed chart dimensions - no auto scale allowed */
+.e-chart, .e-stockchart, .e-accumulation {
+    height: 300px !important;
+    width: 100% !important;
+    overflow: hidden;
+    display: block !important;
+}
+
+/* Explicit fixed size for each chart */
+#stockChart {
+    height: 600px !important;
+}
+
+#growthAnalysisChart {
+    height: 500px !important;
+    width: calc(100% - 10px) !important;
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: none !important;
+    min-width: calc(100% - 10px) !important;
+    padding-right: 15px !important;
+}
+
+#monthlyPerformanceChart {
+    height: 500px !important;
+    width: 100% !important;
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: none !important;
+    min-width: 100% !important;
+}
+
+#topHoldingsChart {
+    height: 420px !important;
+    padding-bottom: 40px !important;
+}
+
+#riskAnalysisChart {
+    height: 380px !important;
+    width: 100% !important;
+    display: block !important;
+    position: relative !important;
+    overflow: visible !important; /* Allow axes to be visible */
+    max-width: 100% !important;
+    min-width: 100% !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+}
+
+#sectorChartPerformance, #sectorChartHoldings {
+    height: 300px !important;
+}
+
+/* Special handling for top holdings chart to ensure x-axis is visible */
+#topHoldingsChart {
+    height: 420px !important;
+    min-height: 420px !important;
+    padding-bottom: 40px !important; /* Extra padding for x-axis labels */
+}
+
+
+/* Ensure axis labels are visible */
+.e-chart .e-primary-x-axis-title,
+.e-chart .e-primaryxaxis-labels {
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* Fix for chart labels */
+#growthAnalysisChart .e-primaryxaxis-labels text,
+#monthlyPerformanceChart .e-primaryxaxis-labels text {
+    visibility: visible !important;
+    text-anchor: middle !important;
+}
+
+#growthAnalysisChart .e-primaryxaxis-labels text:last-of-type,
+#monthlyPerformanceChart .e-primaryxaxis-labels text:last-of-type {
+    text-anchor: end !important;
+}
+
+/* Custom styles for performance data */
+#monthlyPerformanceChart .positive-value {
+    fill: #00E396 !important;
+}
+
+#monthlyPerformanceChart .negative-value {
+    fill: #FF4560 !important;
+}
+
+/* Commented out to avoid conflict with our updated styles
+#riskAnalysisChart {
+    height: 320px !important;
+    min-height: 320px !important;
+    width: 100% !important;
+}*/
+
+/* Fixed card-body heights for dashboard only - no auto scaling */
+#analyticsTab .card-body, 
+#performanceTab .card-body, 
+#overviewTab .card-body,
+#holdingsTab .card-body {
+    height: 280px; /* Base fixed card height */
+}
+
+/* Explicitly allow login card body to auto-size */
+.login-logout-card .card-body {
+    height: auto !important;
+    min-height: auto !important;
+}
+
+/* Shorter height for metric cards */
+.overview-scalar-card .card-body {
+    height: 140px;
+}
+
+/* Fixed height for full-width chart cards */
+.full-width-chart .card-body {
+    height: auto;
+    min-height: 700px;
+    width: 100%;
+    padding: 15px;
+}
+
+/* Card containing the stock chart */
+.full-width-chart .card-body:has(#stockChart) {
+    height: 700px;
+}
+
+/* Card containing the growth analysis chart */
+.full-width-chart .card-body:has(#growthAnalysisChart),
+.full-width-chart .card-body:has(#monthlyPerformanceChart) {
+    height: auto;
+    min-height: 600px;
+    width: 100%;
+    padding: 20px;
+}
+
+/* Ensures tab content doesn't change dimensions */
+.tab-content {
+    min-height: 600px;
+}
+
+/* Display tab content immediately without animation */
+.tab-content {
+    opacity: 1;
+}
+
+/* Force chart containers to maintain aspect ratio */
+.chart-container {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+}
+
+/* Ensure chart-related elements don't cause layout shifts */
+#overviewTab, #performanceTab, #analyticsTab {
+    width: 100%;
+}
+
+/* Remove container-fluid padding for the Holdings tab */
+.tab-active-holdings #dashboard-container {
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Remove container-fluid padding for Holdings tab */
+#holdingsTab {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+}
+
+/* Ensure proper spacing in tab panels */
+.tab-pane {
+    padding-top: 20px;
+}
+
+/* Analytics tab card heights */
+#analyticsTab .card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#analyticsTab .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+#analyticsTab .text-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Special class for analytics cards with strictly equal heights */
+.analytics-equal-cards {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.analytics-equal-cards .col-md-6 {
+    display: flex;
+    margin-bottom: 0;
+}
+
+.analytics-equal-cards .card {
+    width: 100%;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Removed since we're using inline styles now */
+
+.analytics-equal-cards .card-body,
+.analytics-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    height: 520px !important; /* Force exact same height to match our new card height */
     overflow: hidden;
 }
 
-/* Removed hover transform effect */
-
-.card-header {
-    border-bottom: none;
-    padding: 1rem 1.25rem;
-    font-weight: 600;
+/* Standardized chart descriptions for alignment */
+.chart-description {
+    margin-top: 0 !important;
+    margin-bottom: 20px !important;
+    height: 60px !important; /* Force consistent height for descriptions */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    padding: 10px 15px !important;
+    border-radius: 6px !important;
+    z-index: 10 !important;
+    position: relative !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    border-left-width: 3px !important;
+    border-left-style: solid !important;
 }
 
-.card-body {
-    background-color: #333333;
-    color: #ffffff;
-    padding: 1.25rem;
+.chart-description p {
+    color: #ffffff !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
 }
 
-/* Enhanced chart styles */
-.e-chart, .e-accumulation {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    border-radius: 0.25rem;
-    overflow: hidden;
+/* Holdings grid action buttons */
+.action-buttons-container {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    align-items: center;
 }
 
-.e-bubble-tooltip, .e-tooltip-wrap {
+.grid-action-btn {
+    width: 36px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
     border-radius: 4px !important;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23) !important;
-    padding: 8px !important;
+    font-size: 14px !important;
+}
+
+.grid-action-btn i {
+    font-size: 14px !important;
+}
+
+/* Ensure the grid pagination is visible */
+.e-pager {
+    height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: #333 !important;
+    border-top: 1px solid #444 !important;
+}
+
+.e-pager .e-pagercontainer {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+
+/* Update sector chart height */
+/* Responsive sector distribution styling */
+.sector-distribution-row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/* Removed pie-chart-container and desktop-only-table styles to use Bootstrap grid instead */
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    /* Card body settings */
+    .card-body {
+        min-height: auto !important;
+        height: auto !important;
+        padding: 15px !important;
+        overflow: visible !important;
+    }
+    
+    /* Chart dimensions to match table on both desktop and mobile */
+    #sectorChartHoldings {
+        height: 350px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+    }
+    
+    /* Chart container dimensions */
+    #chartContainer {
+        height: 350px !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+    }
+    
+    /* Center legend on mobile */
+    .e-accumulationchart .e-legend {
+        position: relative !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin: 0 auto !important;
+    }
+    
+    /* Switch legend position to bottom on mobile */
+    #sectorChartHoldings tspan {
+        text-anchor: middle !important;
+    }
+    
+    /* Removed desktop-only-table styles */
+    
+    /* Removed additional pie-chart-container styles */
+    
+    /* Removed pie-chart-inner-container styles to use inline styling instead */
+    
+    /* Simple chart styling */
+    .e-accumulationchart {
+        margin: 0 auto !important;
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    /* Mobile chart title */
+    .chart-title {
+        margin-bottom: 15px !important;
+        font-weight: bold !important;
+        color: white !important;
+        position: relative !important;
+        z-index: 25 !important;
+    }
+    
+    /* Proper container sizing */
+    .mobile-chart-container {
+        min-height: auto !important;
+        height: auto !important;
+        overflow: hidden !important;
+    }
+}
+
+/* Responsive styles for sector distribution */
+/* Desktop styles (md and larger) */
+@media (min-width: 768px) {
+    .sector-distribution-container {
+        flex-direction: row;
+    }
+    
+    #sectorChartHoldings {
+        min-height: auto !important;
+        height: auto !important;
+        width: 100% !important;
+    }
+}
+
+/* Mobile styles */
+@media (max-width: 767.98px) {
+    .sector-distribution-container {
+        flex-direction: column;
+    }
+    
+    /* Make table height auto on mobile */
+    .mobile-friendly-table {
+        height: auto !important;
+        max-height: none !important;
+        margin-top: 20px;
+    }
+    
+    /* Make chart smaller on mobile */
+    #sectorChartHoldings {
+        height: 300px !important;
+        width: 300px !important;
+        margin: 0 auto !important;
+    }
+}
+
+.sector-table-container {
+    overflow-y: auto;
+    width: 100%;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #333;
+}
+
+.desktop-table {
+    height: 420px;
+    max-height: 420px;
+    margin-bottom: 0;
+}
+
+.mobile-table {
+    height: 280px;
+    max-height: 280px;
+    margin-bottom: 20px;
+}
+
+/* Chart ID specific styling */
+#sectorChartHoldings, #sectorChartMobile {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+}
+
+/* Styles for sector chart legends - desktop and mobile */
+#sectorChartHoldings .e-legend-item {
+    display: block !important;
+    margin-bottom: 8px !important;
+    padding: 4px 0 !important;
+    clear: both !important;
+    width: 100% !important;
+    float: none !important;
+}
+
+#sectorChartHoldings .e-legend-text {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    padding-left: 4px !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+}
+
+/* Force one item per line for desktop legend */
+@media (min-width: 992px) {
+    #sectorChartHoldings .e-legend-item-container {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+}
+
+/* Mobile-specific styles for sector chart legends */
+@media (max-width: 991.98px) {
+    /* Force portfolio sector distribution card to display properly */
+    #holdingsTab .card:has(.pie-chart-container) {
+        display: block !important;
+        visibility: visible !important;
+        overflow: hidden !important;
+        height: auto !important;
+        min-height: 500px !important;
+    }
+    
+    /* Force fix specific chart container layout */
+    #chartContainer, 
+    #chartContainer > div,
+    #sectorChartHoldings,
+    #sectorChartHoldings > div,
+    .e-accumulationchart,
+    .e-accumulationchart > div,
+    svg.e-accumulationchart {
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: 300px !important;
+        margin: 0 auto !important;
+        overflow: visible !important;
+    }
+    
+    /* Fix chart series */
+    .e-accumulationchart g,
+    .e-accumulationchart > svg > g,
+    .e-accumulationchart .e-series-container,
+    .e-accumulationchart .e-accumulation-series {
+        visibility: visible !important;
+        display: block !important;
+    }
+    
+    /* Force charts to be opaque */
+    .e-accumulationchart path,
+    .e-accumulationchart .e-pie {
+        opacity: 1 !important;
+        visibility: visible !important;
+        stroke-opacity: 1 !important;
+        fill-opacity: 1 !important;
+    }
+    
+    /* Adjust the table container on mobile */
+    .desktop-only-table .table-responsive {
+        max-height: 250px !important;
+    }
+    
+    /* Style the table headers on mobile */
+    .desktop-only-table th {
+        font-size: 12px !important;
+        padding: 8px 4px !important;
+    }
+    
+    /* Style the table cells on mobile */
+    .desktop-only-table td {
+        font-size: 12px !important;
+        padding: 8px 4px !important;
+    }
+    
+    /* Make the legend more compact */
+    #sectorChartHoldings .e-legend {
+        width: 100% !important;
+        height: auto !important;
+        position: static !important;
+        margin: 10px auto !important;
+        text-align: center !important;
+        padding: 0 !important;
+    }
+    
+    #sectorChartHoldings .e-legend-text {
+        text-align: left !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 150px !important;
+    }
+    
+    /* Make legend items more visible side-by-side */
+    #sectorChartHoldings .e-legend-item {
+        display: inline-block !important;
+        margin: 4px 8px !important;
+        padding: 2px !important;
+        width: auto !important;
+        float: none !important;
+    }
+    
+    /* Ensure legend shapes are visible */
+    #sectorChartHoldings .e-legend-shape {
+        height: 10px !important;
+        width: 10px !important;
+        display: inline-block !important;
+        visibility: visible !important;
+    }
+    
+    /* Center the pie slice labels */
+    #sectorChartHoldings .e-pie-text tspan {
+        text-anchor: middle !important;
+    }
+    
+    /* Ensure chart canvas is visible */
+    #sectorChartHoldings svg {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: visible !important;
+    }
+    
+    /* Force visibility for all chart elements */
+    .e-accumulationchart,
+    .e-accumulationchart div,
+    .e-accumulationchart svg,
+    .e-accumulationchart g,
+    .e-accumulationchart path,
+    .e-accumulationchart text,
+    .e-accumulation-series,
+    .e-accumulation-series > g {
+        visibility: visible !important;
+        display: block !important;
+    }
+}
+
+#sectorChartHoldings {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 500px !important;
+}
+
+/* Mobile responsive adjustments */
+/* For very small screens, stack the chart and table */
+@media (max-width: 576px) {
+    .sector-distribution-row .col-md-6 {
+        width: 100%;
+    }
+    
+    .sector-chart-container {
+        margin-bottom: 20px;
+    }
+}
+@media (max-width: 992px) {
+    .sector-chart-container {
+        height: 450px;
+        margin-bottom: 20px;
+        padding: 10px;
+    }
+    
+    .sector-table-container {
+        height: 450px;
+        max-height: 450px;
+        margin-bottom: 10px;
+    }
+    
+    #sectorChartHoldings {
+        max-height: 450px !important;
+    }
+    
+    #sectorChartHoldings .e-legend-text {
+        font-size: 10px !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    /* Better spacing between chart and table */
+    .mobile-chart {
+        margin-bottom: 30px;
+    }
+    
+    /* Table styling */
+    .sector-table-container {
+        margin-bottom: 20px;
+    }
+    
+    .sector-table-container th, 
+    .sector-table-container td {
+        padding: 6px 8px;
+        font-size: 13px;
+    }
+    
+    /* Make sector names readable */
+    .sector-table-container table {
+        width: 100%;
+        table-layout: fixed;
+    }
+    
+    /* First column (sector name) gets more space */
+    .sector-table-container th:first-child,
+    .sector-table-container td:first-child {
+        width: 45%;
+        word-break: break-word;
+    }
+    
+    /* Other columns share remaining space */
+    .sector-table-container th:not(:first-child),
+    .sector-table-container td:not(:first-child) {
+        width: 27.5%;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 575.98px) {
+    .mobile-chart {
+        height: 250px;
+        max-width: 250px;
+    }
+    
+    .mobile-table {
+        height: 250px;
+        max-height: 250px;
+    }
+}
+
+/* For very small screens, stack the chart and table */
+@media (max-width: 576px) {
+    .sector-distribution-row .col-md-6 {
+        width: 100%;
+    }
+    
+    .sector-chart-container {
+        margin-bottom: 20px;
+    }
 }

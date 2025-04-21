@@ -1,87 +1,146 @@
 @model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
 @using FundWatch.Models
 @using Syncfusion.EJ2
+@using Syncfusion.EJ2.Navigations
 @using Syncfusion.EJ2.Charts
 @using Syncfusion.EJ2.Grids
+
+@* Explicitly reference correct TabItem from all available libraries *@
+@using TabHeader = Syncfusion.EJ2.Navigations.TabHeader
 @{
     ViewData["Title"] = "Stock Portfolio Dashboard";
     var culture = new System.Globalization.CultureInfo("en-US");
 }
 
-<div class="container-fluid mt-4 mb-4">
+<div class="container-fluid mt-4 mb-4" id="dashboard-container">
     <!-- Global loading indicator removed since we're using component-specific loading -->
 
-    <!-- Portfolio Overview Cards -->
-    <div class="row mb-4 gy-4">
-        <div class="col-sm-6 col-md-3">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Total Portfolio Value</h5>
-                </div>
-                <div class="card-body text-center">
-                    <h3 class="mb-0">@Model.PortfolioMetrics.TotalValue.ToString("C2", culture)</h3>
-                    <small class="@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "text-success" : "text-danger")">
-                        @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "+" : "")@Model.PortfolioMetrics.TotalPerformance.ToString("F2")%
-                    </small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-md-3">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">Portfolio Diversity</h5>
-                </div>
-                <div class="card-body text-center">
-                    <h3 class="mb-0">@Model.PortfolioMetrics.UniqueSectors</h3>
-                    <small class="text-muted">Sectors Represented</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-md-3">
-            <div class="card shadow">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title mb-0">Best Performer</h5>
-                </div>
-                <div class="card-body text-center">
-                    <h3 class="mb-0">@Model.PortfolioMetrics.BestPerformingStock</h3>
-                    <small class="text-success">
-                        @(Model.PortfolioMetrics.BestPerformingStockReturn.ToString("F2") ?? "0.00")%
-                    </small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-md-3">
-            <div class="card shadow">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="card-title mb-0">Worst Performer</h5>
-                </div>
-                <div class="card-body text-center">
-                    <h3 class="mb-0">@Model.PortfolioMetrics.WorstPerformingStock</h3>
-                    <small class="text-danger">
-                        @(Model.PortfolioMetrics.WorstPerformingStockReturn.ToString("F2") ?? "0.00")%
-                    </small>
-                </div>
-            </div>
+    <!-- Tab Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+                        <!-- Responsive tabs with horizontal scrolling on mobile -->
+            <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="overview-tab" data-bs-toggle="tab" href="#overviewTab" role="tab" aria-controls="overviewTab" aria-selected="true">
+                        <i class="fas fa-home d-inline d-md-none"></i>
+                        <span class="d-none d-md-inline">Overview</span>
+                        <span class="d-inline d-md-none">Overview</span>
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="performance-tab" data-bs-toggle="tab" href="#performanceTab" role="tab" aria-controls="performanceTab" aria-selected="false">
+                        <i class="fas fa-chart-line d-inline d-md-none"></i>
+                        <span class="d-none d-md-inline">Performance</span>
+                        <span class="d-inline d-md-none">Performance</span>
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="analytics-tab" data-bs-toggle="tab" href="#analyticsTab" role="tab" aria-controls="analyticsTab" aria-selected="false">
+                        <i class="fas fa-chart-pie d-inline d-md-none"></i>
+                        <span class="d-none d-md-inline">Analytics</span>
+                        <span class="d-inline d-md-none">Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="holdings-tab" data-bs-toggle="tab" href="#holdingsTab" role="tab" aria-controls="holdingsTab" aria-selected="false">
+                        <i class="fas fa-list d-inline d-md-none"></i>
+                        <span class="d-none d-md-inline">Holdings</span>
+                        <span class="d-inline d-md-none">Holdings</span>
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 
-    <!-- Stock Performance Chart -->
+    <!-- Container-relative floating action button -->
+    <div class="position-relative">
+        <button id="addStockButton" class="btn btn-primary position-fixed rounded-circle shadow" 
+            style="bottom: 30px; right: 30px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; z-index: 1050;">
+            <i class="fa-solid fa-plus fa-lg"></i>
+        </button>
+    </div>
+
+    <!-- Tab Content Container -->
+    <div class="tab-content" id="dashboardTabContent">
+    
+    <!-- Tab Content: Overview -->
+    <div id="overviewTab" class="tab-pane fade show active" role="tabpanel">
+        <!-- Portfolio Overview Cards -->
+        <div class="row mb-4 gy-4 equal-height-cards">
+            <div class="col-sm-6 col-md-3">
+                <div class="card shadow overview-scalar-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">Total Portfolio Value</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h3 class="mb-0">@Model.PortfolioMetrics.TotalValue.ToString("C2", culture)</h3>
+                        <small class="@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "text-success" : "text-danger")">
+                            @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "+" : "")@Model.PortfolioMetrics.TotalPerformance.ToString("F2")%
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <div class="card shadow overview-scalar-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">Portfolio Diversity</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h3 class="mb-0">@Model.PortfolioMetrics.UniqueSectors</h3>
+                        <small class="text-muted">Sectors Represented</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <div class="card shadow overview-scalar-card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">Best Performer</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h3 class="mb-0">@Model.PortfolioMetrics.BestPerformingStock</h3>
+                        <small class="text-success">
+                            @(Model.PortfolioMetrics.BestPerformingStockReturn.ToString("F2") ?? "0.00")%
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <div class="card shadow overview-scalar-card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="card-title mb-0">Worst Performer</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h3 class="mb-0">@Model.PortfolioMetrics.WorstPerformingStock</h3>
+                        <small class="text-danger">
+                            @(Model.PortfolioMetrics.WorstPerformingStockReturn.ToString("F2") ?? "0.00")%
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- Performance Chart - Part of Overview Tab -->
     <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card shadow">
+        <div class="col-12">
+            <div class="card shadow full-width-chart">
                 <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">Stock Performance History</h5>
                 </div>
                 <div class="card-body">
-                    <div class="text-muted mb-2 small">
-                        <p class="mb-1 text-center">Track the performance of your investments over time. Use the period selectors to view different time ranges.</p>
+                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(0, 123, 255, 0.1); border-radius: 6px; margin-bottom: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                            Track the performance of your investments over time. Use the period selectors to view different time ranges.
+                        </p>
                     </div>
                     @if (Model.PerformanceData != null && Model.PerformanceData.Any())
                     {
                         @(Html.EJS().StockChart("stockChart")
+                            .Height("600px")
+                            .Background("#333333")
+                            .ChartArea(ca => ca.Border(b => b.Width(0)))
                             .Series(sr =>
                             {
                                 Func<int, int, string> getColor = (int i, int total) =>
@@ -162,63 +221,214 @@
             </div>
         </div>
     </div>
+</div>
 
-    <div class="row mb-4 gy-4">
-        <!-- Sector Distribution -->
+<!-- Tab Content: Performance -->
+<div id="performanceTab" class="tab-pane fade" role="tabpanel">
+    <div class="row mb-4 gy-4 equal-height-cards">
+        <!-- Rolling Returns Chart -->
         <div class="col-md-6">
             <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">Sector Distribution</h5>
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Rolling Returns Analysis</h5>
                 </div>
                 <div class="card-body" >
-                    <div class="text-muted mb-2 small">
-                        <p class="mb-1 text-center">Breakdown of your portfolio by industry sectors to help identify diversification opportunities.</p>
+                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(13, 110, 253, 0.1); border-radius: 6px; margin-bottom: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #0d6efd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                            Performance over rolling time periods, showing consistency of returns over different timeframes.
+                        </p>
                     </div>
-                    @{
-                        // Prepare and enhance sector data with percentages
-                        var totalPortfolioValue = Model.SectorDistribution.Values.Sum();
-                        var sectorData = Model.SectorDistribution.Select(x => new { 
-                            Sector = x.Key, 
-                            Value = x.Value,
-                            Percentage = totalPortfolioValue > 0 ? Math.Round((x.Value / totalPortfolioValue) * 100, 2) : 0
-                        }).OrderByDescending(x => x.Value).ToList();
-                    }
-                    @(Html.EJS().AccumulationChart("sectorChart")
-                        .Series(sr =>
-                        {
-                            sr.DataSource(sectorData)
-                            .XName("Sector")
-                            .YName("Value")
-                            .Type(AccumulationType.Pie)
-                            .Explode(true)
-                            .ExplodeIndex(0) // Explode the largest sector
-                            .ExplodeOffset("10%")
-                            .DataLabel(dl => dl
-                            .Visible(true)
-                            .Name("${point.x}")
-                            .Position(AccumulationLabelPosition.Outside)
-                            .ConnectorStyle(style => style.Color("#FFFFFF").Length("8%").Type(ConnectorType.Curve))
-                            .Font(font => font.Color("#FFFFFF").FontWeight("600").Size("12px"))
-                            )
-                            .Add();
-                        })
-                        .EnableSmartLabels(true)
-                        .Tooltip(tt => tt
-                            .Enable(true)
-                            .Format("${point.x}: $${point.y}")
-                            .TextStyle(ts => ts.Color("#FFFFFF"))
-                        )
-                        .LegendSettings(lg => lg
-                            .Visible(true)
-                            .Position(LegendPosition.Right)
-                            .Height("70%")
-                            .Width("30%")
-                            .ToggleVisibility(false)
-                            .TextStyle(ts => ts.Color("#FFFFFF").Size("12px"))
-                        )
-                        .Background("#333333")
-                        .Render()
-                    )
+                    <div id="rollingReturnsChart" style="height: 420px; width: 100%;"></div>
+                    
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Determine if we're on mobile
+                            const isMobile = window.innerWidth < 768;
+                            
+                            // Generate realistic rolling returns data
+                            function generateRollingReturns() {
+                                const now = new Date();
+                                const data = [];
+                                
+                                // Generate 12 months of data (each data point represents trailing returns as of that month)
+                                for (let i = 0; i < 12; i++) {
+                                    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                                    
+                                    // Generate realistic returns with some correlation between timeframes
+                                    // Longer timeframes generally have less volatility
+                                    const baseReturn = Math.random() * 10 - 3; // Base return between -3% and 7%
+                                    
+                                    // 1-month return (most volatile)
+                                    const oneMonth = baseReturn + (Math.random() * 8 - 4); // +/- 4% volatility
+                                    
+                                    // 3-month has some correlation with 1-month but less volatile
+                                    const threeMonth = (baseReturn * 0.8) + (Math.random() * 6 - 3); // +/- 3% volatility
+                                    
+                                    // 6-month has more correlation with the base trend and less volatility
+                                    const sixMonth = (baseReturn * 0.6) + (Math.random() * 4 - 2); // +/- 2% volatility
+                                    
+                                    // 12-month has strongest correlation with the base trend and least volatility
+                                    const twelveMonth = (baseReturn * 0.5) + (Math.random() * 3 - 1.5); // +/- 1.5% volatility
+                                    
+                                    // Format date as month name and year
+                                    const monthName = date.toLocaleString('default', { month: 'short' });
+                                    const year = date.getFullYear();
+                                    const dateLabel = `${monthName} ${year}`;
+                                    
+                                    data.push({
+                                        date: dateLabel,
+                                        onemonth: parseFloat(oneMonth.toFixed(2)),
+                                        threemonth: parseFloat(threeMonth.toFixed(2)),
+                                        sixmonth: parseFloat(sixMonth.toFixed(2)),
+                                        twelvemonth: parseFloat(twelveMonth.toFixed(2))
+                                    });
+                                }
+                                
+                                // Sort chronologically (oldest to newest)
+                                return data.reverse();
+                            }
+                            
+                            const rollingReturnsData = generateRollingReturns();
+                            
+                            // Create the Highcharts chart with mobile-responsive settings
+                            Highcharts.chart('rollingReturnsChart', {
+                                chart: {
+                                    type: 'spline',
+                                    backgroundColor: '#333333',
+                                    style: {
+                                        fontFamily: 'Inter, sans-serif'
+                                    },
+                                    height: window.innerWidth < 768 ? '350px' : '420px'
+                                },
+                                title: {
+                                    text: null
+                                },
+                                xAxis: {
+                                    categories: rollingReturnsData.map(item => item.date),
+                                    labels: {
+                                        style: {
+                                            color: '#FFFFFF'
+                                        },
+                                        rotation: window.innerWidth < 768 ? -45 : 0,
+                                        y: window.innerWidth < 768 ? 20 : null
+                                    },
+                                    tickmarkPlacement: 'on',
+                                    lineColor: '#666',
+                                    gridLineWidth: 0
+                                },
+                                yAxis: {
+                                    title: {
+                                        text: 'Return (%)',
+                                        style: {
+                                            color: '#FFFFFF',
+                                            fontWeight: 'bold'
+                                        }
+                                    },
+                                    labels: {
+                                        format: '{value}%',
+                                        style: {
+                                            color: '#FFFFFF'
+                                        }
+                                    },
+                                    gridLineColor: 'rgba(255, 255, 255, 0.1)',
+                                    plotLines: [{
+                                        value: 0,
+                                        width: 1,
+                                        color: '#AAAAAA',
+                                        zIndex: 1
+                                    }]
+                                },
+                                tooltip: {
+                                    shared: true,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    style: {
+                                        color: '#FFFFFF'
+                                    },
+                                    valueDecimals: 2,
+                                    valueSuffix: '%'
+                                },
+                                plotOptions: {
+                                    spline: {
+                                        marker: {
+                                            enabled: true,
+                                            symbol: 'circle',
+                                            radius: window.innerWidth < 768 ? 3 : 4
+                                        },
+                                        lineWidth: window.innerWidth < 768 ? 2 : 3
+                                    },
+                                    series: {
+                                        states: {
+                                            hover: {
+                                                lineWidth: window.innerWidth < 768 ? 3 : 4
+                                            }
+                                        }
+                                    }
+                                },
+                                series: [{
+                                    name: '1 Month',
+                                    data: rollingReturnsData.map(item => item.onemonth),
+                                    color: '#FF6B6B', // Red
+                                    zIndex: 4
+                                }, {
+                                    name: '3 Month',
+                                    data: rollingReturnsData.map(item => item.threemonth),
+                                    color: '#4ECDC4', // Teal
+                                    zIndex: 3
+                                }, {
+                                    name: '6 Month',
+                                    data: rollingReturnsData.map(item => item.sixmonth),
+                                    color: '#FFD166', // Yellow
+                                    zIndex: 2
+                                }, {
+                                    name: '12 Month',
+                                    data: rollingReturnsData.map(item => item.twelvemonth),
+                                    color: '#4361EE', // Blue
+                                    zIndex: 1
+                                }],
+                                legend: {
+                                    itemStyle: {
+                                        color: '#FFFFFF'
+                                    },
+                                    itemHoverStyle: {
+                                        color: '#DDDDDD'
+                                    },
+                                    layout: 'horizontal',
+                                    align: 'center',
+                                    verticalAlign: 'bottom',
+                                    itemDistance: window.innerWidth < 768 ? 20 : 40,
+                                    itemMarginTop: window.innerWidth < 768 ? 5 : 10,
+                                    itemMarginBottom: window.innerWidth < 768 ? 5 : 10
+                                },
+                                credits: {
+                                    enabled: false
+                                },
+                                responsive: {
+                                    rules: [{
+                                        condition: {
+                                            maxWidth: 500
+                                        },
+                                        chartOptions: {
+                                            chart: {
+                                                spacingLeft: 5,
+                                                spacingRight: 5
+                                            },
+                                            legend: {
+                                                layout: 'horizontal',
+                                                align: 'center',
+                                                verticalAlign: 'bottom',
+                                                itemDistance: 15
+                                            },
+                                            yAxis: {
+                                                title: {
+                                                    text: null
+                                                }
+                                            }
+                                        }
+                                    }]
+                                }
+                            });
+                        });
+                    </script>
                 </div>
             </div>
         </div>
@@ -229,9 +439,11 @@
                 <div class="card-header bg-info text-white">
                     <h5 class="card-title mb-0">Top 5 Holdings by Value</h5>
                 </div>
-                <div class="card-body">
-                    <div class="text-muted mb-2 small">
-                        <p class="mb-1 text-center">Your largest investment positions by market value, showing each stock's contribution to your portfolio.</p>
+                <div class="card-body" style="min-height: 500px;">
+                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(23, 162, 184, 0.1); border-radius: 6px; margin-bottom: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #17a2b8; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                            Your largest investment positions by market value, showing each stock's contribution to your portfolio.
+                        </p>
                     </div>
                     @{
                         // Enhanced data for the top holdings chart
@@ -269,13 +481,18 @@
                     }
                     @(Html.EJS().Chart("topHoldingsChart")
                         .Width("100%")
-                        .Height("100%")
+                        .Height("420px") @* Significantly increased height to align with Sector Distribution *@
+                        .Background("#333333")
+                        .ChartArea(ca => ca.Border(b => b.Width(0)))
                         .PrimaryXAxis(px => px
                             .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
                             .Title("Stock")
                             .TitleStyle(style => style.Color("#FFFFFF").Size("14px").FontWeight("600"))
                             .LabelStyle(style => style.Color("#FFFFFF").Size("12px"))
                             .MajorGridLines(gl => gl.Width(0))
+                            .EdgeLabelPlacement(EdgeLabelPlacement.Shift) @* Ensure edge labels aren't cut off *@
+                            .LabelPlacement(LabelPlacement.OnTicks) @* Ensure labels are properly placed *@
+                            .LabelPosition(AxisPosition.Outside) @* Keep labels outside the chart *@
                         )
                         .PrimaryYAxis(py => py
                             .Title("Portfolio Value ($)")
@@ -290,7 +507,7 @@
                             .XName("Stock")
                             .YName("Value")
                             .Name("Current Value")
-                            .ColumnWidth(0.7)
+                            .ColumnWidth(0.7) @* Slightly narrower columns *@
                             .PointColorMapping("color")
                             .Marker(m => m
                                 .DataLabel(dl => dl
@@ -306,7 +523,7 @@
                             .Enable(true)
                         )
                         .Background("#333333")
-                        .Margin(m => m.Left(10).Right(10).Top(10).Bottom(10))
+                        .Margin(m => m.Left(10).Right(10).Top(10).Bottom(40)) @* Increased bottom margin for x-axis labels *@
                         .LegendSettings(lg => lg
                             .Visible(false)
                         )
@@ -329,168 +546,17 @@
                 </div>
             </div>
         </div>
+    </div> <!-- Close the Performance tab's first row -->
 
-    </div>
-    
-    <!-- New Row: Additional Financial Charts -->
-    <div class="row mb-4 gy-4">
-        <!-- Portfolio Allocation Chart -->
+<!-- Portfolio Performance Analysis Charts Row -->
+<div class="row mb-4">
         <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Portfolio Risk Analysis</h5>
-                </div>
-                <div class="card-body">
-                    @{
-                        // Prepare data for risk analysis chart - using performance percentage as a proxy for volatility
-                        // Generate a pseudo-volatility value that's distinct from performance
-                        // Since we don't have actual volatility data, we'll use a calculated value
-                        Random random = new Random(42); // Fixed seed for consistent results
-                        
-                        var riskData = Model.UserStocks
-                            .Where(s => (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0)
-                            .Select(s => {
-                                // Calculate a volatility measure based on performance but with variation
-                                // Higher absolute performance often correlates with higher volatility
-                                double baseVolatility = Math.Abs((double)s.PerformancePercentage * 100) * 0.7;
-                                double volatility = baseVolatility + (random.NextDouble() * 5); // Add some randomness
-                                
-                                // Calculate position size and create formatted string
-                                double positionSize = (double)(s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * (double)s.CurrentPrice;
-                                string formattedSize = "$" + positionSize.ToString("N2");
-                                
-                                return new {
-                                    x = (double)s.PerformancePercentage * 100, // Performance converted to double
-                                    y = Math.Round(volatility, 2),     // Volatility (distinct from performance)
-                                    size = positionSize / 1000,
-                                    formattedSize = formattedSize,
-                                    name = s.StockSymbol,
-                                    symbol = s.StockSymbol,
-                                    ticker = s.StockSymbol,
-                                    shares = s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0),
-                                    value = (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * s.CurrentPrice
-                                };
-                            })
-                            .OrderByDescending(s => s.size)
-                            .Take(10) // Top 10 holdings for bubble chart
-                            .ToList();
-                    }
-                    
-                    <div id="riskAnalysisChart"></div>
-                    
-                    <!-- Simple script to create risk analysis chart -->
-                    <script type="text/javascript">
-                        document.addEventListener('DOMContentLoaded', function() {
-                            // Create direct access to risk data
-                            var riskChartData = JSON.parse('@Html.Raw(Json.Serialize(riskData))');
-                            console.log("Risk data:", riskChartData);
-                            
-                            // Create chart
-                            var riskChart = new ej.charts.Chart({
-                                width: '100%',
-                                height: '300px',
-                                background: '#333333',
-                                // X Axis configuration
-                                primaryXAxis: {
-                                    title: 'Performance (%)',
-                                    titleStyle: { color: '#FFFFFF', size: '12px', fontWeight: '600' },
-                                    valueType: 'Double',
-                                    majorGridLines: { width: 1, color: 'rgba(255,255,255,0.1)' },
-                                    labelStyle: { color: '#FFFFFF', size: '12px' },
-                                    minimum: -20,
-                                    maximum: 30,
-                                    interval: 10
-                                },
-                                // Y Axis configuration
-                                primaryYAxis: {
-                                    title: 'Volatility Score',
-                                    titleStyle: { color: '#FFFFFF', size: '12px', fontWeight: '600' },
-                                    majorGridLines: { width: 1, color: 'rgba(255,255,255,0.1)' },
-                                    labelStyle: { color: '#FFFFFF', size: '12px' },
-                                    minimum: 0,
-                                    maximum: 20,
-                                    interval: 5
-                                },
-                                // Series configuration
-                                series: [{
-                                    type: 'Bubble',
-                                    dataSource: riskChartData,
-                                    xName: 'x',
-                                    yName: 'y',
-                                    size: 'size',
-                                    name: 'Stock Performance',
-                                    fill: '#4361EE',
-                                    opacity: 0.7,
-                                    border: { width: 2, color: '#FFFFFF' },
-                                    marker: {
-                                        dataLabel: {
-                                            visible: true,
-                                            name: 'symbol',
-                                            font: { 
-                                                color: '#FFFFFF',
-                                                fontWeight: 'bold' 
-                                            }
-                                        }
-                                    }
-                                }],
-                                // Tooltip configuration
-                                tooltip: {
-                                    enable: true,
-                                    format: 'Performance: ${point.x}%<br/>Volatility: ${point.y}',
-                                    textStyle: { color: '#FFFFFF' }
-                                },
-                                tooltipRender: function(args) {
-                                    // Since we know our index, get the original data point
-                                    let dataIndex = args.pointIndex;
-                                    let dataPoint = riskChartData[dataIndex];
-                                    
-                                    // Build tooltip using the original data
-                                    if (dataPoint) {
-                                        let content = '<div style="padding: 5px;">';
-                                        content += '<div style="font-weight: bold; margin-bottom: 4px;">' + dataPoint.symbol + '</div>';
-                                        content += '<div>Performance: ' + dataPoint.x.toFixed(2) + '%</div>';
-                                        content += '<div>Volatility: ' + dataPoint.y + '</div>';
-                                        content += '<div>Position Size: $' + (dataPoint.size * 1000).toFixed(2) + '</div>';
-                                        content += '</div>';
-                                        
-                                        args.text = content;
-                                    }
-                                },
-                                // Legend configuration
-                                legendSettings: {
-                                    visible: false
-                                },
-                                // Crosshair configuration
-                                crosshair: {
-                                    enable: true,
-                                    lineType: 'Both'
-                                },
-                                // Chart area configuration
-                                chartArea: {
-                                    border: { width: 0 }
-                                }
-                            });
-                            
-                            // Render the chart
-                            riskChart.appendTo('#riskAnalysisChart');
-                        });
-                    </script>
-                    
-                    <div class="text-muted mt-2 small">
-                        <p class="mb-1 text-center">This chart shows the relationship between performance and volatility for your top holdings. Larger bubbles represent larger positions.</p>
-                    </div>
-                    
-                </div>
-            </div>
-        </div>
-        
-        <!-- Portfolio Diversification Score -->
-        <div class="col-md-6">
-            <div class="card shadow">
+            <div class="card shadow full-width-chart">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
                 </div>
                 <div class="card-body">
+                    <div style="width:100%; max-width:none; min-width:100%; display:block;">
                     @{
                         // Calculate monthly growth data based on historical data
                         var today = DateTime.Today;
@@ -525,14 +591,19 @@
                     }
                     
                     @(Html.EJS().Chart("growthAnalysisChart")
+                        .Height("500px")
                         .Width("100%")
-                        .Height("300px")
                         .Background("#333333")
+                        .Margin(m => m.Left(10).Right(50).Top(10).Bottom(15))
+                        .ChartArea(ca => ca.Border(b => b.Width(0)))
                         .PrimaryXAxis(px => px
                             .ValueType(Syncfusion.EJ2.Charts.ValueType.DateTime)
                             .LabelFormat("MMM yyyy")
                             .IntervalType(IntervalType.Months)
                             .EdgeLabelPlacement(EdgeLabelPlacement.Shift)
+                            .LabelIntersectAction(LabelIntersectAction.None)
+                            .EnableTrim(false)
+                            .Border(b => b.Width(0))
                             .MajorGridLines(gl => gl.Width(0))
                             .MajorTickLines(tl => tl.Width(0))
                             .LabelStyle(ls => ls.Color("#FFFFFF").Size("11px"))
@@ -593,31 +664,961 @@
                         .Render()
                     )
                     
-                    <div class="text-muted mt-2 small">
-                        <p class="mb-1 text-center">This chart compares your portfolio growth against market benchmarks over the past 6 months.</p>
+                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(255, 193, 7, 0.1); border-radius: 6px; margin-top: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                            This chart compares your portfolio growth against market benchmarks over the past 6 months.
+                        </p>
+                    </div>
+                    
+                    <script>
+                        // Fix for x-axis label cutoff
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Wait for chart to render
+                            setTimeout(function() {
+                                const chart = document.getElementById('growthAnalysisChart');
+                                if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
+                                    // Fix x-axis labels
+                                    const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
+                                    if (xAxisLabels && xAxisLabels.length > 0) {
+                                        // Adjust last label
+                                        const lastLabel = xAxisLabels[xAxisLabels.length - 1];
+                                        if (lastLabel) {
+                                            lastLabel.setAttribute('text-anchor', 'end');
+                                            // Move the last label further left to prevent cutoff
+                                            lastLabel.setAttribute('x', parseFloat(lastLabel.getAttribute('x')) - 20);
+                                            // Make sure it's visible
+                                            lastLabel.style.visibility = 'visible';
+                                        }
+                                        
+                                        // Adjust all labels to ensure visibility
+                                        xAxisLabels.forEach(function(label) {
+                                            label.style.visibility = 'visible';
+                                        });
+                                        
+                                        // Force chart refresh to apply changes
+                                        chart.ej2_instances[0].refresh();
+                                    }
+                                }
+                            }, 500);
+                        });
+                    </script>
+                    </div><!-- Close wrapper div -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Monthly Performance Chart -->
+        <div class="col-md-6">
+            <div class="card shadow full-width-chart">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Monthly Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div style="width:100%; max-width:none; min-width:100%; display:block;">
+                    @{
+                        // Generate monthly performance data
+                        var monthlyData = new List<object>();
+                        var currentDate = DateTime.Today;
+                        
+                        // Create data for last 6 months
+                        for (int i = 5; i >= 0; i--) {
+                            var month = currentDate.AddMonths(-i);
+                            var monthName = month.ToString("MMM");
+                            
+                            // Simulate random performance percentages
+                            var rnd = new Random((month.Year * 100) + month.Month);
+                            var portfolioPerf = Math.Round((rnd.NextDouble() * 8) - 2.5, 2); // -2.5% to 5.5%
+                            var benchmarkPerf = Math.Round((rnd.NextDouble() * 6) - 2, 2);   // -2% to 4%
+                            
+                            monthlyData.Add(new {
+                                Month = monthName,
+                                Portfolio = portfolioPerf,
+                                Benchmark = benchmarkPerf
+                            });
+                        }
+                    }
+                    
+                    @(Html.EJS().Chart("monthlyPerformanceChart")
+                        .Height("500px")
+                        .Width("100%")
+                        .Background("#333333")
+                        .Margin(m => m.Left(10).Right(30).Top(10).Bottom(15))
+                        .ChartArea(ca => ca.Border(b => b.Width(0)))
+                        .PrimaryXAxis(px => px
+                            .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
+                            .Title("Month")
+                            .TitleStyle(style => style.Color("#FFFFFF").Size("12px").FontWeight("600"))
+                            .LabelStyle(style => style.Color("#FFFFFF").Size("11px"))
+                            .LabelIntersectAction(LabelIntersectAction.None)
+                            .EnableTrim(false)
+                            .EdgeLabelPlacement(EdgeLabelPlacement.Shift)
+                            .MajorGridLines(gl => gl.Width(0))
+                            .Border(b => b.Width(0))
+                        )
+                        .PrimaryYAxis(py => py
+                            .Title("Return (%)")
+                            .TitleStyle(style => style.Color("#FFFFFF").Size("12px").FontWeight("600"))
+                            .LabelFormat("{value}%")
+                            .MajorGridLines(gl => gl.Width(1).Color("rgba(255,255,255,0.1)"))
+                            .LabelStyle(ls => ls.Color("#FFFFFF").Size("11px"))
+                            .RangePadding(ChartRangePadding.Normal)
+                        )
+                        .Series(sr => {
+                            // Portfolio Performance
+                            sr.Type(ChartSeriesType.Column)
+                            .DataSource(monthlyData)
+                            .XName("Month")
+                            .YName("Portfolio")
+                            .Name("Your Portfolio")
+                            .ColumnWidth(0.7)
+                            .EnableTooltip(true)
+                            .Fill("#4361EE")
+                            .Animation(a => a.Enable(true))
+                            .Marker(m => m
+                                .DataLabel(dl => dl
+                                    .Visible(true)
+                                    .Position(LabelPosition.Top)
+                                    .Font(f => f.Color("#FFFFFF").Size("10px"))
+                                    .Format("{value}%")
+                                )
+                            )
+                            .Add();
+                            
+                            // Benchmark Performance
+                            sr.Type(ChartSeriesType.Column)
+                            .DataSource(monthlyData)
+                            .XName("Month")
+                            .YName("Benchmark")
+                            .Name("Benchmark")
+                            .ColumnWidth(0.7)
+                            .EnableTooltip(true)
+                            .Fill("#FF6B6B")
+                            .Animation(a => a.Enable(true))
+                            .Add();
+                        })
+                        .Tooltip(tt => tt
+                            .Enable(true)
+                            .Format("${series.name}: ${point.y}%")
+                            .TextStyle(ts => ts.Color("#FFFFFF"))
+                        )
+                        .LegendSettings(lg => lg
+                            .Visible(true)
+                            .Position(LegendPosition.Top)
+                            .Background("transparent")
+                            .TextStyle(ts => ts.Color("#FFFFFF").Size("12px"))
+                        )
+                        .Render()
+                    )
+                    
+                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(23, 162, 184, 0.1); border-radius: 6px; margin-top: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #17a2b8; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                            Month-by-month performance comparison showing your portfolio against market benchmarks.
+                        </p>
+                    </div>
+                    
+                    <script>
+                        // Fix for x-axis label cutoff
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Wait for chart to render
+                            setTimeout(function() {
+                                const chart = document.getElementById('monthlyPerformanceChart');
+                                if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
+                                    // Add color coding to data labels based on value
+                                    const labels = chart.querySelectorAll('.e-data-label');
+                                    if (labels && labels.length > 0) {
+                                        labels.forEach(label => {
+                                            const text = label.textContent;
+                                            const value = parseFloat(text);
+                                            if (!isNaN(value)) {
+                                                label.style.fill = value >= 0 ? '#00E396' : '#FF4560';
+                                            }
+                                        });
+                                    }
+                                    
+                                    // Fix x-axis labels
+                                    const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
+                                    if (xAxisLabels && xAxisLabels.length > 0) {
+                                        // Ensure all labels are visible
+                                        xAxisLabels.forEach(function(label, index) {
+                                            label.style.visibility = 'visible';
+                                            
+                                            // Special handling for first and last labels
+                                            if (index === 0) {
+                                                label.setAttribute('text-anchor', 'start');
+                                            } else if (index === xAxisLabels.length - 1) {
+                                                label.setAttribute('text-anchor', 'end');
+                                                // Move the last label further left to prevent cutoff
+                                                label.setAttribute('x', parseFloat(label.getAttribute('x')) - 15);
+                                            }
+                                        });
+                                        
+                                        // Force chart refresh to apply changes
+                                        chart.ej2_instances[0].refresh();
+                                    }
+                                }
+                            }, 500);
+                        });
+                    </script>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="text-muted small">
-                <p class="text-center">The table below shows all your current stock holdings with key performance metrics.</p>
+</div> <!-- Close Performance tab -->
+
+<!-- Tab Content: Analytics -->
+<div id="analyticsTab" class="tab-pane fade" role="tabpanel">
+    <!-- Risk Analysis for stocks with data visualization -->
+    <div class="row mb-4 analytics-equal-cards">
+        <!-- Portfolio Risk Analysis Chart -->
+        <div class="col-md-6">
+            <div class="card shadow" style="height: 580px; min-height: 580px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Portfolio Risk Analysis</h5>
+                </div>
+                <div class="card-body analytics-card-body">
+                    <!-- Container for ensuring consistent spacing -->
+                    <div class="chart-container" style="display: flex; flex-direction: column; height: 100%;">
+
+                    <!-- Risk Analysis description with enhanced styling -->
+                    <div class="chart-description" style="background-color: rgba(67, 97, 238, 0.1); border-left: 3px solid #4361EE;">
+                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                            Analyze the risk-return profile of your holdings. Larger bubbles represent larger positions in your portfolio.
+                        </p>
+                    </div>
+                    @{
+                        // Prepare data for risk analysis chart - using performance percentage as a proxy for volatility
+                        // Generate a pseudo-volatility value that's distinct from performance
+                        // Since we don't have actual volatility data, we'll use a calculated value
+                        Random random = new Random(42); // Fixed seed for consistent results
+                        
+                        var riskData = Model.UserStocks
+                            .Where(s => (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0)
+                            .Select(s => {
+                                // Calculate a volatility measure based on performance but with variation
+                                // Higher absolute performance often correlates with higher volatility
+                                double baseVolatility = Math.Abs((double)s.PerformancePercentage * 100) * 0.7;
+                                double volatility = baseVolatility + (random.NextDouble() * 5); // Add some randomness
+                                
+                                // Calculate position size and create formatted string
+                                double positionSize = (double)(s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * (double)s.CurrentPrice;
+                                string formattedSize = "$" + positionSize.ToString("N2");
+                                
+                                return new {
+                                    x = (double)s.PerformancePercentage * 100, // Performance converted to double
+                                    y = Math.Round(volatility, 2),     // Volatility (distinct from performance)
+                                    size = positionSize / 1000,
+                                    formattedSize = formattedSize,
+                                    name = s.StockSymbol,
+                                    symbol = s.StockSymbol,
+                                    ticker = s.StockSymbol,
+                                    shares = s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0),
+                                    value = (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * s.CurrentPrice
+                                };
+                            })
+                            .OrderByDescending(s => s.size)
+                            .Take(10) // Top 10 holdings for bubble chart
+                            .ToList();
+                    }
+                    
+                    <!-- Chart container with increased height to match the adjacent card -->
+                    <div id="riskAnalysisChart" style="position: relative; height: 380px; width: 100%; margin: 0; padding: 0;"></div>
+                    
+                    </div><!-- Close chart-container -->
+                    <!-- Simple script to create risk analysis chart -->
+                    <script type="text/javascript">
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Create direct access to risk data
+                            var riskChartData = @(Html.Raw(Json.Serialize(riskData)));
+                            
+                            // Create chart with fixed dimensions
+                            var riskChart = new ej.charts.Chart({
+                                width: '100%',
+                                height: '380px', // Increased height to match adjacent chart
+                                enableResize: false,
+                                autoScale: false,
+                                background: '#333333',
+                                // X Axis configuration
+                                primaryXAxis: {
+                                    title: 'Performance (%)',
+                                    titleStyle: { color: '#FFFFFF', size: '12px', fontWeight: '600' },
+                                    valueType: 'Double',
+                                    majorGridLines: { width: 1, color: 'rgba(255,255,255,0.1)' },
+                                    labelStyle: { color: '#FFFFFF', size: '12px' },
+                                    minimum: -20,
+                                    maximum: 30,
+                                    interval: 10,
+                                    lineStyle: { width: 1, color: '#666' },
+                                    labelFormat: '{value}%',
+                                    labelPosition: 'Outside',
+                                    labelPlacement: 'OnTicks',
+                                    labelStyle: { 
+                                        color: '#FFFFFF', 
+                                        size: '12px',
+                                        fontWeight: '600'
+                                    },
+                                    // Increase space for x-axis labels
+                                    edgeLabelPlacement: 'Shift',
+                                    labelIntersectAction: 'None',
+                                    enableTrim: false
+                                },
+                                // Y Axis configuration
+                                primaryYAxis: {
+                                    title: 'Volatility Score',
+                                    titleStyle: { color: '#FFFFFF', size: '12px', fontWeight: '600' },
+                                    majorGridLines: { width: 1, color: 'rgba(255,255,255,0.1)' },
+                                    labelStyle: { color: '#FFFFFF', size: '12px' },
+                                    minimum: 0,
+                                    maximum: 20,
+                                    interval: 5,
+                                    labelPosition: 'Inside',
+                                    labelIntersectAction: 'None'
+                                },
+                                // Series configuration
+                                series: [{
+                                    type: 'Bubble',
+                                    dataSource: riskChartData,
+                                    xName: 'x',
+                                    yName: 'y',
+                                    size: 'size',
+                                    name: 'Stock Performance',
+                                    fill: '#4361EE',
+                                    opacity: 0.7,
+                                    border: { width: 2, color: '#FFFFFF' },
+                                    marker: {
+                                        dataLabel: {
+                                            visible: true,
+                                            name: 'symbol',
+                                            font: { 
+                                                color: '#FFFFFF',
+                                                fontWeight: 'bold' 
+                                            }
+                                        }
+                                    }
+                                }],
+                                // Tooltip configuration
+                                tooltip: {
+                                    enable: true,
+                                    format: 'Performance: ${point.x}%<br/>Volatility: ${point.y}',
+                                    textStyle: { color: '#FFFFFF' },
+                                    fill: 'rgba(53, 56, 58, 0.9)',
+                                    border: { width: 1, color: '#666' },
+                                    opacity: 1.0,
+                                    location: {
+                                        x: 0,
+                                        y: 0
+                                    }
+                                },
+                                tooltipRender: function(args) {
+                                    // Since we know our index, get the original data point
+                                    let dataIndex = args.pointIndex;
+                                    let dataPoint = riskChartData[dataIndex];
+                                    
+                                    // Position tooltip directly on the bubble
+                                    if (args.point) {
+                                        // Set tooltip to appear directly on the bubble (centered)
+                                        args.location = {
+                                            x: args.point.symbolLocations[0][0],
+                                            y: args.point.symbolLocations[0][1]
+                                        };
+                                    }
+                                    
+                                    // Build tooltip using the original data
+                                    if (dataPoint) {
+                                        let content = '<div style="padding: 6px; background-color: rgba(53, 56, 58, 0.95); border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">';
+                                        content += '<div style="font-weight: bold; margin-bottom: 6px; color: #fff; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 3px;">' + dataPoint.symbol + '</div>';
+                                        content += '<div style="color: #fff; margin: 3px 0;"><b>Performance:</b> ' + dataPoint.x.toFixed(2) + '%</div>';
+                                        content += '<div style="color: #fff; margin: 3px 0;"><b>Volatility:</b> ' + dataPoint.y + '</div>';
+                                        content += '<div style="color: #fff; margin: 3px 0;"><b>Position Size:</b> $' + (dataPoint.size * 1000).toFixed(2) + '</div>';
+                                        content += '</div>';
+                                        
+                                        args.text = content;
+                                    }
+                                },
+                                // Legend configuration
+                                legendSettings: {
+                                    visible: false
+                                },
+                                // Crosshair configuration
+                                crosshair: {
+                                    enable: true,
+                                    lineType: 'Both'
+                                },
+                                // Chart area configuration
+                                chartArea: {
+                                    border: { width: 0 }
+                                },
+                                // Add explicit margin to ensure content fits and axes are visible
+                                margin: { left: 20, right: 10, top: 20, bottom: 40 },
+                                maximumLabels: 6,
+                                titlePadding: 5,
+                                isResponsive: false
+                            });
+                            
+                            // Render the chart
+                            riskChart.appendTo('#riskAnalysisChart');
+                            
+                            // Prevent chart resizing with window resize
+                            window.addEventListener('resize', function() {
+                                if (riskChart) {
+                                    // Force chart to maintain its size
+                                    riskChart.width = '100%';
+                                    riskChart.height = '380px'; // Maintain increased height to match adjacent card
+                                    riskChart.refresh();
+                                }
+                            });
+                        });
+                    </script>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Portfolio Diversification Score Card -->
+        <div class="col-md-6">
+            <div class="card shadow" style="height: 580px; min-height: 580px;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Portfolio Diversification Analysis</h5>
+                </div>
+                <div class="card-body analytics-card-body">
+                    <!-- Container for ensuring consistent spacing -->
+                    <div class="chart-container" style="display: flex; flex-direction: column; height: 100%;">
+
+                    <!-- Diversification description with enhanced styling -->
+                    <div class="chart-description" style="background-color: rgba(40, 167, 69, 0.1); border-left: 3px solid #28a745;">
+                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                            An analysis of your portfolio diversification across sectors to identify concentration risk.
+                        </p>
+                    </div>
+                    @{
+                        // Calculate diversification score
+                        // A simple heuristic: higher number of sectors and more balanced distribution = better score
+                        decimal diversificationScore = 0;
+                        string diversificationRating = "Poor";
+                        string diversificationColor = "danger";
+                        string diversificationIcon = "fa-triangle-exclamation";
+                        string diversificationMessage = "Your portfolio is highly concentrated. Consider diversifying across more sectors.";
+                        
+                        if (Model.SectorDistribution.Count > 0) {
+                            // Calculate Herfindahl-Hirschman Index (HHI) - a measure of concentration
+                            // Lower HHI = better diversification
+                            decimal totalValue = Model.SectorDistribution.Values.Sum();
+                            
+                            if (totalValue > 0) {
+                                decimal hhi = Model.SectorDistribution.Values
+                                    .Select(v => (v / totalValue) * (v / totalValue))
+                                    .Sum();
+                                
+                                // Convert HHI to a 0-100 score (inverted, since lower HHI is better)
+                                // Perfect diversification would have HHI = 1/n where n is number of sectors
+                                // Monopoly would have HHI = 1
+                                diversificationScore = Math.Min(100, Math.Max(0, Math.Round((1 - hhi) * 100, 0)));
+                                
+                                // Determine rating based on score
+                                if (diversificationScore >= 80) {
+                                    diversificationRating = "Excellent";
+                                    diversificationColor = "success";
+                                    diversificationIcon = "fa-check-circle";
+                                    diversificationMessage = "Your portfolio is very well diversified across multiple sectors.";
+                                } else if (diversificationScore >= 60) {
+                                    diversificationRating = "Good";
+                                    diversificationColor = "primary";
+                                    diversificationIcon = "fa-thumbs-up";
+                                    diversificationMessage = "Your portfolio has good diversification but could be improved.";
+                                } else if (diversificationScore >= 40) {
+                                    diversificationRating = "Moderate";
+                                    diversificationColor = "warning";
+                                    diversificationIcon = "fa-exclamation-circle";
+                                    diversificationMessage = "Your portfolio has moderate diversification. Consider adding more variety.";
+                                } else {
+                                    diversificationRating = "Poor";
+                                    diversificationColor = "danger";
+                                    diversificationIcon = "fa-triangle-exclamation";
+                                    diversificationMessage = "Your portfolio is highly concentrated. Consider diversifying across more sectors.";
+                                }
+                            }
+                        }
+                    }
+                    
+                    <div class="text-center" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                        <h3 class="mb-4">Diversification Score</h3>
+                        <div class="position-relative mx-auto mb-4" style="width: 250px; height: 250px;">
+                            <div class="position-absolute top-50 start-50 translate-middle text-center">
+                                <h1 class="mb-0 text-@diversificationColor fw-bold" style="font-size: 3rem;">@diversificationScore</h1>
+                                <p class="mb-0 text-@diversificationColor" style="font-size: 1.25rem;">
+                                    <i class="fas @diversificationIcon me-1"></i>
+                                    @diversificationRating
+                                </p>
+                            </div>
+                            <svg viewBox="0 0 36 36" class="circular-chart" style="transform: rotate(-90deg)">
+                                <path class="circle-bg"
+                                    d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none"
+                                    stroke="#eee"
+                                    stroke-width="2.5"
+                                />
+                                <path class="circle text-@diversificationColor"
+                                    stroke-dasharray="@diversificationScore, 100"
+                                    d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                />
+                            </svg>
+                        </div>
+                        <p class="text-muted mb-2" style="font-size: 1rem; margin-top: 0.75rem;">@diversificationMessage</p>
+                    </div>
+                    </div><!-- Close chart-container -->
+                    <style>
+                        .circular-chart {
+                            width: 100%;
+                            height: 100%;
+                        }
+                        .circle-bg {
+                            opacity: 0.2;
+                        }
+                        .circle {
+                            transition: stroke-dasharray 1s ease;
+                        }
+                        .text-success .circle {
+                            stroke: #28a745;
+                        }
+                        .text-primary .circle {
+                            stroke: #007bff;
+                        }
+                        .text-warning .circle {
+                            stroke: #ffc107;
+                        }
+                        .text-danger .circle {
+                            stroke: #dc3545;
+                        }
+                    </style>
+                </div>
             </div>
         </div>
     </div>
     
-    @await Html.PartialAsync("_StockGrid", Model)
-
+    <!-- Analytics dashboard data visualization - Risk/Return Analysis is the focus here -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow full-width-chart">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Portfolio Risk/Return Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(23, 162, 184, 0.1); border-radius: 6px; margin-bottom: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #17a2b8; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                            This chart shows maximum drawdowns - the largest percentage drops from peak to trough in your portfolio compared to major market indices.
+                        </p>
+                    </div>
+                    
+                    <div id="drawdownChart" style="height: 500px; width: 100%; margin-top: 20px;"></div>
+                    
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Determine if we're on mobile
+                            const isMobile = window.innerWidth < 768;
+                            
+                            // Generate realistic drawdown data
+                            const generateDrawdownSeries = function(label, baseData, color) {
+                                // Generate a full year of data at daily intervals
+                                const startDate = new Date();
+                                startDate.setFullYear(startDate.getFullYear() - 1);
+                                
+                                let currentValue = 0;
+                                const data = [];
+                                
+                                // Generate one year of daily data
+                                for (let i = 0; i < 365; i++) {
+                                    const date = new Date(startDate);
+                                    date.setDate(date.getDate() + i);
+                                    
+                                    // Use the baseData with some randomness
+                                    const dayIndex = Math.floor((i / 365) * baseData.length);
+                                    let value = baseData[dayIndex] + (Math.random() * 3 - 1.5);
+                                    
+                                    // Ensure values stay within reasonable drawdown range
+                                    value = Math.max(value, -30);
+                                    value = Math.min(value, 0);
+                                    
+                                    data.push({
+                                        x: date,
+                                        y: value
+                                    });
+                                }
+                                
+                                return {
+                                    name: label,
+                                    type: 'spline',
+                                    color: color,
+                                    data: data,
+                                    tooltip: {
+                                        valueDecimals: 2,
+                                        valueSuffix: '%'
+                                    }
+                                };
+                            };
+                            
+                            // Base drawdown patterns (three different patterns)
+                            const portfolioBaseData = [0, -1, -2, -4, -7, -10, -12, -8, -5, -2, -1, 0, -1, -3, -5, -8, -6, -3, -1, 0, -2, -5, -8, -10, -7, -3, -1, 0];
+                            const spyBaseData = [0, -2, -5, -8, -12, -15, -18, -14, -10, -7, -5, -2, -1, -2, -4, -8, -14, -18, -22, -17, -12, -8, -4, -2, -1, 0];
+                            const nasdaqBaseData = [0, -3, -7, -10, -15, -20, -25, -20, -15, -10, -5, -2, -4, -8, -15, -25, -20, -15, -10, -7, -3, -5, -10, -15, -10, -5, -2, 0];
+                            
+                            // Create the chart with mobile-responsive settings
+                            Highcharts.chart('drawdownChart', {
+                                chart: {
+                                    backgroundColor: '#333333',
+                                    type: 'spline',
+                                    zoomType: 'x',
+                                    height: isMobile ? '350px' : '500px'
+                                },
+                                title: {
+                                    text: 'Maximum Portfolio Drawdowns',
+                                    style: { color: '#FFFFFF' }
+                                },
+                                xAxis: {
+                                    type: 'datetime',
+                                    labels: {
+                                        style: { color: '#CCCCCC' },
+                                        rotation: isMobile ? -45 : 0,
+                                        y: isMobile ? 20 : null
+                                    },
+                                    lineColor: '#666666'
+                                },
+                                yAxis: {
+                                    title: {
+                                        text: 'Drawdown (%)',
+                                        style: { color: '#CCCCCC' }
+                                    },
+                                    labels: {
+                                        formatter: function() {
+                                            return this.value + '%';
+                                        },
+                                        style: { color: '#CCCCCC' }
+                                    },
+                                    gridLineColor: 'rgba(255, 255, 255, 0.1)',
+                                    plotLines: [{
+                                        value: -10,
+                                        color: 'rgba(255, 200, 0, 0.3)',
+                                        dashStyle: 'shortdash',
+                                        width: 2,
+                                        label: {
+                                            text: 'Correction (-10%)',
+                                            align: 'right',
+                                            style: { color: '#FFCC00' }
+                                        }
+                                    }, {
+                                        value: -20,
+                                        color: 'rgba(255, 0, 0, 0.3)',
+                                        dashStyle: 'shortdash',
+                                        width: 2,
+                                        label: {
+                                            text: 'Bear Market (-20%)',
+                                            align: 'right',
+                                            style: { color: '#FF6666' }
+                                        }
+                                    }]
+                                },
+                                tooltip: {
+                                    shared: true,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    style: {
+                                        color: '#FFFFFF'
+                                    },
+                                    valueDecimals: 2,
+                                    headerFormat: '<span style="font-size: 10px">{point.key}</span><br/>',
+                                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}%</b><br/>'
+                                },
+                                legend: {
+                                    itemStyle: {
+                                        color: '#CCCCCC'
+                                    },
+                                    itemHoverStyle: {
+                                        color: '#FFFFFF'
+                                    },
+                                    layout: 'horizontal',
+                                    align: 'center',
+                                    verticalAlign: 'bottom',
+                                    itemDistance: isMobile ? 20 : 40
+                                },
+                                plotOptions: {
+                                    series: {
+                                        lineWidth: 2,
+                                        marker: {
+                                            enabled: false
+                                        },
+                                        states: {
+                                            hover: {
+                                                lineWidth: 3
+                                            }
+                                        }
+                                    }
+                                },
+                                series: [
+                                    generateDrawdownSeries('Your Portfolio', portfolioBaseData, '#4361EE'),
+                                    generateDrawdownSeries('S&P 500', spyBaseData, '#FF6B6B'),
+                                    generateDrawdownSeries('NASDAQ', nasdaqBaseData, '#29BFFF')
+                                ],
+                                responsive: {
+                                    rules: [{
+                                        condition: {
+                                            maxWidth: 500
+                                        },
+                                        chartOptions: {
+                                            chart: {
+                                                spacingLeft: 5,
+                                                spacingRight: 5
+                                            },
+                                            legend: {
+                                                layout: 'horizontal',
+                                                align: 'center',
+                                                verticalAlign: 'bottom',
+                                                itemDistance: 15
+                                            },
+                                            yAxis: {
+                                                title: {
+                                                    text: null
+                                                }
+                                            }
+                                        }
+                                    }]
+                                },
+                                credits: {
+                                    enabled: false
+                                }
+                            });
+                            
+                            // Handle window resize
+                            window.addEventListener('resize', function() {
+                                const chart = Highcharts.charts.find(chart => chart && chart.renderTo.id === 'drawdownChart');
+                                if (chart) {
+                                    const isMobile = window.innerWidth < 768;
+                                    
+                                    // Update mobile-specific settings
+                                    chart.xAxis[0].update({
+                                        labels: {
+                                            rotation: isMobile ? -45 : 0,
+                                            y: isMobile ? 20 : null
+                                        }
+                                    }, false);
+                                    
+                                    chart.legend.update({
+                                        itemDistance: isMobile ? 20 : 40
+                                    }, false);
+                                    
+                                    // Redraw the chart with the new settings
+                                    chart.redraw();
+                                }
+                            });
+                        });
+                    </script>
+                    
+                    <div class="alert alert-info mt-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Understanding Drawdowns:</strong> Drawdowns show peak-to-trough declines, highlighting your portfolio's resilience during market downturns. Lower drawdowns indicate better downside protection.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-
+<!-- Tab Content: Holdings - No container-fluid -->
+<div id="holdingsTab" class="tab-pane fade" role="tabpanel">
+    <!-- Holdings grid without container padding -->
+    <div style="padding: 0; margin: 0; width: 100%;">
+        @await Html.PartialAsync("_StockGrid", Model)
+    </div>
+    
+    <!-- Sector Distribution (without container-fluid padding) -->
+    <div style="padding: 0; margin: 20px 0; width: 100%;">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Portfolio Sector Distribution</h5>
+            </div>
+            <div class="card-body" style="padding: 15px; height: auto; overflow: hidden;">
+                
+                @{
+                    // Prepare and enhance sector data with percentages
+                    var totalPortfolioValueHoldings = Model.SectorDistribution.Values.Sum();
+                    var sectorDataHoldings = Model.SectorDistribution.Select(x => new { 
+                        // Shorter sector names for mobile
+                        Sector = x.Key.Length > 20 ? x.Key.Substring(0, 20) + "..." : x.Key,
+                        FullSector = x.Key,
+                        Value = x.Value,
+                        Percentage = totalPortfolioValueHoldings > 0 ? Math.Round((x.Value / totalPortfolioValueHoldings) * 100, 2) : 0
+                    }).OrderByDescending(x => x.Value).ToList();
+                }
+                
+                <!-- Pie chart container - visible on both desktop and mobile -->
+                <!-- Simple row-based layout using Bootstrap grid -->
+                <div class="row">
+                    <!-- Chart column - 6 columns on desktop, 12 on mobile -->
+                    <div class="col-md-6 col-12 mb-4">
+                        <!-- Title for mobile -->
+                        <h6 class="text-center d-block d-md-none mb-3" style="font-weight: bold; color: white;">Sector Distribution</h6>
+                        
+                        <!-- Chart with simple styling -->
+                        <div style="height: auto; width: 100%; margin: 0 auto;">
+                            @(Html.EJS().AccumulationChart("sectorChartHoldings")
+                                .Background("#333333")
+                                .Border(b => b.Width(0).Color("transparent"))
+                                .Series(sr =>
+                                {
+                                    sr.DataSource(sectorDataHoldings)
+                                    .XName("Sector")
+                                    .YName("Value")
+                                    .Type(AccumulationType.Pie)
+                                    .Explode(false)
+                                    .Radius("70%")
+                                    .DataLabel(dl => dl
+                                        .Visible(true)
+                                        .Name("${point.y}")
+                                        .Position(AccumulationLabelPosition.Inside)
+                                        .Font(font => font.Color("#FFFFFF").FontWeight("bold").Size("14px"))
+                                    )
+                                    .Add();
+                                })
+                                .EnableSmartLabels(true)
+                                .Height("350px")
+                                .Width("100%")
+                                .Tooltip(tt => tt
+                                    .Enable(true)
+                                    .Format("${point.x}: $${point.y}")
+                                    .TextStyle(ts => ts.Color("#FFFFFF"))
+                                )
+                                .LegendSettings(lg => lg
+                                    .Visible(true)
+                                    .Position(LegendPosition.Right)
+                                    .TextStyle(ts => ts.Color("#FFFFFF").Size("12px"))
+                                    .Height("80%")
+                                    .Width("30%")
+                                    .ShapeHeight(12)
+                                    .ShapeWidth(12)
+                                    .ShapePadding(5)
+                                    .Alignment(Alignment.Center)
+                                    .EnablePages(false)
+                                    .ItemPadding(10)
+                                )
+                                .Background("#333333")
+                                .Render()
+                            )
+                        </div>
+                    </div>
+                    
+                    <!-- Table column - 6 columns on desktop, 12 on mobile -->
+                    <div class="col-md-6 col-12">
+                        <div class="table-responsive" style="height: 350px; max-height: 350px; overflow-y: auto; border: 1px solid #444; border-radius: 5px; margin-bottom: 0;">
+                            <table class="table table-striped table-hover mb-0">
+                                <thead class="sticky-top" style="background-color: #2a2a2a;">
+                                    <tr>
+                                        <th style="width: 50%;">Sector</th>
+                                        <th class="text-end" style="width: 25%;">Value</th>
+                                        <th class="text-end" style="width: 25%;">Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var sector in sectorDataHoldings) {
+                                        <tr>
+                                            <td title="@sector.FullSector">@sector.FullSector</td>
+                                            <td class="text-end">@sector.Value.ToString("C2", culture)</td>
+                                            <td class="text-end">@sector.Percentage.ToString("F2")%</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+                </div>
+            </div>
+        </div>
 @section Scripts {
     <script>
+        // Chart adjustments for mobile/desktop with consistent sizing
+        document.addEventListener('DOMContentLoaded', function() {
+            // Is this a mobile device?
+            const isMobile = window.innerWidth < 992;
+            
+            // Get the pie chart
+            const sectorChart = document.getElementById('sectorChartHoldings');
+            if (sectorChart && sectorChart.ej2_instances && sectorChart.ej2_instances[0]) {
+                // Set legend position based on device
+                if (isMobile) {
+                    sectorChart.ej2_instances[0].legendSettings.position = 'Bottom';
+                    sectorChart.ej2_instances[0].legendSettings.width = '100%';
+                    sectorChart.ej2_instances[0].legendSettings.height = '15%';
+                    
+                    // Ensure chart has same dimensions as table on mobile
+                    sectorChart.style.width = '100%';
+                    sectorChart.style.height = '350px';
+                } else {
+                    sectorChart.ej2_instances[0].legendSettings.position = 'Right';
+                    sectorChart.ej2_instances[0].legendSettings.width = '30%';
+                    sectorChart.ej2_instances[0].legendSettings.height = '70%';
+                    
+                    // Ensure chart has same dimensions as table on desktop
+                    sectorChart.style.width = '100%';
+                    sectorChart.style.height = '350px';
+                }
+                
+                // Refresh the chart
+                setTimeout(function() {
+                    sectorChart.ej2_instances[0].refresh();
+                    
+                    // Make sure all chart elements are visible
+                    const svgElements = sectorChart.querySelectorAll('svg, g, path, circle');
+                    svgElements.forEach(function(el) {
+                        el.style.visibility = 'visible';
+                    });
+                    
+                    // Force chart container to match dimensions
+                    const container = sectorChart.closest('.e-accumulationchart');
+                    if (container) {
+                        container.style.width = '100%';
+                        container.style.height = '350px';
+                        container.style.visibility = 'visible';
+                    }
+                }, 100);
+            }
+        });
+        
         // Global reference to chart
         let stockChart;
+        
+        // Chart labels fix utility function
+        function fixChartLabels(chartId) {
+            const chart = document.getElementById(chartId);
+            if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
+                // Fix x-axis labels
+                const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
+                if (xAxisLabels && xAxisLabels.length > 0) {
+                    // Ensure all labels are visible
+                    xAxisLabels.forEach(function(label, index) {
+                        label.style.visibility = 'visible';
+                        
+                        // Special handling for first and last labels
+                        if (index === 0) {
+                            label.setAttribute('text-anchor', 'start');
+                        } else if (index === xAxisLabels.length - 1) {
+                            label.setAttribute('text-anchor', 'end');
+                            // Move the last label further left to prevent cutoff
+                            label.setAttribute('x', parseFloat(label.getAttribute('x')) - 20);
+                        }
+                    });
+                    
+                    // Force chart refresh to apply changes
+                    chart.ej2_instances[0].refresh();
+                    console.log(`Fixed labels for chart: ${chartId}`);
+                }
+            }
+        }
         
         // Format utility functions
         function formatCurrency(value) {
@@ -668,6 +1669,126 @@
                 }
             });
         }
+        
+        // Let Bootstrap handle tab switching
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Dashboard tabs initialized");
+            
+            // Fix all chart labels when tab is shown
+            function fixAllChartLabels() {
+                // Apply fixes to all charts in the dashboard
+                setTimeout(function() {
+                    fixChartLabels('topHoldingsChart');
+                    fixChartLabels('growthAnalysisChart');
+                    fixChartLabels('monthlyPerformanceChart');
+                    fixChartLabels('riskAnalysisChart');
+                    if (document.getElementById('stockChart')) {
+                        fixChartLabels('stockChart');
+                    }
+                }, 300);
+            }
+            
+            // Run initial fix on page load
+            fixAllChartLabels();
+            
+            // Add special handling for tabs 
+            document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tabLink => {
+                tabLink.addEventListener('shown.bs.tab', function(event) {
+                    // Fix chart labels whenever any tab is shown
+                    fixAllChartLabels();
+                    
+                    // Add special class for Holdings tab
+                    if (event.target.getAttribute('href') === '#holdingsTab') {
+                        document.getElementById('dashboard-container').classList.add('tab-active-holdings');
+                    } else {
+                        document.getElementById('dashboard-container').classList.remove('tab-active-holdings');
+                    }
+                    
+                    // Handle specific tabs with special needs
+                    if (event.target.getAttribute('href') === '#analyticsTab') {
+                        setTimeout(function() {
+                            // Get risk chart and refresh if it exists
+                            const riskChartElement = document.getElementById('riskAnalysisChart');
+                            if (riskChartElement && riskChartElement.ej2_instances && riskChartElement.ej2_instances[0]) {
+                                riskChartElement.ej2_instances[0].refresh();
+                                console.log('Risk Analysis chart refreshed');
+                            }
+                            
+                            // Ensure descriptions are visible in Analytics tab
+                            document.querySelectorAll('#analyticsTab .chart-description').forEach(function(desc) {
+                                desc.style.setProperty('display', 'flex', 'important');
+                                desc.style.setProperty('visibility', 'visible', 'important');
+                                desc.style.setProperty('z-index', '100', 'important');
+                                desc.style.setProperty('align-items', 'center', 'important');
+                            });
+                        }, 200);
+                    } else if (event.target.getAttribute('href') === '#performanceTab') {
+                        setTimeout(function() {
+                            // Ensure growth chart labels aren't cut off in Performance tab
+                            const growthChart = document.getElementById('growthAnalysisChart');
+                            const monthlyChart = document.getElementById('monthlyPerformanceChart');
+                            
+                            if (growthChart && growthChart.ej2_instances && growthChart.ej2_instances[0]) {
+                                const chartInstance = growthChart.ej2_instances[0];
+                                // Ensure adequate right margin for the chart
+                                setTimeout(function() {
+                                    // Fix the last x-axis label position specifically
+                                    const xAxisLabels = growthChart.querySelectorAll('.e-primaryxaxis-labels text');
+                                    if (xAxisLabels && xAxisLabels.length > 0) {
+                                        const lastLabel = xAxisLabels[xAxisLabels.length - 1];
+                                        if (lastLabel) {
+                                            lastLabel.setAttribute('text-anchor', 'end');
+                                            lastLabel.setAttribute('x', parseFloat(lastLabel.getAttribute('x')) - 30);
+                                            lastLabel.style.visibility = 'visible';
+                                        }
+                                    }
+                                    chartInstance.refresh();
+                                }, 100);
+                                console.log('Growth Analysis chart refreshed with label positioning');
+                            }
+                            
+                            if (monthlyChart && monthlyChart.ej2_instances && monthlyChart.ej2_instances[0]) {
+                                monthlyChart.ej2_instances[0].margin.right = 30;
+                                monthlyChart.ej2_instances[0].refresh();
+                                console.log('Monthly Performance chart refreshed');
+                            }
+                        }, 200);
+                    }
+                    
+                    // Update URL for bookmarking
+                    const tabName = event.target.getAttribute('href').replace('#', '').replace('Tab', '');
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', tabName);
+                    window.history.replaceState({}, '', url);
+                });
+            });
+            
+            // Handle View Portfolio Growth button
+            const viewPortfolioBtn = document.getElementById('viewPerformanceTabBtn');
+            if (viewPortfolioBtn) {
+                viewPortfolioBtn.addEventListener('click', function() {
+                    // Trigger click on the Performance tab
+                    document.getElementById('performance-tab').click();
+                });
+            }
+            
+            // Check URL for tab parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            
+            if (tabParam) {
+                // Find and click the correct tab
+                const tabId = `${tabParam}-tab`;
+                const tabLink = document.getElementById(tabId);
+                if (tabLink) {
+                    tabLink.click();
+                }
+            }
+            
+            // Fix chart labels immediately and after resize
+            fixAllChartLabels();
+            window.addEventListener('resize', fixAllChartLabels);
+        });
 
         // Initialization
         window.addEventListener('load', function() {
@@ -682,6 +1803,82 @@
             
             // Initialize stock chart if it exists
             stockChart = document.getElementById('stockChart')?.ej2_instances?.[0];
+            
+            // Ensure all chart descriptions are properly visible
+            document.querySelectorAll('.chart-description').forEach(function(desc) {
+                desc.style.setProperty('display', 'flex', 'important');
+                desc.style.setProperty('visibility', 'visible', 'important');
+                desc.style.setProperty('z-index', '100', 'important');
+                desc.style.setProperty('position', 'relative', 'important');
+                desc.style.setProperty('align-items', 'center', 'important');
+                desc.style.setProperty('justify-content', 'center', 'important');
+                desc.style.setProperty('height', '60px', 'important');
+                desc.style.setProperty('margin-bottom', '20px', 'important');
+            });
+            
+            // Specific fix for risk analysis chart description
+            const analyticCards = document.querySelectorAll('#analyticsTab .chart-description');
+            if (analyticCards && analyticCards.length >= 2) {
+                // Make both descriptions have identical height and styling
+                const firstDesc = analyticCards[0];
+                const secondDesc = analyticCards[1];
+                
+                // Force same height and styling
+                const height = Math.max(
+                    firstDesc.offsetHeight || 60, 
+                    secondDesc.offsetHeight || 60
+                );
+                
+                firstDesc.style.height = height + 'px';
+                secondDesc.style.height = height + 'px';
+                
+                console.log('Analytics descriptions aligned with height: ' + height + 'px');
+            }
+            
+            // Initialize floating action button
+            const addButton = document.getElementById('addStockButton');
+            if (addButton) {
+                addButton.addEventListener('click', function() {
+                    window.location.href = '/AppUserStocks/CreateOrEdit';
+                });
+                
+                // Add hover effect
+                addButton.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.1)';
+                    this.style.boxShadow = '0 6px 10px rgba(0,0,0,0.25)';
+                    this.style.transition = 'all 0.3s ease';
+                });
+                
+                addButton.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                    this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                    this.style.transition = 'all 0.3s ease';
+                });
+            }
+            
+            // Ensure sector chart is responsive
+            function refreshSectorChart() {
+                const sectorChart = document.getElementById('sectorChartHoldings');
+                if (sectorChart && sectorChart.ej2_instances && sectorChart.ej2_instances[0]) {
+                    setTimeout(() => {
+                        sectorChart.ej2_instances[0].refresh();
+                    }, 100);
+                }
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                refreshSectorChart();
+            });
+            
+            // Handle tab switch for sector chart
+            document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function(e) {
+                    if (e.target.getAttribute('href') === '#holdingsTab') {
+                        refreshSectorChart();
+                    }
+                });
+            });
         });
     </script>
 }

@@ -158,13 +158,13 @@
             var submitButton = document.getElementById("submitButton");
             
             // If we're in edit mode, ensure the stock symbol is displayed
-            var modelId = @Model.Id;
-            var stockSymbol = "@Model.StockSymbol";
+            var modelId = @(Model.Id);
+            var stockSymbol = "@(Model.StockSymbol)";
             
             console.log("Model.Id: " + modelId + ", StockSymbol: " + stockSymbol);
             
             // For edit mode, ensure the value is set
-            if (modelId > 0 && stockSymbol && dropdownList) {
+            if (modelId > 0 && stockSymbol !== "" && dropdownList) {
                 // Make sure dropdown has the value set
                 setTimeout(function() {
                     // If initialStock exists in ViewBag but dropdown isn't showing it
