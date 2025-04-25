@@ -136,6 +136,7 @@ namespace FundWatch.Services
         {
             var result = new ConcurrentDictionary<string, List<StockDataPoint>>();
             var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1); // Include tomorrow to ensure today's data is included
             var startDate = today.AddDays(-daysBack);
 
             // Group symbols into manageable batches
@@ -162,11 +163,11 @@ namespace FundWatch.Services
                         var allData = new List<StockDataPoint>();
                         var chunkSize = 365; // 1 year chunks
 
-                        for (var chunkStart = startDate; chunkStart < today; chunkStart = chunkStart.AddDays(chunkSize))
+                        for (var chunkStart = startDate; chunkStart < tomorrow; chunkStart = chunkStart.AddDays(chunkSize))
                         {
                             var chunkEnd = chunkStart.AddDays(chunkSize);
-                            if (chunkEnd > today)
-                                chunkEnd = today;
+                            if (chunkEnd > tomorrow)
+                                chunkEnd = tomorrow;
 
                             _logger.LogInformation($"Fetching chunk for {symbol}: {chunkStart:yyyy-MM-dd} to {chunkEnd:yyyy-MM-dd}");
 
@@ -185,7 +186,7 @@ namespace FundWatch.Services
                             // Ensure data is sorted by date (ascending)
                             allData = allData.OrderBy(d => d.Date).ToList();
                             result[symbol] = allData;
-                            _cache.Set(cacheKey, allData, TimeSpan.FromHours(24)); // Cache historical data for 24 hours
+                            _cache.Set(cacheKey, allData, TimeSpan.FromHours(8)); // Cache historical data for 8 hours to ensure fresher data
 
                             _logger.LogInformation($"Collected total of {allData.Count} data points for {symbol}");
                         }

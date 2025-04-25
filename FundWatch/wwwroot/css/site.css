@@ -204,10 +204,39 @@ body {
 }
 
 
-/* Ensure cards are full height and have proper alignment */
+/* Card layouts for equal heights and auto-sizing */
 .fixed-card {
     display: flex;
     flex-direction: column;
+}
+
+/* Equal height cards within rows */
+.equal-height-cards {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.equal-height-cards .col-sm-6,
+.equal-height-cards .col-md-3,
+.equal-height-cards .col-md-4,
+.equal-height-cards .col-md-6,
+.equal-height-cards .col-md-8 {
+    display: flex;
+}
+
+.equal-height-cards .card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.equal-height-cards .card-body {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: visible;
+    min-height: 0;
 }
 
 .card-header h5 {
@@ -240,6 +269,15 @@ body {
 
 /* Responsive adjustments for smaller screens */
 @media (max-width: 575.98px) {
+    /* Auto-sizing for Details page */
+    #priceHistoryChart {
+        min-height: 300px !important;
+        height: auto !important;
+    }
+    
+    .card-body {
+        overflow: visible;
+    }
     .card-text {
         font-size: 0.8rem;
     }
@@ -309,10 +347,13 @@ body {
     background-color: #333333;
     color: #ffffff;
     padding: 1.25rem;
-    height: 380px;
+    display: flex;
+    flex-direction: column;
+    height: 580px;
 }
 .e-content{
-    height:400px!important;
+    min-height: 400px;
+    height: auto !important;
 }
 /* Enhanced chart styles */
 .e-chart, .e-accumulation, .e-stockchart {
@@ -469,22 +510,24 @@ body {
     stroke: #dc3545;
 }
 
-/* Fixed chart sizing to prevent resize on tab switch or page refresh */
-/* Fixed chart dimensions - no auto scale allowed */
+/* Chart dimensions with auto-height */
 .e-chart, .e-stockchart, .e-accumulation {
-    height: 300px !important;
+    min-height: 300px !important;
+    height: auto !important;
     width: 100% !important;
-    overflow: hidden;
+    overflow: visible;
     display: block !important;
 }
 
-/* Explicit fixed size for each chart */
-#stockChart {
-    height: 600px !important;
+/* Minimum heights for specific charts */
+#stockChart, #priceHistoryChart {
+    min-height: 600px !important;
+    height: auto !important;
 }
 
 #growthAnalysisChart {
-    height: 500px !important;
+    min-height: 500px !important;
+    height: auto !important;
     width: calc(100% - 10px) !important;
     display: block !important;
     margin: 0 auto !important;
@@ -500,11 +543,6 @@ body {
     margin: 0 auto !important;
     max-width: none !important;
     min-width: 100% !important;
-}
-
-#topHoldingsChart {
-    height: 420px !important;
-    padding-bottom: 40px !important;
 }
 
 #riskAnalysisChart {
@@ -527,9 +565,7 @@ body {
 
 /* Special handling for top holdings chart to ensure x-axis is visible */
 #topHoldingsChart {
-    height: 420px !important;
-    min-height: 420px !important;
-    padding-bottom: 40px !important; /* Extra padding for x-axis labels */
+    height: 580px !important;
 }
 
 
@@ -568,12 +604,32 @@ body {
     width: 100% !important;
 }*/
 
-/* Fixed card-body heights for dashboard only - no auto scaling */
-#analyticsTab .card-body, 
-#performanceTab .card-body, 
-#overviewTab .card-body,
-#holdingsTab .card-body {
-    height: 280px; /* Base fixed card height */
+/* Equal height cards within rows */
+.equal-height-cards {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.equal-height-cards .col-sm-6,
+.equal-height-cards .col-md-3,
+.equal-height-cards .col-md-4,
+.equal-height-cards .col-md-6 {
+    display: flex;
+}
+
+.equal-height-cards .card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.equal-height-cards .card-body {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: visible;
+    padding: 1.25rem;
 }
 
 /* Explicitly allow login card body to auto-size */
@@ -582,17 +638,20 @@ body {
     min-height: auto !important;
 }
 
-/* Shorter height for metric cards */
+/* Auto-sizing metric cards */
 .overview-scalar-card .card-body {
-    height: 140px;
+    padding: 1rem;
+    min-height: auto;
+    height: auto;
 }
 
-/* Fixed height for full-width chart cards */
+/* Auto-sizing full-width chart cards with minimum height */
 .full-width-chart .card-body {
     height: auto;
-    min-height: 700px;
+    min-height: 500px;
     width: 100%;
     padding: 15px;
+    overflow: visible;
 }
 
 /* Card containing the stock chart */
@@ -699,15 +758,16 @@ body {
     display: flex;
     flex-direction: column;
     padding: 15px;
-    height: 600px !important; /* Force exact same height to match our new card height */
-    overflow: hidden;
+    min-height: 400px; /* Changed to min-height without !important to allow auto-sizing */
+    overflow: visible; /* Changed to visible to prevent content cutoff */
 }
 
 /* Standardized chart descriptions for alignment */
 .chart-description {
     margin-top: 0 !important;
     margin-bottom: 20px !important;
-    height: 60px !important; /* Force consistent height for descriptions */
+    min-height: 60px !important;
+    height: auto !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -787,8 +847,22 @@ body {
     .card-body {
         min-height: auto !important;
         height: auto !important;
+        max-height: none !important;
         padding: 15px !important;
         overflow: visible !important;
+    }
+    
+    /* Ensure chart containers can adjust their height */
+    .e-chart, .e-stockchart, .e-accumulation {
+        height: auto !important;
+        min-height: 300px !important;
+        max-height: none !important;
+    }
+    
+    /* Ensure price history chart is visible on mobile */
+    #priceHistoryChart {
+        height: auto !important;
+        min-height: 300px !important;
     }
     
     /* Chart dimensions to match table on both desktop and mobile */

@@ -66,7 +66,7 @@
     <!-- Tab Content: Overview -->
     <div id="overviewTab" class="tab-pane fade show active" role="tabpanel">
         <!-- Portfolio Overview Cards -->
-        <div class="row mb-4 gy-4 equal-height-cards">
+        <div class="row mb-4 gy-4">
             <div class="col-sm-6 col-md-3">
                 <div class="card shadow overview-scalar-card">
                     <div class="card-header bg-primary text-white">
@@ -129,7 +129,7 @@
                 <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">Stock Performance History</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="height: auto; min-height: auto; padding-bottom: 0;">
                     <div class="chart-description" style="background-color: rgba(0, 123, 255, 0.1); border-left: 3px solid #007bff;">
                         <p class="text-center mb-1">
                             Track the performance of your investments over time. Use the period selectors to view different time ranges.
@@ -225,20 +225,20 @@
 
 <!-- Tab Content: Performance -->
 <div id="performanceTab" class="tab-pane fade" role="tabpanel">
-    <div class="row mb-4 gy-4 equal-height-cards">
+    <div class="row mb-4 gy-4">
         <!-- Rolling Returns Chart -->
         <div class="col-md-6">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">Rolling Returns Analysis</h5>
                 </div>
-                <div class="card-body" >
-                    <div class="chart-description" style="background-color: rgba(13, 110, 253, 0.1); border-left: 3px solid #0d6efd;">
+                <div class="card-body" style="height: auto; min-height: auto; padding-bottom: 0;">
+                    <div class="chart-description" style="background-color: rgba(13, 110, 253, 0.1); border-left: 3px solid #0d6efd; margin-bottom: 10px;">
                         <p class="text-center mb-1">
                             Performance over rolling time periods, showing consistency of returns over different timeframes.
                         </p>
                     </div>
-                    <div id="rollingReturnsChart" style="height: 420px; width: 100%;"></div>
+                    <div id="rollingReturnsChart" style="flex: 1; width: 100%; height: 650px; margin-bottom: 15px;"></div>
                     
                     <script>
                         document.addEventListener('DOMContentLoaded', function() {
@@ -298,7 +298,7 @@
                                     style: {
                                         fontFamily: 'Inter, sans-serif'
                                     },
-                                    height: window.innerWidth < 768 ? '350px' : '420px'
+                                    height: '100%'
                                 },
                                 title: {
                                     text: null
@@ -439,8 +439,8 @@
                 <div class="card-header bg-info text-white">
                     <h5 class="card-title mb-0">Top 5 Holdings by Value</h5>
                 </div>
-                <div class="card-body" style="min-height: 500px;">
-                    <div class="chart-description" style="background-color: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8;">
+                <div class="card-body" style="height: auto; min-height: auto; padding-bottom: 0;">
+                    <div class="chart-description" style="background-color: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8; margin-bottom: 10px;">
                         <p class="text-center mb-1">
                             Your largest investment positions by market value, showing each stock's contribution to your portfolio.
                         </p>
@@ -481,7 +481,7 @@
                     }
                     @(Html.EJS().Chart("topHoldingsChart")
                         .Width("100%")
-                        .Height("420px") @* Significantly increased height to align with Sector Distribution *@
+                        .Height("100%")
                         .Background("#333333")
                         .ChartArea(ca => ca.Border(b => b.Width(0)))
                         .PrimaryXAxis(px => px
@@ -493,6 +493,8 @@
                             .EdgeLabelPlacement(EdgeLabelPlacement.Shift) @* Ensure edge labels aren't cut off *@
                             .LabelPlacement(LabelPlacement.OnTicks) @* Ensure labels are properly placed *@
                             .LabelPosition(AxisPosition.Outside) @* Keep labels outside the chart *@
+                            .LabelIntersectAction(LabelIntersectAction.Rotate45) @* Rotate labels if they intersect *@
+                            .LabelRotation(0) @* Start with horizontal labels *@
                         )
                         .PrimaryYAxis(py => py
                             .Title("Portfolio Value ($)")
@@ -518,17 +520,31 @@
                                 )
                             )
                             .Add();
+                            
+                            // Add a series for percentage to show in legend
+                            sr.Type(ChartSeriesType.Column)
+                            .DataSource(topHoldings)
+                            .XName("Stock")
+                            .YName("PortfolioPercentage")
+                            .Name("Portfolio Weight (%)")
+                            .Visible(false) // Hide the actual series, but show in legend
+                            .Add();
                         })
                         .Tooltip(tt => tt
                             .Enable(true)
                         )
                         .Background("#333333")
-                        .Margin(m => m.Left(10).Right(10).Top(10).Bottom(40)) @* Increased bottom margin for x-axis labels *@
+                        .Margin(m => m.Left(10).Right(10).Top(10).Bottom(80)) @* Increased bottom margin for legend and axis labels *@
                         .LegendSettings(lg => lg
-                            .Visible(false)
+                            .Visible(true)
+                            .Position(LegendPosition.Bottom)
+                            .Alignment(Alignment.Center)
+                            .Height("50px")
+                            .TextStyle(ts => ts.Color("#FFFFFF").Size("12px"))
                         )
                         .Render()
                     )
+                    <div style="margin-bottom: 15px;"></div>
                     
                     <script id="holdingsLabelTemplate" type="text/x-template">
                         <div style="color: #fff; font-weight: bold;">
@@ -549,14 +565,14 @@
     </div> <!-- Close the Performance tab's first row -->
 
 <!-- Portfolio Performance Analysis Charts Row -->
-<div class="row mb-4">
+<div class="row mb-4 gy-4">
         <div class="col-md-6">
             <div class="card shadow full-width-chart">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
                 </div>
-                <div class="card-body">
-                    <div style="width:100%; max-width:none; min-width:100%; display:block;">
+                <div class="card-body" style="height: auto; min-height: auto; padding-bottom: 0;">
+                    <div style="width:100%; max-width:none; min-width:100%; display:block; margin-bottom: 15px;">
                     @{
                         // Calculate monthly growth data based on historical data
                         var today = DateTime.Today;
@@ -591,7 +607,7 @@
                     }
                     
                     @(Html.EJS().Chart("growthAnalysisChart")
-                        .Height("500px")
+                        .Height("650px")
                         .Width("100%")
                         .Background("#333333")
                         .Margin(m => m.Left(10).Right(50).Top(10).Bottom(15))
@@ -700,8 +716,8 @@
                 <div class="card-header bg-info text-white">
                     <h5 class="card-title mb-0">Monthly Performance</h5>
                 </div>
-                <div class="card-body">
-                    <div style="width:100%; max-width:none; min-width:100%; display:block;">
+                <div class="card-body" style="height: auto; min-height: auto; padding-bottom: 0;">
+                    <div style="width:100%; max-width:none; min-width:100%; display:block; margin-bottom: 15px;">
                     @{
                         // Generate monthly performance data
                         var monthlyData = new List<object>();
@@ -726,7 +742,7 @@
                     }
                     
                     @(Html.EJS().Chart("monthlyPerformanceChart")
-                        .Height("500px")
+                        .Height("650px")
                         .Width("100%")
                         .Background("#333333")
                         .Margin(m => m.Left(10).Right(30).Top(10).Bottom(15))
@@ -1177,14 +1193,14 @@
                 <div class="card-header bg-info text-white">
                     <h5 class="card-title mb-0">Portfolio Risk/Return Analysis</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="height: auto; min-height: auto; padding-bottom: 0;">
                     <div class="chart-description" style="background-color: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8;">
                         <p class="text-center mb-1">
                             This chart shows maximum drawdowns - the largest percentage drops from peak to trough in your portfolio compared to major market indices.
                         </p>
                     </div>
                     
-                    <div id="drawdownChart" style="height: 500px; width: 100%; margin-top: 20px;"></div>
+                    <div id="drawdownChart" style="flex: 1; width: 100%; margin-top: 20px;"></div>
                     
                     <script>
                         document.addEventListener('DOMContentLoaded', function() {
@@ -1565,6 +1581,15 @@
         function fixChartLabels(chartId) {
             const chart = document.getElementById(chartId);
             if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
+                // Special handling for Performance tab charts to ensure consistent height
+                if (chartId === 'topHoldingsChart' || chartId === 'growthAnalysisChart' || 
+                    chartId === 'monthlyPerformanceChart' || chartId === 'rollingReturnsChart') {
+                    const chartInstance = chart.ej2_instances[0];
+                    // Set fixed height to be consistent across all Performance tab charts
+                    chartInstance.height = '650px';
+                    console.log(`Fixed ${chartId} height to 650px`);
+                }
+                
                 // Fix x-axis labels
                 const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
                 if (xAxisLabels && xAxisLabels.length > 0) {
