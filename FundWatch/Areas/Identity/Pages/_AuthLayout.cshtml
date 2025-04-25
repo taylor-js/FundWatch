@@ -3,7 +3,7 @@
 }
 
 <div class="row justify-content-center">
-    <div class="col-10 mt-5 mb-5 col-sm-8">
+    <div class="col-11 mt-5 mb-5 col-sm-8 col-md-6">
         <div class="card login-logout-card">
             <div class="card-header">
                 <ul class="nav nav-tabs card-header-tabs">
@@ -21,7 +21,7 @@
             </div>
             <div class="card-body">
                 <div class="row justify-content-center">
-                    <div class="col-10 my-4" style="min-height: 400px; display: block;">
+                    <div class="col-12 my-4" style="min-height: 380px; display: block;">
                         @RenderBody()
                     </div>
                 </div>
@@ -37,7 +37,10 @@
             const currentPage = location.pathname;
             $('.nav-tabs li a').each(function () {
                 const $this = $(this);
-                if (currentPage.toLowerCase().indexOf($this.attr('href').toLowerCase()) !== -1) {
+                const linkPath = $this.attr('href').toLowerCase();
+                
+                // Exact path matching for login/register tabs
+                if (currentPage.toLowerCase() === linkPath) {
                     $this.addClass('active');
                 }
             })

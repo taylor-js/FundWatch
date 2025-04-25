@@ -130,8 +130,8 @@
                     <h5 class="card-title mb-0">Stock Performance History</h5>
                 </div>
                 <div class="card-body">
-                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(0, 123, 255, 0.1); border-radius: 6px; margin-bottom: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                    <div class="chart-description" style="background-color: rgba(0, 123, 255, 0.1); border-left: 3px solid #007bff;">
+                        <p class="text-center mb-1">
                             Track the performance of your investments over time. Use the period selectors to view different time ranges.
                         </p>
                     </div>
@@ -233,8 +233,8 @@
                     <h5 class="card-title mb-0">Rolling Returns Analysis</h5>
                 </div>
                 <div class="card-body" >
-                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(13, 110, 253, 0.1); border-radius: 6px; margin-bottom: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #0d6efd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                    <div class="chart-description" style="background-color: rgba(13, 110, 253, 0.1); border-left: 3px solid #0d6efd;">
+                        <p class="text-center mb-1">
                             Performance over rolling time periods, showing consistency of returns over different timeframes.
                         </p>
                     </div>
@@ -440,8 +440,8 @@
                     <h5 class="card-title mb-0">Top 5 Holdings by Value</h5>
                 </div>
                 <div class="card-body" style="min-height: 500px;">
-                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(23, 162, 184, 0.1); border-radius: 6px; margin-bottom: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #17a2b8; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                    <div class="chart-description" style="background-color: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8;">
+                        <p class="text-center mb-1">
                             Your largest investment positions by market value, showing each stock's contribution to your portfolio.
                         </p>
                     </div>
@@ -664,8 +664,8 @@
                         .Render()
                     )
                     
-                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(255, 193, 7, 0.1); border-radius: 6px; margin-top: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                    <div class="chart-description" style="background-color: rgba(255, 193, 7, 0.1); border-left: 3px solid #ffc107; margin-top: 15px;">
+                        <p class="text-center mb-1">
                             This chart compares your portfolio growth against market benchmarks over the past 6 months.
                         </p>
                     </div>
@@ -680,20 +680,7 @@
                                     // Fix x-axis labels
                                     const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
                                     if (xAxisLabels && xAxisLabels.length > 0) {
-                                        // Adjust last label
-                                        const lastLabel = xAxisLabels[xAxisLabels.length - 1];
-                                        if (lastLabel) {
-                                            lastLabel.setAttribute('text-anchor', 'end');
-                                            // Move the last label further left to prevent cutoff
-                                            lastLabel.setAttribute('x', parseFloat(lastLabel.getAttribute('x')) - 20);
-                                            // Make sure it's visible
-                                            lastLabel.style.visibility = 'visible';
-                                        }
-                                        
-                                        // Adjust all labels to ensure visibility
-                                        xAxisLabels.forEach(function(label) {
-                                            label.style.visibility = 'visible';
-                                        });
+                                        // Label styling handled by CSS
                                         
                                         // Force chart refresh to apply changes
                                         chart.ej2_instances[0].refresh();
@@ -810,8 +797,8 @@
                         .Render()
                     )
                     
-                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(23, 162, 184, 0.1); border-radius: 6px; margin-top: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #17a2b8; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                    <div class="chart-description" style="background-color: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8; margin-top: 15px;">
+                        <p class="text-center mb-1">
                             Month-by-month performance comparison showing your portfolio against market benchmarks.
                         </p>
                     </div>
@@ -823,38 +810,20 @@
                             setTimeout(function() {
                                 const chart = document.getElementById('monthlyPerformanceChart');
                                 if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
-                                    // Add color coding to data labels based on value
+                                    // Add data-value attribute to labels for CSS targeting
                                     const labels = chart.querySelectorAll('.e-data-label');
                                     if (labels && labels.length > 0) {
-                                        labels.forEach(label => {
-                                            const text = label.textContent;
-                                            const value = parseFloat(text);
-                                            if (!isNaN(value)) {
-                                                label.style.fill = value >= 0 ? '#00E396' : '#FF4560';
+                                        labels.forEach(function(label) {
+                                            if (label.textContent) {
+                                                label.setAttribute('data-value', label.textContent);
                                             }
                                         });
                                     }
                                     
-                                    // Fix x-axis labels
-                                    const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
-                                    if (xAxisLabels && xAxisLabels.length > 0) {
-                                        // Ensure all labels are visible
-                                        xAxisLabels.forEach(function(label, index) {
-                                            label.style.visibility = 'visible';
-                                            
-                                            // Special handling for first and last labels
-                                            if (index === 0) {
-                                                label.setAttribute('text-anchor', 'start');
-                                            } else if (index === xAxisLabels.length - 1) {
-                                                label.setAttribute('text-anchor', 'end');
-                                                // Move the last label further left to prevent cutoff
-                                                label.setAttribute('x', parseFloat(label.getAttribute('x')) - 15);
-                                            }
-                                        });
-                                        
-                                        // Force chart refresh to apply changes
-                                        chart.ej2_instances[0].refresh();
-                                    }
+                                    // Label positioning handled by CSS
+                                    
+                                    // Force chart refresh to apply changes
+                                    chart.ej2_instances[0].refresh();
                                 }
                             }, 500);
                         });
@@ -882,7 +851,7 @@
 
                     <!-- Risk Analysis description with enhanced styling -->
                     <div class="chart-description" style="background-color: rgba(67, 97, 238, 0.1); border-left: 3px solid #4361EE;">
-                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                        <p class="text-center mb-1">
                             Analyze the risk-return profile of your holdings. Larger bubbles represent larger positions in your portfolio.
                         </p>
                     </div>
@@ -929,7 +898,7 @@
                     <script type="text/javascript">
                         document.addEventListener('DOMContentLoaded', function() {
                             // Create direct access to risk data
-                            var riskChartData = @(Html.Raw(Json.Serialize(riskData)));
+                            var riskChartData = JSON.parse('@Html.Raw(Json.Serialize(riskData))'.replace(/'/g, "\\'"));
                             
                             // Create chart with fixed dimensions
                             var riskChart = new ej.charts.Chart({
@@ -1085,7 +1054,7 @@
 
                     <!-- Diversification description with enhanced styling -->
                     <div class="chart-description" style="background-color: rgba(40, 167, 69, 0.1); border-left: 3px solid #28a745;">
-                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                        <p class="text-center mb-1">
                             An analysis of your portfolio diversification across sectors to identify concentration risk.
                         </p>
                     </div>
@@ -1209,8 +1178,8 @@
                     <h5 class="card-title mb-0">Portfolio Risk/Return Analysis</h5>
                 </div>
                 <div class="card-body">
-                    <div class="chart-description" style="padding: 10px 15px; background-color: rgba(23, 162, 184, 0.1); border-radius: 6px; margin-bottom: 15px; z-index: 10; position: relative; display: block !important; visibility: visible !important; border-left: 3px solid #17a2b8; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <p class="text-center mb-1" style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 0;">
+                    <div class="chart-description" style="background-color: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8;">
+                        <p class="text-center mb-1">
                             This chart shows maximum drawdowns - the largest percentage drops from peak to trough in your portfolio compared to major market indices.
                         </p>
                     </div>
@@ -1714,13 +1683,8 @@
                                 console.log('Risk Analysis chart refreshed');
                             }
                             
-                            // Ensure descriptions are visible in Analytics tab
-                            document.querySelectorAll('#analyticsTab .chart-description').forEach(function(desc) {
-                                desc.style.setProperty('display', 'flex', 'important');
-                                desc.style.setProperty('visibility', 'visible', 'important');
-                                desc.style.setProperty('z-index', '100', 'important');
-                                desc.style.setProperty('align-items', 'center', 'important');
-                            });
+                            // Refresh analytics charts when tab is shown
+                            console.log('Analytics tab shown - refreshing charts');
                         }, 200);
                     } else if (event.target.getAttribute('href') === '#performanceTab') {
                         setTimeout(function() {
@@ -1732,16 +1696,7 @@
                                 const chartInstance = growthChart.ej2_instances[0];
                                 // Ensure adequate right margin for the chart
                                 setTimeout(function() {
-                                    // Fix the last x-axis label position specifically
-                                    const xAxisLabels = growthChart.querySelectorAll('.e-primaryxaxis-labels text');
-                                    if (xAxisLabels && xAxisLabels.length > 0) {
-                                        const lastLabel = xAxisLabels[xAxisLabels.length - 1];
-                                        if (lastLabel) {
-                                            lastLabel.setAttribute('text-anchor', 'end');
-                                            lastLabel.setAttribute('x', parseFloat(lastLabel.getAttribute('x')) - 30);
-                                            lastLabel.style.visibility = 'visible';
-                                        }
-                                    }
+                                        // Just refresh the chart - CSS will handle label positioning
                                     chartInstance.refresh();
                                 }, 100);
                                 console.log('Growth Analysis chart refreshed with label positioning');
@@ -1804,36 +1759,20 @@
             // Initialize stock chart if it exists
             stockChart = document.getElementById('stockChart')?.ej2_instances?.[0];
             
-            // Ensure all chart descriptions are properly visible
+            // Chart-related initialization
             document.querySelectorAll('.chart-description').forEach(function(desc) {
-                desc.style.setProperty('display', 'flex', 'important');
-                desc.style.setProperty('visibility', 'visible', 'important');
-                desc.style.setProperty('z-index', '100', 'important');
-                desc.style.setProperty('position', 'relative', 'important');
-                desc.style.setProperty('align-items', 'center', 'important');
-                desc.style.setProperty('justify-content', 'center', 'important');
-                desc.style.setProperty('height', '60px', 'important');
-                desc.style.setProperty('margin-bottom', '20px', 'important');
+                // Add data-value attribute to data labels for CSS targeting
+                const labels = document.querySelectorAll('.e-data-label');
+                if (labels && labels.length > 0) {
+                    labels.forEach(function(label) {
+                        if (label.textContent) {
+                            label.setAttribute('data-value', label.textContent);
+                        }
+                    });
+                }
             });
             
-            // Specific fix for risk analysis chart description
-            const analyticCards = document.querySelectorAll('#analyticsTab .chart-description');
-            if (analyticCards && analyticCards.length >= 2) {
-                // Make both descriptions have identical height and styling
-                const firstDesc = analyticCards[0];
-                const secondDesc = analyticCards[1];
-                
-                // Force same height and styling
-                const height = Math.max(
-                    firstDesc.offsetHeight || 60, 
-                    secondDesc.offsetHeight || 60
-                );
-                
-                firstDesc.style.height = height + 'px';
-                secondDesc.style.height = height + 'px';
-                
-                console.log('Analytics descriptions aligned with height: ' + height + 'px');
-            }
+            // Chart descriptions now handled in CSS
             
             // Initialize floating action button
             const addButton = document.getElementById('addStockButton');
@@ -1842,18 +1781,7 @@
                     window.location.href = '/AppUserStocks/CreateOrEdit';
                 });
                 
-                // Add hover effect
-                addButton.addEventListener('mouseenter', function() {
-                    this.style.transform = 'scale(1.1)';
-                    this.style.boxShadow = '0 6px 10px rgba(0,0,0,0.25)';
-                    this.style.transition = 'all 0.3s ease';
-                });
-                
-                addButton.addEventListener('mouseleave', function() {
-                    this.style.transform = 'scale(1)';
-                    this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-                    this.style.transition = 'all 0.3s ease';
-                });
+                // Button hover effects handled in CSS
             }
             
             // Ensure sector chart is responsive

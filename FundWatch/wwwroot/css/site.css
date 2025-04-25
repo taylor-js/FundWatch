@@ -42,21 +42,48 @@ html, body {
 
 /* Tab navigation customization */
 .login-logout-card .card-header {
-    padding: 0px 0px 12px 0px;
+    padding: 0;
+    border-bottom: none;
+    background-color: #1a1a1a;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
 }
 
 .login-logout-card ul.nav-tabs {
-    margin: 0px 0px -12px 0px;
+    margin: 0;
+    border-bottom: 1px solid #444;
+    width: 100%;
 }
 
 .login-logout-card li.nav-item {
     width: 50%;
+    margin: 0;
 }
 
 /* Login form specific styles */
 .login-logout-card form {
-    margin-bottom: 30px;
-    padding-bottom: 30px;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+}
+
+.login-logout-card .form-floating input {
+    background-color: #444;
+    color: #fff;
+    border-color: #555;
+}
+
+.login-logout-card .form-floating label {
+    color: #b0c4de;
+}
+
+.login-logout-card .form-floating input:focus {
+    background-color: #444;
+    color: #fff;
+    border-color: #007bff;
+}
+
+.login-logout-card .form-floating input:focus + label {
+    color: #007bff;
 }
 
 /* Login button must be visible */
@@ -71,19 +98,45 @@ button[type="submit"] {
 
 .login-logout-card a.nav-link {
     font-size: 1rem;
-    color: #495057;
+    color: #b0c4de;
     text-align: center;
     padding: 1rem;
+    background-color: #292929;
+    border-color: #444 #444 #333;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    margin: 0;
+    display: block;
+}
+
+.login-logout-card a.nav-link.active {
+    color: #1e90ff;
+    background-color: #333;
+    border-color: #444 #444 #333;
+    border-top: 2px solid #007bff;
+    font-weight: 600;
+}
+
+.login-logout-card a.nav-link:hover:not(.active) {
+    color: #fff;
+    background-color: #383838;
+    border-color: #555 #555 #444;
 }
 
 .login-logout-card .card-body {
-    padding: 10px 20px;
+    padding: 20px 30px;
     height: auto !important;
     min-height: auto !important;
     background-color: #333333;
     display: block !important;
     flex: none !important;
     overflow: visible !important;
+    border-top: none;
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Base styles for the body */
@@ -256,8 +309,11 @@ body {
     background-color: #333333;
     color: #ffffff;
     padding: 1.25rem;
+    height: 380px;
 }
-
+.e-content{
+    height:400px!important;
+}
 /* Enhanced chart styles */
 .e-chart, .e-accumulation, .e-stockchart {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -354,6 +410,7 @@ body {
     z-index: 1000;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
+    transform: scale(1);
 }
 
 #addStockButton:hover {
@@ -642,7 +699,7 @@ body {
     display: flex;
     flex-direction: column;
     padding: 15px;
-    height: 520px !important; /* Force exact same height to match our new card height */
+    height: 600px !important; /* Force exact same height to match our new card height */
     overflow: hidden;
 }
 
@@ -671,6 +728,9 @@ body {
     margin: 0 !important;
     text-align: center !important;
     line-height: 1.4 !important;
+    width: 100% !important; /* Ensure text takes full width */
+    max-width: 100% !important; /* Prevent text from overflowing */
+    word-wrap: break-word !important; /* Break long words */
 }
 
 /* Holdings grid action buttons */
@@ -873,10 +933,53 @@ body {
 
 #sectorChartHoldings .e-legend-text {
     display: inline-block !important;
-    vertical-align: middle !important;
-    padding-left: 4px !important;
-    white-space: normal !important;
-    word-wrap: break-word !important;
+}
+    
+/* Chart labels visibility and positioning */
+.e-chart .e-primaryxaxis-labels text,
+.e-stockchart .e-primaryxaxis-labels text,
+.e-accumulation-chart .e-primaryxaxis-labels text {
+    visibility: visible !important;
+}
+
+/* First and last label positioning */
+.e-chart .e-primaryxaxis-labels text:first-of-type,
+.e-stockchart .e-primaryxaxis-labels text:first-of-type {
+    text-anchor: start !important;
+}
+
+.e-chart .e-primaryxaxis-labels text:last-of-type,
+.e-stockchart .e-primaryxaxis-labels text:last-of-type {
+    text-anchor: end !important;
+}
+
+/* Data label color coding */
+.e-chart .e-data-label[data-value^="-"],
+.negative-value {
+    fill: #FF4560 !important;
+}
+
+.e-chart .e-data-label:not([data-value^="-"]),
+.positive-value {
+    fill: #00E396 !important;
+}
+
+/* Chart description visibility */
+.chart-description {
+    display: flex !important;
+    visibility: visible !important;
+    z-index: 100 !important;
+    position: relative !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-bottom: 20px !important;
+    overflow: auto !important;
+}
+
+/* Analytics tab chart descriptions specific styling */
+#analyticsTab .chart-description {
+    min-height: 60px !important;
+    max-height: 80px !important;
 }
 
 /* Force one item per line for desktop legend */
