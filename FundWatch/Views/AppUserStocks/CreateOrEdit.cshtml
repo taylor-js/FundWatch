@@ -14,8 +14,8 @@
     var debugInfo = $"Model.Id: {Model.Id}, Model.StockSymbol: {Model.StockSymbol}, HasInitialStock: {hasInitialStock}";
 }
 
-<div class="mt-4 mb-4">
-    <div class="card shadow">
+<div class="mt-4 mb-4 container">
+    <div class="card shadow border">
         <div class="card-header bg-primary text-white">
             <h3 class="mb-0">@(Model.Id == 0 ? "Create" : "Edit") Stock Position</h3>
         </div>
@@ -30,8 +30,8 @@
                 }
                 <input type="hidden" asp-for="UserId" />
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
+                <div class="row g-2">
+                    <div class="col-md-6 mb-2">
                         @(Html.EJS().DropDownList("StockSymbol")
                             .Placeholder("Stock Symbol or Company Name")
                             .FloatLabelType(FloatLabelType.Always)
@@ -55,7 +55,7 @@
                         <div class="d-none">@debugInfo</div>
                         <span asp-validation-for="StockSymbol" class="text-danger"></span>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6 mb-2">
                         @(Html.EJS().NumericTextBox("NumberOfSharesPurchased")
                             .Format("n0")
                             .Min(0)
@@ -68,8 +68,8 @@
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
+                <div class="row g-2">
+                    <div class="col-md-6 mb-2">
                         @(Html.EJS().DatePicker("DatePurchased")
                             .Format("MM/dd/yyyy")
                             .FloatLabelType(FloatLabelType.Always)
@@ -79,7 +79,7 @@
                             .Render())
                         <span asp-validation-for="DatePurchased" class="text-danger"></span>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6 mb-2">
                         @(Html.EJS().NumericTextBox("PurchasePrice")
                             .Format("c2")
                             .Min(0)
@@ -93,8 +93,8 @@
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
+                <div class="row g-2">
+                    <div class="col-md-6 mb-2">
                         @(Html.EJS().DatePicker("DateSold")
                             .Format("MM/dd/yyyy")
                             .FloatLabelType(FloatLabelType.Always)
@@ -104,7 +104,7 @@
                             .Render())
                         <span asp-validation-for="DateSold" class="text-danger"></span>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6 mb-2">
                         @(Html.EJS().NumericTextBox("CurrentPrice")
                             .Format("c2")
                             .Min(0)
@@ -118,7 +118,7 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-2">
                     @(Html.EJS().NumericTextBox("NumberOfSharesSold")
                         .Format("n0")
                         .Min(0)
@@ -130,7 +130,7 @@
                     <span asp-validation-for="NumberOfSharesSold" class="text-danger"></span>
                 </div>
 
-                <div class="d-flex justify-content-between mt-4">
+                <div class="d-flex justify-content-between mt-3">
                     <a asp-action="Dashboard" class="btn btn-secondary">Back to Dashboard</a>
                     @(Html.EJS().Button("submitButton")
                         .Content(Model.Id == 0 ? "Create" : "Save")

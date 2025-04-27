@@ -110,8 +110,6 @@ body {
 #login-submit, 
 button[type="submit"] {
     display: block !important;
-    margin-top: 20px !important;
-    margin-bottom: 20px !important;
     position: relative !important;
     z-index: 10 !important;
 }
@@ -530,9 +528,7 @@ body {
     background-color: #333333;
     color: #ffffff;
     padding: 1.25rem;
-    display: flex;
     flex-direction: column;
-    height: 500px;
 }
 .e-content{
     min-height: 400px;
@@ -1150,7 +1146,6 @@ body {
 
 #performanceTab .card-body {
     flex: 1;
-    display: flex;
     flex-direction: column;
     padding: 1rem;
     height: auto !important;
@@ -1311,11 +1306,6 @@ body {
     border: 1px solid #444;
     margin: 15px 0;
     max-width: 100%;
-}
-
-/* Specific height setting for holdings grid */
-#holdingsGrid {
-    min-height: 700px !important; /* Force minimum height to ensure footer visibility */
 }
 
 .e-grid .e-headercell {
