@@ -9,7 +9,7 @@
     </div>
     <div class="hero-content">
         <div class="container">
-            <div class="row align-items-center">
+            <div class="row align-items-center" style="min-height: 500px;">
                 <div class="col-lg-7 hero-text">
                     <h1 class="display-4 fw-bold text-white mb-3">Smart Portfolio Tracking & Analytics</h1>
                     <p class="lead text-white mb-4">Visualize your investments, track performance, and make data-driven decisions with our powerful analytics tools.</p>
@@ -18,9 +18,11 @@
                         <a href="/AppUserStocks/Dashboard" class="btn btn-outline-light btn-lg mb-3">View Dashboard</a>
                     </div>
                 </div>
-                <div class="col-lg-5 d-none d-lg-block">
-                    <div class="chart-showcase">
-                        <div id="showcaseChart"></div>
+                <div class="col-lg-5 d-none d-lg-block d-flex align-items-center justify-content-center">
+                    <div class="chart-showcase position-relative w-100">
+                        <div class="rounded overflow-hidden shadow-lg" style="border: 3px solid rgba(255,255,255,0.2);">
+                            <img src="/img/stock-chart-hero.jpg" alt="Interactive stock chart" class="img-fluid w-100" style="height: 240px; object-fit: cover; object-position: center top;">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -40,7 +42,10 @@
         
         <div class="row equal-height-cards g-4">
             <div class="col-md-4">
-                <div class="feature-card card h-100">
+                <div class="feature-card card h-100 overflow-hidden">
+                    <div class="position-relative" style="height: 180px;">
+                        <img src="/img/portfolio-tracking.png" class="position-absolute w-100 h-100" alt="Portfolio tracking dashboard" style="object-fit: cover; object-position: center;">
+                    </div>
                     <div class="card-body d-flex flex-column">
                         <div class="feature-icon mb-4">
                             <i class="fas fa-chart-line"></i>
@@ -52,7 +57,10 @@
             </div>
             
             <div class="col-md-4">
-                <div class="feature-card card h-100">
+                <div class="feature-card card h-100 overflow-hidden">
+                    <div class="position-relative" style="height: 180px;">
+                        <img src="/img/analytics-dashboard.png" class="position-absolute w-100 h-100" alt="Advanced analytics charts" style="object-fit: cover; object-position: center;">
+                    </div>
                     <div class="card-body d-flex flex-column">
                         <div class="feature-icon mb-4">
                             <i class="fas fa-chart-pie"></i>
@@ -64,7 +72,10 @@
             </div>
             
             <div class="col-md-4">
-                <div class="feature-card card h-100">
+                <div class="feature-card card h-100 overflow-hidden">
+                    <div class="position-relative" style="height: 180px;">
+                        <img src="/img/secure-platform.png" class="position-absolute w-100 h-100" alt="Secure financial platform" style="object-fit: cover; object-position: center;">
+                    </div>
                     <div class="card-body d-flex flex-column">
                         <div class="feature-icon mb-4">
                             <i class="fas fa-shield-alt"></i>
@@ -79,7 +90,7 @@
 </section>
 
 <!-- Chart showcase section -->
-<section class="chart-showcase-section py-5 bg-light">
+<section class="chart-showcase-section py-5">
     <div class="container">
         <div class="row justify-content-center mb-5">
             <div class="col-lg-8 text-center">
@@ -90,9 +101,15 @@
         
         <div class="row align-items-center">
             <div class="col-lg-6 mb-4 mb-lg-0">
-                <div class="chart-card card shadow">
+                <div class="chart-card card shadow overflow-hidden">
+                    <div class="card-header d-flex align-items-center">
+                        <div class="rounded-circle bg-primary p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="fa-solid fa-arrow-trend-up"></i>
+                        </div>
+                        <span class="ms-2 fw-bold">Performance Metrics</span>
+                    </div>
                     <div class="card-body">
-                        <div id="performanceChart" class="demo-chart"></div>
+                        <canvas id="performanceChart" class="demo-chart"></canvas>
                     </div>
                 </div>
             </div>
@@ -118,9 +135,15 @@
                 </ul>
             </div>
             <div class="col-lg-6 mb-4 mb-lg-0">
-                <div class="chart-card card shadow">
+                <div class="chart-card card shadow overflow-hidden">
+                    <div class="card-header d-flex align-items-center">
+                        <div class="rounded-circle bg-success p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="fa-solid fa-chart-pie text-white"></i>
+                        </div>
+                        <span class="ms-2 fw-bold">Sector Distribution</span>
+                    </div>
                     <div class="card-body">
-                        <div id="sectorChart" class="demo-chart"></div>
+                        <canvas id="sectorChart" class="demo-chart"></canvas>
                     </div>
                 </div>
             </div>
@@ -218,7 +241,10 @@
                         backgroundColor: 'rgba(0, 123, 255, 0.1)',
                         borderWidth: 3,
                         tension: 0.3,
-                        fill: true
+                        fill: true,
+                        pointBackgroundColor: 'rgb(0, 123, 255)',
+                        pointBorderColor: '#fff',
+                        pointRadius: 5
                     },
                     {
                         label: 'S&P 500',
@@ -227,7 +253,10 @@
                         borderWidth: 2,
                         borderDash: [5, 5],
                         tension: 0.3,
-                        fill: false
+                        fill: false,
+                        pointBackgroundColor: 'rgb(220, 53, 69)',
+                        pointBorderColor: '#fff',
+                        pointRadius: 4
                     }]
                 },
                 options: {
@@ -239,6 +268,13 @@
                             labels: {
                                 usePointStyle: true,
                                 padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + '%';
+                                }
                             }
                         }
                     },
@@ -253,6 +289,11 @@
                                     return value + '%';
                                 }
                             }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
@@ -266,15 +307,16 @@
                     datasets: [{
                         data: [30, 20, 15, 12, 10, 13],
                         backgroundColor: [
-                            'rgba(0, 123, 255, 0.8)',
-                            'rgba(40, 167, 69, 0.8)',
-                            'rgba(255, 193, 7, 0.8)',
-                            'rgba(111, 66, 193, 0.8)',
-                            'rgba(23, 162, 184, 0.8)',
-                            'rgba(108, 117, 125, 0.8)'
+                            'rgba(0, 123, 255, 0.85)',
+                            'rgba(40, 167, 69, 0.85)',
+                            'rgba(255, 193, 7, 0.85)',
+                            'rgba(111, 66, 193, 0.85)',
+                            'rgba(23, 162, 184, 0.85)',
+                            'rgba(108, 117, 125, 0.85)'
                         ],
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverBorderWidth: 3
                     }]
                 },
                 options: {
@@ -284,7 +326,8 @@
                         legend: {
                             position: 'right',
                             labels: {
-                                padding: 20
+                                padding: 20,
+                                usePointStyle: true
                             }
                         },
                         tooltip: {
@@ -295,47 +338,14 @@
                             }
                         }
                     },
-                    cutout: '60%'
-                }
-            });
-            
-            // Showcase chart in hero section
-            const showcaseChart = new Chart(document.getElementById('showcaseChart'), {
-                type: 'line',
-                data: {
-                    labels: ['', '', '', '', '', '', '', '', '', '', '', ''],
-                    datasets: [{
-                        label: 'Growth',
-                        data: [30, 40, 35, 50, 45, 60, 55, 70, 65, 80, 75, 90],
-                        borderColor: 'rgba(255, 255, 255, 0.8)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            enabled: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: false
-                        },
-                        y: {
-                            display: false
-                        }
+                    cutout: '60%',
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true
                     }
                 }
             });
+            
         });
     </script>
 }

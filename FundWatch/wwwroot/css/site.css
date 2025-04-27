@@ -37,7 +37,7 @@ body {
 /* Ensure all card images have the same height */
 .card-img-top {
     height: 200px;
-    object-fit: cover;
+    object-fit: none;
 }
 
 /* Styling for the main header section */
@@ -1852,6 +1852,33 @@ body {
     height: 300px;
     padding: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.chart-showcase .rounded {
+    overflow: hidden;
+    transition: transform 0.5s;
+    width: 100%;
+}
+
+.chart-showcase .rounded:hover {
+    transform: translateY(-5px);
+}
+
+.chart-showcase img {
+    height: 240px; 
+    object-fit: cover; 
+    object-position: center top;
+    transition: transform 0.5s;
+    display: block;
+    margin: 0 auto;
+}
+
+.chart-showcase:hover img {
+    transform: scale(1.05);
 }
 
 /* Sections styling */
@@ -1873,13 +1900,28 @@ body {
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
     transition: transform 0.3s, box-shadow 0.3s;
-    background: white;
     overflow: hidden;
 }
 
     .feature-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-card .position-relative {
+        overflow: hidden;
+    }
+    
+    .feature-card img {
+        transition: transform 0.5s;
+        object-fit: cover;
+        object-position: center;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+    }
+    
+    .feature-card:hover img {
+        transform: scale(1.05);
     }
 
 .feature-icon {
@@ -1916,15 +1958,29 @@ body {
     text-align: center;
 }
 
-/* Chart showcase section */
-.chart-showcase-section {
-    background-color: #f8f9fa;
-}
-
 .chart-card {
     border: none;
     border-radius: 10px;
     overflow: hidden;
+}
+
+.chart-card .card-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+}
+
+.chart-card .rounded-circle {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-card .rounded-circle i {
+    font-size: 1.2rem;
+    color: white;
 }
 
 .demo-chart {
