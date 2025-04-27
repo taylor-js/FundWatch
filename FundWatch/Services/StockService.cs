@@ -77,8 +77,17 @@ namespace FundWatch.Services
             _httpClient = clientFactory.CreateClient("PolygonApi");
             _logger = logger;
             _cache = cache;
-            _apiKey = configuration.GetValue<string>("PolygonApi:ApiKey") ??
-                      throw new ArgumentNullException("PolygonApi:ApiKey", "API key is required");
+            
+            // Try to get API key from configuration with fallback to environment variable
+            string? configApiKey = configuration.GetValue<string>("PolygonApi:ApiKey");
+            string? envApiKey = Environment.GetEnvironmentVariable("POLYGON_API_KEY");
+            _apiKey = configApiKey ?? envApiKey ?? "MISSING_API_KEY";
+            
+            if (_apiKey == "MISSING_API_KEY")
+            {
+                _logger.LogError("Polygon API key is missing. Chart data will not be available.");
+            }
+            
             _rateLimiter = new RateLimitingHandler(); // Initialize RateLimiter
         }
 
@@ -588,6 +597,13 @@ namespace FundWatch.Services
 
         private async Task<JObject?> SendApiRequestAsync(string endpoint, Dictionary<string, string>? queryParams = null)
         {
+            // Check if API key is invalid/missing before making the request
+            if (string.IsNullOrEmpty(_apiKey) || _apiKey == "MISSING_API_KEY")
+            {
+                _logger.LogError("API key is missing or invalid. Please configure a valid Polygon.io API key.");
+                return null;
+            }
+
             for (int retry = 0; retry < MAX_RETRIES; retry++)
             {
                 try
@@ -600,13 +616,29 @@ namespace FundWatch.Services
 
                     var response = await _httpClient.GetAsync(fullUrl);
 
+                    if (response.StatusCode == HttpStatusCode.Forbidden) // 403 error
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        _logger.LogError("API key authentication failed (403 Forbidden). Please check your Polygon.io API key. Response: {Content}", errorContent);
+                        
+                        // Don't retry on auth failures - it won't help
+                        return null;
+                    }
+
                     response.EnsureSuccessStatusCode();
                     var content = await response.Content.ReadAsStringAsync();
                     return JObject.Parse(content);
                 }
+                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    _logger.LogError(ex, "API key authentication failed (403 Forbidden). Please check your Polygon.io API key.");
+                    // Don't retry auth failures
+                    return null;
+                }
                 catch (Exception ex) when (retry < MAX_RETRIES - 1)
                 {
                     _logger.LogWarning(ex, "Retry {Retry} for request to {Endpoint}.", retry + 1, endpoint);
+                    await Task.Delay((int)Math.Pow(2, retry) * 1000); // Exponential backoff
                 }
             }
 

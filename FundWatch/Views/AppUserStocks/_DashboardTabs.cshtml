@@ -1,0 +1,82 @@
+@model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
+@{
+    // This partial view contains tab navigation for the dashboard
+    var portfolioValue = Model.PortfolioMetrics.TotalValue;
+    var portfolioGain = Model.PortfolioMetrics.TotalGain;
+    var portfolioGainPercentage = Model.PortfolioMetrics.TotalPerformance;
+    var portfolioStockCount = Model.UserStocks.Count;
+}
+
+<!-- Dashboard Hero Section -->
+<div class="dashboard-hero mb-4">
+    <div class="container">
+        <div class="dashboard-hero-content">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1>Your Portfolio Dashboard</h1>
+                    <p>Track, analyze, and optimize your investments in one place.</p>
+                </div>
+                <div class="col-lg-6">
+                    <div class="dashboard-metrics">
+                        <div class="dashboard-metric">
+                            <div class="value">@portfolioValue.ToString("C0")</div>
+                            <div class="label">Portfolio Value</div>
+                        </div>
+                        <div class="dashboard-metric">
+                            <div class="value @(portfolioGain >= 0 ? "text-success" : "text-danger")">
+                                @(portfolioGain >= 0 ? "+" : "")@portfolioGain.ToString("C0")
+                            </div>
+                            <div class="label">Total Gain/Loss</div>
+                        </div>
+                        <div class="dashboard-metric">
+                            <div class="value @(portfolioGainPercentage >= 0 ? "text-success" : "text-danger")">
+                                @(portfolioGainPercentage >= 0 ? "+" : "")@portfolioGainPercentage.ToString("0.00")%
+                            </div>
+                            <div class="label">Percentage</div>
+                        </div>
+                        <div class="dashboard-metric">
+                            <div class="value">@portfolioStockCount</div>
+                            <div class="label">Stocks</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Navigation -->
+<div class="row mb-4">
+    <div class="col-12">
+        <!-- Responsive tabs with horizontal scrolling on mobile -->
+        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overviewTab" role="tab" aria-controls="overviewTab" aria-selected="true">
+                    <i class="fas fa-chart-pie me-2"></i>Overview
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performanceTab" role="tab" aria-controls="performanceTab" aria-selected="false">
+                    <i class="fas fa-chart-line me-2"></i>Performance
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analyticsTab" role="tab" aria-controls="analyticsTab" aria-selected="false">
+                    <i class="fas fa-chart-bar me-2"></i>Analytics
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="holdings-tab" data-bs-toggle="tab" data-bs-target="#holdingsTab" role="tab" aria-controls="holdingsTab" aria-selected="false">
+                    <i class="fas fa-table me-2"></i>Holdings
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Container-relative floating action button -->
+<div class="position-relative">
+    <button id="addStockButton" class="btn btn-primary position-fixed rounded-circle shadow">
+        <i class="fa-solid fa-plus fa-lg"></i>
+    </button>
+</div>

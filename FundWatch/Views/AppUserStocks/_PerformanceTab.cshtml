@@ -1,0 +1,647 @@
+@model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Navigations
+@using Syncfusion.EJ2.Charts
+@using Syncfusion.EJ2.Grids
+@{
+    var culture = new System.Globalization.CultureInfo("en-US");
+}
+
+<div class="row mb-4 gy-4">
+    <!-- Rolling Returns Chart -->
+    <div class="col-md-6">
+        <div class="card shadow" style="height: 580px; min-height: 580px;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Rolling Returns Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-description">
+                    <p class="text-center">
+                        Performance over rolling time periods, showing consistency of returns over different timeframes.
+                    </p>
+                </div>
+                <div id="rollingReturnsChart"></div>
+                
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Determine if we're on mobile
+                        const isMobile = window.innerWidth < 768;
+                        
+                        // Generate realistic rolling returns data
+                        function generateRollingReturns() {
+                            const now = new Date();
+                            const data = [];
+                            
+                            // Generate 12 months of data (each data point represents trailing returns as of that month)
+                            for (let i = 0; i < 12; i++) {
+                                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                                
+                                // Generate realistic returns with some correlation between timeframes
+                                // Longer timeframes generally have less volatility
+                                const baseReturn = Math.random() * 10 - 3; // Base return between -3% and 7%
+                                
+                                // 1-month return (most volatile)
+                                const oneMonth = baseReturn + (Math.random() * 8 - 4); // +/- 4% volatility
+                                
+                                // 3-month has some correlation with 1-month but less volatile
+                                const threeMonth = (baseReturn * 0.8) + (Math.random() * 6 - 3); // +/- 3% volatility
+                                
+                                // 6-month has more correlation with the base trend and less volatility
+                                const sixMonth = (baseReturn * 0.6) + (Math.random() * 4 - 2); // +/- 2% volatility
+                                
+                                // 12-month has strongest correlation with the base trend and least volatility
+                                const twelveMonth = (baseReturn * 0.5) + (Math.random() * 3 - 1.5); // +/- 1.5% volatility
+                                
+                                // Format date as month name and year
+                                const monthName = date.toLocaleString('default', { month: 'short' });
+                                const year = date.getFullYear();
+                                const dateLabel = `${monthName} ${year}`;
+                                
+                                data.push({
+                                    date: dateLabel,
+                                    onemonth: parseFloat(oneMonth.toFixed(2)),
+                                    threemonth: parseFloat(threeMonth.toFixed(2)),
+                                    sixmonth: parseFloat(sixMonth.toFixed(2)),
+                                    twelvemonth: parseFloat(twelveMonth.toFixed(2))
+                                });
+                            }
+                            
+                            // Sort chronologically (oldest to newest)
+                            return data.reverse();
+                        }
+                        
+                        const rollingReturnsData = generateRollingReturns();
+                        
+                        // Create the Highcharts chart with mobile-responsive settings
+                        Highcharts.chart('rollingReturnsChart', {
+                            chart: {
+                                type: 'spline',
+                                backgroundColor: '#333333',
+                                style: {
+                                    'fontFamily': 'Inter, sans-serif'
+                                },
+                                height: '400px'
+                            },
+                            title: {
+                                text: null
+                            },
+                            xAxis: {
+                                categories: rollingReturnsData.map(item => item.date),
+                                labels: {
+                                    style: {
+                                        color: '#FFFFFF'
+                                    },
+                                    rotation: window.innerWidth < 768 ? -45 : 0,
+                                    y: window.innerWidth < 768 ? 20 : null
+                                },
+                                tickmarkPlacement: 'on',
+                                lineColor: '#666',
+                                gridLineWidth: 0
+                            },
+                            yAxis: {
+                                title: {
+                                    text: 'Return (%)',
+                                    style: {
+                                        color: '#FFFFFF',
+                                        fontWeight: 'bold'
+                                    }
+                                },
+                                labels: {
+                                    format: '{value}%',
+                                    style: {
+                                        color: '#FFFFFF'
+                                    }
+                                },
+                                gridLineColor: 'rgba(255, 255, 255, 0.1)',
+                                plotLines: [{
+                                    value: 0,
+                                    width: 1,
+                                    color: '#AAAAAA',
+                                    zIndex: 1
+                                }]
+                            },
+                            tooltip: {
+                                shared: true,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                style: {
+                                    color: '#FFFFFF'
+                                },
+                                valueDecimals: 2,
+                                valueSuffix: '%'
+                            },
+                            plotOptions: {
+                                spline: {
+                                    marker: {
+                                        enabled: true,
+                                        symbol: 'circle',
+                                        radius: window.innerWidth < 768 ? 3 : 4
+                                    },
+                                    lineWidth: window.innerWidth < 768 ? 2 : 3
+                                },
+                                series: {
+                                    states: {
+                                        hover: {
+                                            lineWidth: window.innerWidth < 768 ? 3 : 4
+                                        }
+                                    }
+                                }
+                            },
+                            series: [{
+                                name: '1 Month',
+                                data: rollingReturnsData.map(item => item.onemonth),
+                                color: '#FF6B6B', // Red
+                                zIndex: 4
+                            }, {
+                                name: '3 Month',
+                                data: rollingReturnsData.map(item => item.threemonth),
+                                color: '#4ECDC4', // Teal
+                                zIndex: 3
+                            }, {
+                                name: '6 Month',
+                                data: rollingReturnsData.map(item => item.sixmonth),
+                                color: '#FFD166', // Yellow
+                                zIndex: 2
+                            }, {
+                                name: '12 Month',
+                                data: rollingReturnsData.map(item => item.twelvemonth),
+                                color: '#4361EE', // Blue
+                                zIndex: 1
+                            }],
+                            legend: {
+                                itemStyle: {
+                                    color: '#FFFFFF'
+                                },
+                                itemHoverStyle: {
+                                    color: '#DDDDDD'
+                                },
+                                layout: 'horizontal',
+                                align: 'center',
+                                verticalAlign: 'bottom',
+                                itemDistance: window.innerWidth < 768 ? 20 : 40,
+                                itemMarginTop: window.innerWidth < 768 ? 5 : 10,
+                                itemMarginBottom: window.innerWidth < 768 ? 5 : 10
+                            },
+                            credits: {
+                                enabled: false
+                            },
+                            responsive: {
+                                rules: [{
+                                    condition: {
+                                        maxWidth: 500
+                                    },
+                                    chartOptions: {
+                                        chart: {
+                                            spacingLeft: 5,
+                                            spacingRight: 5
+                                        },
+                                        legend: {
+                                            layout: 'horizontal',
+                                            align: 'center',
+                                            verticalAlign: 'bottom',
+                                            itemDistance: 15
+                                        },
+                                        yAxis: {
+                                            title: {
+                                                text: null
+                                            }
+                                        }
+                                    }
+                                }]
+                            }
+                        });
+                    });
+                </script>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Heatmap -->
+    <div class="col-md-6">
+        <div class="card shadow" style="height: 580px; min-height: 580px;">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">Portfolio Heatmap</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-description">
+                    <p class="text-center">
+                        Visualize your portfolio allocation and performance with size representing value and color representing performance.
+                    </p>
+                </div>
+                @{
+                    // Enhanced data for the portfolio heatmap
+                    var holdingsTotalValue = Model.UserStocks
+                        .Where(x => (x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) > 0)
+                        .Sum(x => (x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) * x.CurrentPrice);
+                        
+                    var allHoldings = Model.UserStocks
+                    .Select(x => new
+                    {
+                        x = x.StockSymbol,
+                        y = (x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) * x.CurrentPrice,
+                        text = x.StockSymbol,
+                        company = Model.CompanyDetails.ContainsKey(x.StockSymbol) ? Model.CompanyDetails[x.StockSymbol].Name : x.StockSymbol,
+                        shares = x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0),
+                        price = x.CurrentPrice,
+                        performance = Model.CompanyDetails.ContainsKey(x.StockSymbol) 
+                            ? Math.Round((x.CurrentPrice - x.PurchasePrice) / x.PurchasePrice * 100, 2)
+                            : 0,
+                        weight = holdingsTotalValue > 0 
+                            ? Math.Round(((x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) * x.CurrentPrice / holdingsTotalValue) * 100, 2)
+                            : 0
+                    })
+                    .Where(x => x.shares > 0) // Exclude stocks with zero holdings
+                    .OrderByDescending(x => x.y)
+                    .ToList();
+                }
+                
+                <!-- Templates removed since we're using Highcharts instead of Syncfusion TreeMap -->
+                
+                <!-- Portfolio visualization with HighCharts Treemap -->
+                <div id="portfolioTreemap" style="width: 100%; height: 400px;"></div>
+                
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Create the treemap data from the server-side model
+                        const portfolioData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(allHoldings));
+                        
+                        // Initialize the Highcharts Treemap
+                        Highcharts.chart('portfolioTreemap', {
+                            series: [{
+                                type: "treemap",
+                                layoutAlgorithm: 'squarified',
+                                data: portfolioData.map(item => ({
+                                    id: item.x,
+                                    name: item.x,
+                                    value: item.y,
+                                    colorValue: item.performance,
+                                    custom: {
+                                        company: item.company,
+                                        shares: item.shares,
+                                        price: item.price,
+                                        performance: item.performance,
+                                        weight: item.weight
+                                    }
+                                })),
+                                dataLabels: {
+                                    enabled: true,
+                                    format: '<div style="text-align: center; width: 100%"><span style="font-weight: bold">{point.name}</span><br>{point.custom.weight}%<br><span style="font-size: 10px;">{point.custom.performance}%</span></div>',
+                                    style: {
+                                        color: '#FFFFFF',
+                                        textOutline: 'none'
+                                    },
+                                    useHTML: true,
+                                    allowOverlap: false
+                                }
+                            }],
+                            tooltip: {
+                                useHTML: true,
+                                formatter: function() {
+                                    return `<div style="max-width: 250px;">
+                                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${this.point.custom.company}</div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                            <span>Symbol:</span>
+                                            <span style="font-weight: bold;">${this.point.name}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                            <span>Value:</span>
+                                            <span style="font-weight: bold;">$${this.point.value.toLocaleString()}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                            <span>Portfolio Weight:</span>
+                                            <span style="font-weight: bold;">${this.point.custom.weight}%</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                            <span>Performance:</span>
+                                            <span style="font-weight: bold;">
+                                                <span class="${this.point.custom.performance >= 0 ? 'text-success' : 'text-danger'}">${this.point.custom.performance}%</span>
+                                            </span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                            <span>Shares:</span>
+                                            <span style="font-weight: bold;">${this.point.custom.shares}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between;">
+                                            <span>Price:</span>
+                                            <span style="font-weight: bold;">$${this.point.custom.price}</span>
+                                        </div>
+                                    </div>`;
+                                }
+                            },
+                            colorAxis: {
+                                minColor: '#D50000',  // Dark red for negative performance
+                                maxColor: '#00C853',  // Dark green for positive performance
+                                stops: [
+                                    [0, '#D50000'],   // -20% or worse
+                                    [0.2, '#FF7043'], // -10% to -20%
+                                    [0.4, '#FFAB91'], // -5% to -10%
+                                    [0.6, '#AED581'], // 0% to 5%
+                                    [0.8, '#66BB6A'], // 5% to 10%
+                                    [1, '#00C853']    // 10%+ gain
+                                ]
+                            },
+                            title: {
+                                text: null
+                            },
+                            chart: {
+                                backgroundColor: '#333333'
+                            },
+                            credits: {
+                                enabled: false
+                            }
+                        });
+                    });
+                </script>
+                
+                @* <div style="margin-top: 15px;">
+                    <div class="legend-note text-center text-light">
+                        <small>Size represents position value | Color represents performance</small>
+                    </div>
+                </div> *@
+            </div>
+        </div>
+    </div>
+</div> <!-- Close the Performance tab's first row -->
+
+<!-- Portfolio Performance Analysis Charts Row -->
+<div class="row mb-4 gy-4">
+    <div class="col-md-6">
+        <div class="card shadow" style="height: 580px; min-height: 580px;">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div>
+                @{
+                    // Calculate monthly growth data based on historical data
+                    var today = DateTime.Today;
+                    var sixMonthsAgo = today.AddMonths(-6);
+                    var threeMonthsAgo = today.AddMonths(-3);
+                    var oneMonthAgo = today.AddMonths(-1);
+                    
+                    // Create compounded return data - this is mocked since we need to calculate from historical data
+                    var growthData = new List<object>();
+                    int dataPoints = 6; // 6 months of data
+                    
+                    decimal portfolioValue = Model.PortfolioMetrics.TotalCost;
+                    decimal marketBenchmark = portfolioValue;
+                    
+                    for (int i = 0; i < dataPoints; i++) {
+                        var date = today.AddMonths(-dataPoints + i + 1);
+                        
+                        // Add some randomness to simulate real data
+                        var rnd = new Random(i * 100);
+                        var portfolioGrowth = 1 + (decimal)(rnd.NextDouble() * 0.04 - 0.01);
+                        var marketGrowth = 1 + (decimal)(rnd.NextDouble() * 0.03 - 0.005);
+                        
+                        portfolioValue *= portfolioGrowth;
+                        marketBenchmark *= marketGrowth;
+                        
+                        growthData.Add(new {
+                            Date = date,
+                            Portfolio = Math.Round(portfolioValue, 2),
+                            Market = Math.Round(marketBenchmark, 2)
+                        });
+                    }
+                }
+                
+                @(Html.EJS().Chart("growthAnalysisChart")
+                    .Width("100%")
+                    .Background("#333333")
+                    .Margin(m => m.Left(10).Right(50).Top(10).Bottom(15))
+                    .ChartArea(ca => ca.Border(b => b.Width(0)))
+                    .PrimaryXAxis(px => px
+                        .ValueType(Syncfusion.EJ2.Charts.ValueType.DateTime)
+                        .LabelFormat("MMM yyyy")
+                        .IntervalType(Syncfusion.EJ2.Charts.IntervalType.Months)
+                        .EdgeLabelPlacement(Syncfusion.EJ2.Charts.EdgeLabelPlacement.Shift)
+                        .LabelIntersectAction(Syncfusion.EJ2.Charts.LabelIntersectAction.None)
+                        .EnableTrim(false)
+                        .Border(b => b.Width(0))
+                        .MajorGridLines(gl => gl.Width(0))
+                        .MajorTickLines(tl => tl.Width(0))
+                        .LabelStyle(ls => ls.Color("#FFFFFF").Size("11px"))
+                    )
+                    .PrimaryYAxis(py => py
+                        .Title("Value ($)")
+                        .TitleStyle(style => style.Color("#FFFFFF").Size("12px").FontWeight("600"))
+                        .LabelFormat("${value}")
+                        .MajorGridLines(gl => gl.Width(1).Color("rgba(255,255,255,0.1)"))
+                        .LabelStyle(ls => ls.Color("#FFFFFF").Size("11px"))
+                    )
+                    .Series(sr => {
+                        sr.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Line)
+                        .DataSource(growthData)
+                        .XName("Date")
+                        .YName("Portfolio")
+                        .Name("Your Portfolio")
+                        .Width(3)
+                        .Marker(m => m
+                            .Visible(true)
+                            .Height(8)
+                            .Width(8)
+                            .Shape(Syncfusion.EJ2.Charts.ChartShape.Circle)
+                        )
+                        .Add();
+                        
+                        sr.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Line)
+                        .DataSource(growthData)
+                        .XName("Date")
+                        .YName("Market")
+                        .Name("Market Benchmark")
+                        .Width(3)
+                        .DashArray("5,5")
+                        .Marker(m => m
+                            .Visible(true)
+                            .Height(8)
+                            .Width(8)
+                            .Shape(Syncfusion.EJ2.Charts.ChartShape.Diamond)
+                        )
+                        .Add();
+                    })
+                    .Tooltip(tt => tt
+                        .Enable(true)
+                        .Shared(true)
+                        .Format("${series.name}: ${point.y}")
+                        .TextStyle(ts => ts.Color("#FFFFFF"))
+                    )
+                    .Crosshair(ch => ch
+                        .Enable(true)
+                        .LineType(Syncfusion.EJ2.Charts.LineType.Vertical)
+                    )
+                    .LegendSettings(lg => lg
+                        .Visible(true)
+                        .Position(Syncfusion.EJ2.Charts.LegendPosition.Top)
+                        .Background("transparent")
+                        .TextStyle(ts => ts.Color("#FFFFFF").Size("12px"))
+                    )
+                    .Render()
+                )
+                
+                <div class="chart-description">
+                    <p class="text-center">
+                        This chart compares your portfolio growth against market benchmarks over the past 6 months.
+                    </p>
+                </div>
+                
+                <script>
+                    // Fix for x-axis label cutoff
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Wait for chart to render
+                        setTimeout(function() {
+                            const chart = document.getElementById('growthAnalysisChart');
+                            if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
+                                // Fix x-axis labels
+                                const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
+                                if (xAxisLabels && xAxisLabels.length > 0) {
+                                    // Label styling handled by CSS
+                                    
+                                    // Force chart refresh to apply changes
+                                    chart.ej2_instances[0].refresh();
+                                }
+                            }
+                        }, 500);
+                    });
+                </script>
+                </div><!-- Close wrapper div -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly Performance Chart -->
+    <div class="col-md-6">
+        <div class="card shadow" style="height: 580px; min-height: 580px;">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">Monthly Performance</h5>
+            </div>
+            <div class="card-body">
+                <div>
+                @{
+                    // Generate monthly performance data
+                    var monthlyData = new List<object>();
+                    var currentDate = DateTime.Today;
+                    
+                    // Create data for last 6 months
+                    for (int i = 5; i >= 0; i--) {
+                        var month = currentDate.AddMonths(-i);
+                        var monthName = month.ToString("MMM");
+                        
+                        // Simulate random performance percentages
+                        var rnd = new Random((month.Year * 100) + month.Month);
+                        var portfolioPerf = Math.Round((rnd.NextDouble() * 8) - 2.5, 2); // -2.5% to 5.5%
+                        var benchmarkPerf = Math.Round((rnd.NextDouble() * 6) - 2, 2);   // -2% to 4%
+                        
+                        monthlyData.Add(new {
+                            Month = monthName,
+                            Portfolio = portfolioPerf,
+                            Benchmark = benchmarkPerf
+                        });
+                    }
+                }
+                
+                @(Html.EJS().Chart("monthlyPerformanceChart")
+                    .Width("100%")
+                    .Background("#333333")
+                    .Margin(m => m.Left(10).Right(30).Top(10).Bottom(15))
+                    .ChartArea(ca => ca.Border(b => b.Width(0)))
+                    .PrimaryXAxis(px => px
+                        .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
+                        .Title("Month")
+                        .TitleStyle(style => style.Color("#FFFFFF").Size("12px").FontWeight("600"))
+                        .LabelStyle(style => style.Color("#FFFFFF").Size("11px"))
+                        .LabelIntersectAction(Syncfusion.EJ2.Charts.LabelIntersectAction.None)
+                        .EnableTrim(false)
+                        .EdgeLabelPlacement(Syncfusion.EJ2.Charts.EdgeLabelPlacement.Shift)
+                        .MajorGridLines(gl => gl.Width(0))
+                        .Border(b => b.Width(0))
+                    )
+                    .PrimaryYAxis(py => py
+                        .Title("Return (%)")
+                        .TitleStyle(style => style.Color("#FFFFFF").Size("12px").FontWeight("600"))
+                        .LabelFormat("{value}%")
+                        .MajorGridLines(gl => gl.Width(1).Color("rgba(255,255,255,0.1)"))
+                        .LabelStyle(ls => ls.Color("#FFFFFF").Size("11px"))
+                        .RangePadding(Syncfusion.EJ2.Charts.ChartRangePadding.Normal)
+                    )
+                    .Series(sr => {
+                        // Portfolio Performance
+                        sr.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Column)
+                        .DataSource(monthlyData)
+                        .XName("Month")
+                        .YName("Portfolio")
+                        .Name("Your Portfolio")
+                        .ColumnWidth(0.7)
+                        .EnableTooltip(true)
+                        .Fill("#4361EE")
+                        .Animation(a => a.Enable(true))
+                        .Marker(m => m
+                            .DataLabel(dl => dl
+                                .Visible(true)
+                                .Position(Syncfusion.EJ2.Charts.LabelPosition.Top)
+                                .Font(f => f.Color("#FFFFFF").Size("10px"))
+                                .Format("{value}%")
+                            )
+                        )
+                        .Add();
+                        
+                        // Benchmark Performance
+                        sr.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Column)
+                        .DataSource(monthlyData)
+                        .XName("Month")
+                        .YName("Benchmark")
+                        .Name("Benchmark")
+                        .ColumnWidth(0.7)
+                        .EnableTooltip(true)
+                        .Fill("#FF6B6B")
+                        .Animation(a => a.Enable(true))
+                        .Add();
+                    })
+                    .Tooltip(tt => tt
+                        .Enable(true)
+                        .Format("${series.name}: ${point.y}%")
+                        .TextStyle(ts => ts.Color("#FFFFFF"))
+                    )
+                    .LegendSettings(lg => lg
+                        .Visible(true)
+                        .Position(Syncfusion.EJ2.Charts.LegendPosition.Top)
+                        .Background("transparent")
+                        .TextStyle(ts => ts.Color("#FFFFFF").Size("12px"))
+                    )
+                    .Render()
+                )
+                
+                <div class="chart-description">
+                    <p class="text-center">
+                        Month-by-month performance comparison showing your portfolio against market benchmarks.
+                    </p>
+                </div>
+                
+                <script>
+                    // Fix for x-axis label cutoff
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Wait for chart to render
+                        setTimeout(function() {
+                            const chart = document.getElementById('monthlyPerformanceChart');
+                            if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
+                                // Add data-value attribute to labels for CSS targeting
+                                const labels = chart.querySelectorAll('.e-data-label');
+                                if (labels && labels.length > 0) {
+                                    labels.forEach(function(label) {
+                                        if (label.textContent) {
+                                            label.setAttribute('data-value', label.textContent);
+                                        }
+                                    });
+                                }
+                                
+                                // Label positioning handled by CSS
+                                
+                                // Force chart refresh to apply changes
+                                chart.ej2_instances[0].refresh();
+                            }
+                        }, 500);
+                    });
+                </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -80,6 +80,16 @@ namespace FundWatch.Controllers
             var symbols = userStocks.Select(s => s.StockSymbol.Trim().ToUpper())
                 .Distinct()
                 .ToList();
+            
+            // Create a test request to check API status 
+            var testSymbol = symbols.First();
+            var testPrice = await _stockService.GetRealTimePricesAsync(new List<string> { testSymbol });
+            
+            if (testPrice == null || !testPrice.Any())
+            {
+                _logger.LogError("API connectivity test failed for symbol {Symbol}. API key may be invalid.", testSymbol);
+                TempData["ApiError"] = "Unable to connect to stock data API. Please check your API key configuration.";
+            }
                 
             _logger.LogInformation("Preparing dashboard for user {UserId} with {SymbolCount} symbols", userId, symbols.Count);
 

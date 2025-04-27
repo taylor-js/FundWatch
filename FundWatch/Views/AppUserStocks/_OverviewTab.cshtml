@@ -1,0 +1,285 @@
+@model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Navigations
+@using Syncfusion.EJ2.Charts
+@using Syncfusion.EJ2.Grids
+@{
+    var culture = new System.Globalization.CultureInfo("en-US");
+    // Prepare the series data for Highcharts
+    var seriesData = new List<object>();
+    foreach (var stock in Model.PerformanceData.OrderBy(kvp => kvp.Key))
+    {
+        if (stock.Value != null && stock.Value.Any())
+        {
+            seriesData.Add(new
+            {
+                name = stock.Key,
+                data = stock.Value.Select(p => new object[] {
+                                        p.Date.ToString("yyyy-MM-ddTHH:mm:ss"),
+                                        p.Value
+                            }).ToArray()
+            });
+        }
+    }
+
+    // Serialize to JSON
+    var seriesDataJson = Newtonsoft.Json.JsonConvert.SerializeObject(seriesData);
+}
+
+<!-- Portfolio Overview Cards -->
+<div class="row mb-4 gy-4">
+    <div class="col-sm-6 col-md-3">
+        <div class="card shadow overview-scalar-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Total Portfolio Value</h5>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.PortfolioMetrics.TotalValue.ToString("C2", culture)</h3>
+                <small class="@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "text-success" : "text-danger")">
+                    @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "+" : "")@Model.PortfolioMetrics.TotalPerformance.ToString("F2")%
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <div class="card shadow overview-scalar-card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Portfolio Diversity</h5>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.PortfolioMetrics.UniqueSectors</h3>
+                <small class="text-muted">Sectors Represented</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <div class="card shadow overview-scalar-card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">Best Performer</h5>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.PortfolioMetrics.BestPerformingStock</h3>
+                <small class="text-success">
+                    @(Model.PortfolioMetrics.BestPerformingStockReturn.ToString("F2") ?? "0.00")%
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+        <div class="card shadow overview-scalar-card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Worst Performer</h5>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.PortfolioMetrics.WorstPerformingStock</h3>
+                <small class="text-danger">
+                    @(Model.PortfolioMetrics.WorstPerformingStockReturn.ToString("F2") ?? "0.00")%
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Chart - Part of Overview Tab -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow full-width-chart">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Stock Performance History</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-description">
+                    <p class="text-center mb-1">
+                        Track the performance of your investments over time. Use the period selectors to view different time ranges.
+                    </p>
+                </div>
+                @if (Model.PerformanceData != null && Model.PerformanceData.Any())
+                {
+                    <div id="stockChart" style="width: 100%; height: 600px;"></div>
+                    
+                    
+                    <script type="text/javascript">
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Load series data from server-side JSON
+                            var seriesData = JSON.parse('@Html.Raw(seriesDataJson.Replace("'", "\\'"))');
+                            
+                            // Debug chart library loading
+                            console.log("Highcharts version:", Highcharts?.version);
+                            console.log("Highcharts object:", Highcharts);
+                            console.log("stockChart function available:", typeof Highcharts?.stockChart === 'function');
+                            console.log("StockChart function available:", typeof Highcharts?.StockChart === 'function');
+                            
+                            // Check if we have valid data
+                            if (!seriesData || seriesData.length === 0) {
+                                // Display an error message with instructions
+                                document.getElementById('stockChart').innerHTML = `
+                                    <div class="alert alert-warning text-center p-5" style="margin-top: 50px;">
+                                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Performance Data Not Available</h5>
+                                        <p class="mb-0">
+                                            We're unable to fetch stock performance data. This is likely due to API key issues.
+                                            <br><strong>Solution:</strong> Please verify your Polygon.io API key in your application settings.
+                                        </p>
+                                    </div>`;
+                                return;
+                            }
+                            
+                            // Debug chart libraries
+                            console.log("Highcharts version:", Highcharts?.version);
+                            console.log("stockChart function available:", typeof Highcharts?.stockChart === 'function');
+                            
+                            // Create the Highcharts stock chart
+                            Highcharts.stockChart('stockChart', {
+                                chart: {
+                                    backgroundColor: '#333333',
+                                    style: {
+                                        fontFamily: 'Inter, sans-serif'
+                                    }
+                                },
+                                rangeSelector: {
+                                    selected: 5, // Default to 5Y view
+                                    buttons: [
+                                        { type: 'month', count: 1, text: '1M' },
+                                        { type: 'month', count: 3, text: '3M' },
+                                        { type: 'month', count: 6, text: '6M' },
+                                        { type: 'ytd', text: 'YTD' },
+                                        { type: 'year', count: 1, text: '1Y' },
+                                        { type: 'year', count: 5, text: '5Y' },
+                                        { type: 'all', text: 'ALL' }
+                                    ],
+                                    buttonTheme: {
+                                        fill: 'none',
+                                        stroke: 'none',
+                                        'stroke-width': 0,
+                                        r: 8,
+                                        style: {
+                                            color: '#CCCCCC',
+                                            fontWeight: 'normal'
+                                        },
+                                        states: {
+                                            hover: {
+                                                fill: '#4361EE',
+                                                style: { color: 'white' }
+                                            },
+                                            select: {
+                                                fill: '#4361EE',
+                                                style: { color: 'white' }
+                                            }
+                                        }
+                                    },
+                                    inputEnabled: false
+                                },
+                                title: { text: null },
+                                navigator: { enabled: true },
+                                scrollbar: { enabled: true },
+                                xAxis: {
+                                    type: 'datetime',
+                                    labels: { style: { color: '#CCCCCC' } },
+                                    lineColor: '#666666',
+                                    tickColor: '#666666'
+                                },
+                                yAxis: {
+                                    labels: {
+                                        formatter: function() {
+                                            return '$' + this.value.toFixed(2);
+                                        },
+                                        style: { color: '#CCCCCC' }
+                                    },
+                                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                chart: {
+                                    backgroundColor: '#333333',
+                                    style: {
+                                        fontFamily: 'Inter, sans-serif'
+                                    }
+                                },
+                                rangeSelector: {
+                                    selected: 5, // Default to 5Y view
+                                    buttons: [
+                                        { type: 'month', count: 1, text: '1M' },
+                                        { type: 'month', count: 3, text: '3M' },
+                                        { type: 'month', count: 6, text: '6M' },
+                                        { type: 'ytd', text: 'YTD' },
+                                        { type: 'year', count: 1, text: '1Y' },
+                                        { type: 'year', count: 5, text: '5Y' },
+                                        { type: 'all', text: 'ALL' }
+                                    ],
+                                    buttonTheme: {
+                                        fill: 'none',
+                                        stroke: 'none',
+                                        'stroke-width': 0,
+                                        r: 8,
+                                        style: {
+                                            color: '#CCCCCC',
+                                            fontWeight: 'normal'
+                                        },
+                                        states: {
+                                            hover: {
+                                                fill: '#4361EE',
+                                                style: { color: 'white' }
+                                            },
+                                            select: {
+                                                fill: '#4361EE',
+                                                style: { color: 'white' }
+                                            }
+                                        }
+                                    },
+                                    inputEnabled: false
+                                },
+                                title: { text: null },
+                                navigator: { enabled: true },
+                                scrollbar: { enabled: true },
+                                xAxis: {
+                                    type: 'datetime',
+                                    labels: { style: { color: '#CCCCCC' } },
+                                    lineColor: '#666666',
+                                    tickColor: '#666666'
+                                },
+                                yAxis: {
+                                    labels: {
+                                        formatter: function() {
+                                            return '$' + this.value.toFixed(2);
+                                        },
+                                        style: { color: '#CCCCCC' }
+                                    },
+                                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                tooltip: {
+                                    shared: true,
+                                    split: false,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    style: { color: '#FFFFFF' },
+                                    valueDecimals: 2,
+                                    valuePrefix: '$'
+                                },
+                                legend: {
+                                    enabled: true,
+                                    itemStyle: { color: '#CCCCCC' },
+                                    itemHoverStyle: { color: '#FFFFFF' }
+                                },
+                                plotOptions: {
+                                    series: {
+                                        lineWidth: 2,
+                                        states: {
+                                            hover: { lineWidth: 3 }
+                                        }
+                                    }
+                                },
+                                series: seriesData,
+                                credits: { enabled: false }
+                            });
+                        });
+                    </script>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        No performance data available. Add some stocks to see their performance over time.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

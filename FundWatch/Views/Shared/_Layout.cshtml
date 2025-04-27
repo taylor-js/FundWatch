@@ -3,20 +3,20 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FundWatch</title>
+    <title>@ViewData["Title"] - FundWatch</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="FundWatch" />
-    <meta property="og:description" content="Track and manage your stock portfolio with FundWatch" />
+    <meta property="og:title" content="FundWatch - Smart Portfolio Tracking & Analytics" />
+    <meta property="og:description" content="Visualize your investments, track performance, and make data-driven decisions with FundWatch." />
     <meta property="og:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}/logo.png")" />
     <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
     <meta property="og:type" content="website" />
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="FundWatch" />
-    <meta name="twitter:description" content="Track and manage your stock portfolio with FundWatch" />
+    <meta name="twitter:title" content="FundWatch - Smart Portfolio Tracking" />
+    <meta name="twitter:description" content="Visualize your investments, track performance, and make data-driven decisions with FundWatch." />
     <meta name="twitter:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}/logo.png")" />
 
     <!-- Load Bootstrap CSS -->
@@ -26,8 +26,8 @@
     
     <!-- Load other stylesheets -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
 
     <!-- Load custom stylesheets -->
     <link rel="stylesheet" asp-append-version="true" href="~/css/site.css" />
@@ -36,8 +36,16 @@
     <!-- Syncfusion JS -->
     <script type="text/javascript" asp-append-version="true" src="https://cdn.syncfusion.com/ej2/25.2.3/dist/ej2.min.js"></script>
     
-    <!-- Highcharts -->
-    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <!-- Highcharts - Load Highstock and required modules -->
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <!-- Add highcharts-more for bubble charts -->
+    <script src="https://code.highcharts.com/highcharts-more.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/data.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/accessibility.js"></script>
+    <!-- Also make sure treemap and heatmap are from stock folder -->
+    <script src="https://code.highcharts.com/stock/modules/treemap.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/heatmap.js"></script>
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NYNBFN0R23"></script>
@@ -51,23 +59,28 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <nav class="navbar navbar-expand-lg fixed-top navbar-dark">
             <div class="container">
-                <a class="navbar-brand d-flex align-items-center ms-2" href="/">
-                    <img src="~/favicon-32x32.png" alt="Logo" class="logo-img navbar-icon" />
-                    <span class="logo-text ms-2 d-none d-lg-block">FundWatch</span>
-                    <span class="logo-text ms-2 d-lg-none">FW</span>
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                    <img src="~/img/fundwatch-logo.png" alt="FundWatch Logo" class="logo-img" width="40" height="40" />
+                    <span class="logo-text ms-2 fw-bold">FundWatch</span>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 justify-content-start align-items-center w-100">
-                        <li class="nav-item w-100">
-                            <a class="nav-link px-3" asp-area="" asp-controller="AppUserStocks" asp-action="Dashboard">Portfolio</a>
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link px-3" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-3" asp-area="" asp-controller="AppUserStocks" asp-action="Dashboard">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-3" asp-area="" asp-controller="AppUserStocks" asp-action="CreateOrEdit">Add Stock</a>
                         </li>
                     </ul>
-                    <div class="align-items-center">
+                    <div class="navbar-nav">
                         <partial name="_LoginPartial" />
                     </div>
                 </div>
@@ -75,15 +88,45 @@
         </nav>
     </header>
 
-    <div class="container">
+    <div class="main-content">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
-    <footer class="text-center bg-dark py-5 mt-auto mt-5">
+    
+    <footer class="footer">
         <div class="container">
-            &copy; @DateTime.Now.Year - FundWatch
-            @*  - <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-decoration-none">Privacy</a> *@
+            <div class="row">
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <div class="footer-brand">
+                        <img src="~/img/fundwatch-logo.png" alt="FundWatch Logo" width="50" height="50" />
+                        <h3 class="mt-3">FundWatch</h3>
+                        <p class="footer-tagline">Smart Portfolio Tracking & Analytics</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <h5>Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/AppUserStocks/Dashboard">Dashboard</a></li>
+                        <li><a href="/AppUserStocks/CreateOrEdit">Add Stock</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h5>Resources</h5>
+                    <ul class="footer-links">
+                        <li><a href="https://polygon.io/" target="_blank">Polygon.io API</a></li>
+                        <li><a href="https://www.syncfusion.com/" target="_blank">Syncfusion</a></li>
+                        <li><a href="https://azure.microsoft.com/" target="_blank">Microsoft Azure</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom mt-4 pt-4">
+                <p class="text-center mb-0">&copy; @DateTime.Now.Year FundWatch. All rights reserved.</p>
+                <div class="text-center mt-2">
+                    <small>Stock data provided by <a href="https://polygon.io/" target="_blank">Polygon.io</a></small>
+                </div>
+            </div>
         </div>
     </footer>
     <!-- jQuery CDN -->

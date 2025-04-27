@@ -1,0 +1,13 @@
+@model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Navigations
+@using Syncfusion.EJ2.Charts
+@using Syncfusion.EJ2.Grids
+@{
+    var culture = new System.Globalization.CultureInfo("en-US");
+}
+
+<!-- Holdings grid without container padding -->
+<div style="padding: 0; margin: 0; width: 100%;">
+    @await Html.PartialAsync("_StockGrid", Model)
+</div>

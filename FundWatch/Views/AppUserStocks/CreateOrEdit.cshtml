@@ -14,7 +14,7 @@
     var debugInfo = $"Model.Id: {Model.Id}, Model.StockSymbol: {Model.StockSymbol}, HasInitialStock: {hasInitialStock}";
 }
 
-<div class="container-fluid mt-4 mb-4">
+<div class="mt-4 mb-4">
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
             <h3 class="mb-0">@(Model.Id == 0 ? "Create" : "Edit") Stock Position</h3>
@@ -149,26 +149,10 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <style>
-        /* Ensure control wrappers use full width */
-        .e-control-wrapper {
-            width: 100%;
-        }
-        
-        /* Fix input width and paddings */
-        .e-control-wrapper .e-input-group {
-            width: 100%;
-        }
-        
-        /* More consistent element height */
-        .mb-3 {
-            margin-bottom: 1.5rem !important;
-        }
-    </style>
     <script type="text/javascript">
         // Store server-side data in JavaScript variables
-        var hasDuplicateStock = JSON.parse('@Json.Serialize(TempData["DuplicateStock"] != null && TempData["ExistingStockId"] != null)');
-        var hasEqualShares = JSON.parse('@Json.Serialize(TempData["EqualShares"] != null)');
+        var hasDuplicateStock = @(TempData["DuplicateStock"] != null && TempData["ExistingStockId"] != null ? "true" : "false");
+        var hasEqualShares = @(TempData["EqualShares"] != null ? "true" : "false");
         var existingStockId = "@(TempData["ExistingStockId"]?.ToString() ?? "")";
         
         document.addEventListener("DOMContentLoaded", function() {

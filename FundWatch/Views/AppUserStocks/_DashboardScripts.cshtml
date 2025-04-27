@@ -1,0 +1,329 @@
+@* Dashboard scripts used in all tabs *@
+
+<script>
+    // Chart adjustments for mobile/desktop with consistent sizing
+    document.addEventListener('DOMContentLoaded', function() {
+        // Is this a mobile device?
+        const isMobile = window.innerWidth < 992;
+        
+        // Get the pie chart
+        const sectorChart = document.getElementById('sectorChartHoldings');
+        if (sectorChart && sectorChart.ej2_instances && sectorChart.ej2_instances[0]) {
+            // Set legend position based on device
+            if (isMobile) {
+                sectorChart.ej2_instances[0].legendSettings.position = 'Bottom';
+                sectorChart.ej2_instances[0].legendSettings.width = '100%';
+                sectorChart.ej2_instances[0].legendSettings.height = '15%';
+                
+                // Ensure chart has same dimensions as table on mobile
+                sectorChart.style.width = '100%';
+                sectorChart.style.height = '350px';
+            } else {
+                sectorChart.ej2_instances[0].legendSettings.position = 'Right';
+                sectorChart.ej2_instances[0].legendSettings.width = '30%';
+                sectorChart.ej2_instances[0].legendSettings.height = '70%';
+                
+                // Ensure chart has same dimensions as table on desktop
+                sectorChart.style.width = '100%';
+                sectorChart.style.height = '350px';
+            }
+            
+            // Refresh the chart
+            setTimeout(function() {
+                sectorChart.ej2_instances[0].refresh();
+                
+                // Make sure all chart elements are visible
+                const svgElements = sectorChart.querySelectorAll('svg, g, path, circle');
+                svgElements.forEach(function(el) {
+                    el.style.visibility = 'visible';
+                });
+                
+                // Force chart container to match dimensions
+                const container = sectorChart.closest('.e-accumulationchart');
+                if (container) {
+                    container.style.width = '100%';
+                    container.style.height = '350px';
+                    container.style.visibility = 'visible';
+                }
+            }, 100);
+        }
+    });
+    
+    // Global chart references
+    
+    // Chart labels fix utility function
+    function fixChartLabels(chartId) {
+        const chart = document.getElementById(chartId);
+        if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
+            // Special handling for Performance tab charts to ensure consistent height
+            if (chartId === 'topHoldingsChart' || chartId === 'growthAnalysisChart' || 
+                chartId === 'monthlyPerformanceChart' || chartId === 'rollingReturnsChart') {
+                const chartInstance = chart.ej2_instances[0];
+                // Set fixed height to be consistent across all Performance tab charts
+                chartInstance.height = '650px';
+                console.log(`Fixed ${chartId} height to 650px`);
+            }
+            
+            // Fix x-axis labels
+            const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
+            if (xAxisLabels && xAxisLabels.length > 0) {
+                // Ensure all labels are visible
+                xAxisLabels.forEach(function(label, index) {
+                    label.style.visibility = 'visible';
+                    
+                    // Special handling for first and last labels
+                    if (index === 0) {
+                        label.setAttribute('text-anchor', 'start');
+                    } else if (index === xAxisLabels.length - 1) {
+                        label.setAttribute('text-anchor', 'end');
+                        // Move the last label further left to prevent cutoff
+                        label.setAttribute('x', parseFloat(label.getAttribute('x')) - 20);
+                    }
+                });
+                
+                // Force chart refresh to apply changes
+                chart.ej2_instances[0].refresh();
+                console.log(`Fixed labels for chart: ${chartId}`);
+            }
+        }
+    }
+    
+    // Format utility functions
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value);
+    }
+
+    function formatPercentage(value) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'percent',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value / 100);
+    }
+
+    // Grid functionality
+    function getCurrentPrice(field, data) {
+        return data.CurrentPrice || 0;
+    }
+
+    function getValueTemplate(props) {
+        if (!props || !props.NumberOfSharesPurchased) return '$0.00';
+        const shares = props.NumberOfSharesPurchased - (props.NumberOfSharesSold || 0);
+        const value = shares * (props.CurrentPrice || 0);
+        return formatCurrency(value);
+    }
+
+    function getPerformanceTemplate(props) {
+        if (!props || !props.NumberOfSharesPurchased || !props.PurchasePrice) return '0.00%';
+        const shares = props.NumberOfSharesPurchased - (props.NumberOfSharesSold || 0);
+        const currentValue = shares * (props.CurrentPrice || 0);
+        const costBasis = shares * props.PurchasePrice;
+        const performance = costBasis !== 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0;
+
+        const className = performance >= 0 ? 'text-success' : 'text-danger';
+        return `<span class="${className}">${performance.toFixed(2)}%</span>`;
+    }
+
+    function colorPerformanceCells() {
+        document.querySelectorAll('.performance-cell').forEach(cell => {
+            const value = parseFloat(cell.textContent);
+            if (!isNaN(value)) {
+                cell.classList.add(value > 0 ? 'positive' : 'negative');
+            }
+        });
+    }
+    
+    // Let Bootstrap handle tab switching
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Dashboard tabs initialized");
+        
+        // Prevent negative width/height on SVG elements
+        // This fixes the "<svg> attribute width: A negative value is not valid" error
+        const originalCreateSVG = ej.base.createSvg;
+        if (originalCreateSVG) {
+            ej.base.createSvg = function() {
+                const svg = originalCreateSVG.apply(this, arguments);
+                
+                // Override the setAttribute method to prevent negative dimensions
+                const originalSetAttribute = svg.setAttribute;
+                svg.setAttribute = function(name, value) {
+                    if ((name === 'width' || name === 'height') && parseFloat(value) < 0) {
+                        console.warn(`Prevented negative ${name} value: ${value}`);
+                        value = '0'; // Use 0 instead of negative value
+                    }
+                    return originalSetAttribute.call(this, name, value);
+                };
+                
+                return svg;
+            };
+        }
+        
+        // Fix all chart labels when tab is shown
+        function fixAllChartLabels() {
+            // Apply fixes to all charts in the dashboard
+            setTimeout(function() {
+                fixChartLabels('topHoldingsChart');
+                fixChartLabels('growthAnalysisChart');
+                fixChartLabels('monthlyPerformanceChart');
+                fixChartLabels('riskAnalysisChart');
+                // Stock chart is now using Highcharts and doesn't need this fix
+            }, 300);
+        }
+        
+        // Run initial fix on page load
+        fixAllChartLabels();
+        
+        // Add special handling for tabs 
+        document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tabLink => {
+            tabLink.addEventListener('shown.bs.tab', function(event) {
+                // Fix chart labels whenever any tab is shown
+                fixAllChartLabels();
+                
+                // Add special class for Holdings tab
+                const targetTab = event.target.getAttribute('data-bs-target');
+                if (targetTab === '#holdingsTab') {
+                    document.getElementById('dashboard-container').classList.add('tab-active-holdings');
+                } else {
+                    document.getElementById('dashboard-container').classList.remove('tab-active-holdings');
+                }
+                
+                // Handle specific tabs with special needs
+                if (targetTab === '#analyticsTab') {
+                    setTimeout(function() {
+                        // Get risk chart and refresh if it exists
+                        const riskChartElement = document.getElementById('riskAnalysisChart');
+                        if (riskChartElement && riskChartElement.ej2_instances && riskChartElement.ej2_instances[0]) {
+                            riskChartElement.ej2_instances[0].refresh();
+                            console.log('Risk Analysis chart refreshed');
+                        }
+                        
+                        // Refresh analytics charts when tab is shown
+                        console.log('Analytics tab shown - refreshing charts');
+                    }, 200);
+                } else if (targetTab === '#performanceTab') {
+                    setTimeout(function() {
+                        // Ensure growth chart labels aren't cut off in Performance tab
+                        const growthChart = document.getElementById('growthAnalysisChart');
+                        const monthlyChart = document.getElementById('monthlyPerformanceChart');
+                        
+                        if (growthChart && growthChart.ej2_instances && growthChart.ej2_instances[0]) {
+                            const chartInstance = growthChart.ej2_instances[0];
+                            // Ensure adequate right margin for the chart
+                            setTimeout(function() {
+                                    // Just refresh the chart - CSS will handle label positioning
+                                chartInstance.refresh();
+                            }, 100);
+                            console.log('Growth Analysis chart refreshed with label positioning');
+                        }
+                        
+                        if (monthlyChart && monthlyChart.ej2_instances && monthlyChart.ej2_instances[0]) {
+                            monthlyChart.ej2_instances[0].margin.right = 30;
+                            monthlyChart.ej2_instances[0].refresh();
+                            console.log('Monthly Performance chart refreshed');
+                        }
+                    }, 200);
+                }
+                
+                // Update URL for bookmarking
+                const tabName = targetTab.replace('#', '').replace('Tab', '');
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', tabName);
+                window.history.replaceState({}, '', url);
+            });
+        });
+        
+        // Handle View Portfolio Growth button
+        const viewPortfolioBtn = document.getElementById('viewPerformanceTabBtn');
+        if (viewPortfolioBtn) {
+            viewPortfolioBtn.addEventListener('click', function() {
+                // Trigger click on the Performance tab
+                document.getElementById('performance-tab').click();
+            });
+        }
+        
+        // Check URL for tab parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        
+        if (tabParam) {
+            // Find and click the correct tab
+            const tabId = `${tabParam}-tab`;
+            const tabLink = document.getElementById(tabId);
+            if (tabLink) {
+                tabLink.click();
+            }
+        }
+        
+        // Fix chart labels immediately and after resize
+        fixAllChartLabels();
+        window.addEventListener('resize', fixAllChartLabels);
+    });
+
+    // Initialization
+    window.addEventListener('load', function() {
+        // Initialize UI elements
+        colorPerformanceCells();
+
+        const grid = document.getElementById('holdingsGrid')?.ej2_instances?.[0];
+        if (grid) {
+            grid.refreshHeader();
+            grid.refresh();
+        }
+        
+        // Stock chart is now using Highcharts, no Syncfusion initialization needed
+        
+        // Chart-related initialization
+        document.querySelectorAll('.chart-description').forEach(function(desc) {
+            // Add data-value attribute to data labels for CSS targeting
+            const labels = document.querySelectorAll('.e-data-label');
+            if (labels && labels.length > 0) {
+                labels.forEach(function(label) {
+                    if (label.textContent) {
+                        label.setAttribute('data-value', label.textContent);
+                    }
+                });
+            }
+        });
+        
+        // Chart descriptions now handled in CSS
+        
+        // Initialize floating action button
+        const addButton = document.getElementById('addStockButton');
+        if (addButton) {
+            addButton.addEventListener('click', function() {
+                window.location.href = '/AppUserStocks/CreateOrEdit';
+            });
+            
+            // Button hover effects handled in CSS
+        }
+        
+        // Ensure sector chart is responsive
+        function refreshSectorChart() {
+            const sectorChart = document.getElementById('sectorChartHoldings');
+            if (sectorChart && sectorChart.ej2_instances && sectorChart.ej2_instances[0]) {
+                setTimeout(() => {
+                    sectorChart.ej2_instances[0].refresh();
+                }, 100);
+            }
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            refreshSectorChart();
+        });
+        
+        // Handle tab switch for sector chart
+        document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(e) {
+                if (e.target.getAttribute('data-bs-target') === '#holdingsTab') {
+                    refreshSectorChart();
+                }
+            });
+        });
+    });
+</script>

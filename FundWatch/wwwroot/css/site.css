@@ -14,7 +14,27 @@ html, body {
     flex-direction: column;
 }
 
-/* Ensure images in cards are appropriately scaled */
+/* Ensure pages properly fill available space */
+body {
+    min-height: 100vh; /* Use viewport height to ensure full page coverage */
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0; /* Remove any bottom padding */
+}
+
+/* Make main content grow to fill available space */
+.main-content {
+    flex: 1 0 auto; /* Allow main content to grow and fill space */
+}
+
+/* Footer will stay at the bottom */
+.footer {
+    flex-shrink: 0; /* Prevent footer from shrinking */
+    margin-top: auto; /* Push footer to the bottom if content is short */
+    min-height: 300px; /* Minimum height for the footer */
+}
+
+/* Ensure all card images have the same height */
 .card-img-top {
     height: 200px;
     object-fit: cover;
@@ -149,13 +169,69 @@ body {
     flex-direction: column;
 }
 
-.navbar-brand, .nav-link, .footer {
+/* Footer styling */
+.footer {
+    background-color: #1a1a1a;
+    color: #b0c4de;
+    padding: 3rem 0 1.5rem;
+    margin-top: 3rem;
+    position: relative;
+    width: 100%;
+    border-top: 1px solid #333;
+}
+
+.footer-brand {
+    margin-bottom: 1.5rem;
+}
+
+.footer-brand img {
+    width: 50px;
+    height: 50px;
+}
+
+.footer h5 {
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    color: #fff;
+}
+
+.footer-links {
+    list-style: none;
+    padding-left: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.75rem;
+}
+
+.footer-links a {
+    color: #b0c4de;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: #007bff;
+}
+
+.footer-tagline {
+    color: #888;
+    margin-top: 0.5rem;
+}
+
+.footer-bottom {
+    border-top: 1px solid #333;
+    padding-top: 1.5rem;
+    margin-top: 2rem;
+}
+
+.navbar-brand, .nav-link {
     color: #1e90ff; /* Dodger blue */
 }
 
-    .nav-link:hover {
-        color: #4682b4; /* Steel blue on hover */
-    }
+.nav-link:hover {
+    color: #4682b4; /* Steel blue on hover */
+}
 
 /* Ensure grid columns are responsive */
 e-grid-column {
@@ -177,6 +253,23 @@ body {
 .navbar {
     background-color: #1a1a1a !important;
     box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+}
+
+.main-content {
+    margin-top: 5rem; /* Add space below fixed navbar */
+    min-height: calc(100vh - 5rem - 300px); /* Ensure content fills available space (viewport height minus navbar and footer) */
+    padding: 0; /* Remove padding, we'll apply it to the container */
+}
+
+/* Responsive adjustments for navbar spacing */
+@media (max-width: 991.98px) {
+    .main-content {
+        margin-top: 4.5rem; /* Slightly less space needed for smaller navbar */
+    }
 }
 
 .navbar-brand {
@@ -186,14 +279,21 @@ body {
     color: #007bff !important;
 }
 
+.navbar-brand .logo-img {
+    width: 40px;
+    height: 40px;
+    margin-right: 0.5rem;
+}
+
 .nav-link {
     font-weight: 500;
     transition: color 0.3s ease;
+    padding: 0.75rem 1rem !important;
 }
 
-    .nav-link:hover {
-        color: #007bff !important;
-    }
+.nav-link:hover {
+    color: #007bff !important;
+}
 
 .navbar-toggler {
     border-color: #007bff;
@@ -220,14 +320,26 @@ body {
 .equal-height-cards .col-md-3,
 .equal-height-cards .col-md-4,
 .equal-height-cards .col-md-6,
-.equal-height-cards .col-md-8 {
+.equal-height-cards .col-md-8,
+.equal-height-cards .col-md-12 {
     display: flex;
 }
 
 .equal-height-cards .card {
     width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.equal-height-cards .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 .equal-height-cards .card-body {
@@ -237,6 +349,58 @@ body {
     justify-content: center;
     overflow: visible;
     min-height: 0;
+    padding: 1.25rem;
+}
+
+/* Overview Tab Card Styling to match Index page */
+#overviewTab .card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
+}
+
+#overviewTab .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+#overviewTab .card-header {
+    border-bottom: none;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+
+#overviewTab .overview-scalar-card .card-body {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+#overviewTab .overview-scalar-card h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+#overviewTab .overview-scalar-card small {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+#overviewTab .text-success {
+    color: #28a745 !important;
+}
+
+#overviewTab .text-danger {
+    color: #dc3545 !important;
+}
+
+/* Apply responsive margins */
+@media (max-width: 767.98px) {
+    .equal-height-cards .card {
+        margin-bottom: 1rem !important;
+    }
 }
 
 .card-header h5 {
@@ -261,10 +425,30 @@ body {
     font-size: 0.9rem;
 }
 
+.card-text.flex-grow-1 {
+    flex-grow: 1;
+}
+
 .display-value {
     font-size: clamp(1.5rem, 3vw, 2.5rem);
     font-weight: bold;
     margin-bottom: 0;
+}
+
+/* Input form styling */
+/* Ensure control wrappers use full width */
+.e-control-wrapper {
+    width: 100%;
+}
+
+/* Fix input width and paddings */
+.e-control-wrapper .e-input-group {
+    width: 100%;
+}
+
+/* More consistent element height */
+.mb-3 {
+    margin-bottom: 1.5rem !important;
 }
 
 /* Responsive adjustments for smaller screens */
@@ -291,7 +475,6 @@ body {
 
 #chartContainer {
     width: 100%;
-    padding-top: 100%; /* This creates a square aspect ratio */
     position: relative;
 }
 
@@ -349,7 +532,7 @@ body {
     padding: 1.25rem;
     display: flex;
     flex-direction: column;
-    height: 580px;
+    height: 500px;
 }
 .e-content{
     min-height: 400px;
@@ -393,6 +576,64 @@ body {
     }
 }
 
+/* Dashboard styling to match homepage */
+.dashboard-hero {
+    position: relative;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    overflow: hidden;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 1rem 0;
+}
+
+.dashboard-hero h1 {
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-hero p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.dashboard-metrics {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.dashboard-metric {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    flex: 1;
+    margin: 0.5rem;
+    min-width: 150px;
+    backdrop-filter: blur(5px);
+}
+
+.dashboard-metric .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-metric .label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
 /* Dashboard Tab Navigation */
 .nav-tabs {
     border-bottom: 1px solid #444;
@@ -402,6 +643,10 @@ body {
     -webkit-overflow-scrolling: touch;
     -ms-overflow-style: -ms-autohiding-scrollbar;
     scrollbar-width: none;
+    background-color: #1f1f1f;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    padding: 0 10px;
 }
 
 .nav-tabs::-webkit-scrollbar {
@@ -415,11 +660,11 @@ body {
 
 .nav-tabs .nav-link {
     color: #b0c4de; /* Light steel blue - matching body text */
-    background-color: #292929; /* Dark gray background */
-    border-color: #444 #444 #333;
-    border-top-left-radius: 0.25rem;
-    border-top-right-radius: 0.25rem;
-    padding: 0.75rem 1.25rem;
+    background-color: transparent; /* Transparent background */
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    padding: 1rem 1.5rem;
     font-weight: 500;
     transition: all 0.3s ease;
     display: inline-block;
@@ -428,35 +673,49 @@ body {
 
 @media (max-width: 767.98px) {
     .nav-tabs .nav-link {
-        padding: 0.5rem 0.75rem;
+        padding: 0.75rem 1rem;
         font-size: 0.9rem;
     }
 }
 
 .nav-tabs .nav-link.active {
-    color: #1e90ff; /* Dodger blue - matching navbar links */
-    background-color: #333; /* Matching card background color */
-    border-color: #444 #444 #333;
-    border-top: 2px solid #007bff;
+    color: #fff; /* White text */
+    background-color: transparent; /* Transparent background */
+    border-bottom: 3px solid #007bff;
+    font-weight: 600;
 }
 
 .nav-tabs .nav-link:hover:not(.active) {
     color: #fff;
-    background-color: #383838;
-    border-color: #555 #555 #444;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom: 3px solid rgba(0, 123, 255, 0.3);
 }
 
 /* Floating action button styling */
 #addStockButton {
-    z-index: 1000;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     transition: all 0.3s ease;
     transform: scale(1);
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
 }
 
 #addStockButton:hover {
     transform: scale(1.1);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #0069d9 0%, #0046a1 100%);
+}
+
+#addStockButton i {
+    font-size: 1.5rem;
 }
 
 /* Analytics tab - Equal height cards */
@@ -522,13 +781,10 @@ body {
 /* Minimum heights for specific charts */
 #stockChart, #priceHistoryChart {
     min-height: 600px !important;
-    height: auto !important;
 }
 
 #growthAnalysisChart {
-    min-height: 500px !important;
     height: auto !important;
-    width: calc(100% - 10px) !important;
     display: block !important;
     margin: 0 auto !important;
     max-width: none !important;
@@ -546,8 +802,10 @@ body {
 }
 
 #riskAnalysisChart {
-    height: 380px !important;
     width: 100% !important;
+    height: 450px !important;
+    min-height: 450px !important;
+    max-height: 450px !important;
     display: block !important;
     position: relative !important;
     overflow: visible !important; /* Allow axes to be visible */
@@ -690,19 +948,18 @@ body {
     width: 100%;
 }
 
-/* Remove container-fluid padding for the Holdings tab */
+/* Consistent container padding for the Holdings tab */
 .tab-active-holdings #dashboard-container {
     max-width: 100%;
-    padding-left: 0;
-    padding-right: 0;
-    margin-left: 0;
-    margin-right: 0;
+    padding-left: 15px;
+    padding-right: 15px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-/* Remove container-fluid padding for Holdings tab */
-#holdingsTab {
-    padding-left: 0;
-    padding-right: 0;
+/* Reset any previous padding on tabs */
+#overviewTab, #performanceTab, #analyticsTab, #holdingsTab {
+    padding: 0;
     max-width: 100%;
 }
 
@@ -711,18 +968,86 @@ body {
     padding-top: 20px;
 }
 
+/* Consistent padding for all tab content - container level padding */
+#dashboardTabContent {
+    padding: 0 15px;
+    margin-bottom: 60px; /* Add space at the bottom to push footer down */
+}
+
+/* Make all tabs have consistent margin */
+#overviewTab, #performanceTab, #analyticsTab, #holdingsTab {
+    margin: 0;
+    padding: 20px 0;
+}
+
+/* Unified card styling for all dashboard tabs */
+#dashboardTabContent .card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+
+#dashboardTabContent .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+#dashboardTabContent .card-header {
+    border-bottom: none;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+
+#dashboardTabContent .card-body {
+    background-color: #333333;
+    padding: 1.5rem;
+}
+
+/* Row level consistency */
+#dashboardTabContent .row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 991.98px) {
+    #dashboardTabContent {
+        padding: 0 10px; /* Smaller padding on mobile */
+    }
+}
+
 /* Analytics tab card heights */
 #analyticsTab .card {
     height: 100%;
     display: flex;
     flex-direction: column;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
+}
+
+#analyticsTab .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+#analyticsTab .card-header {
+    border-bottom: none;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
 }
 
 #analyticsTab .card-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 15px;
+    padding: 1.5rem;
+    background-color: #333333;
 }
 
 #analyticsTab .text-center {
@@ -730,6 +1055,14 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+#analyticsTab .chart-description {
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 3px solid #0d6efd;
 }
 
 /* Special class for analytics cards with strictly equal heights */
@@ -781,6 +1114,116 @@ body {
     border-left-style: solid !important;
 }
 
+/* Overview tab chart description */
+.card-body .chart-description {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 3px solid #007bff;
+}
+
+/* Performance tab standardized styling */
+#performanceTab .card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border: none;
+    overflow: hidden;
+}
+
+#performanceTab .card-header {
+    padding: 1rem;
+    border-bottom: none;
+}
+
+#performanceTab .card-header.bg-primary {
+    background-color: #0d6efd !important;
+}
+
+#performanceTab .card-header.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+#performanceTab .card-header.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+#performanceTab .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    background-color: #333333;
+    padding-bottom: 0 !important;
+}
+
+#performanceTab .chart-description {
+    margin-bottom: 10px;
+    padding: 0.75rem;
+    border-radius: 6px;
+}
+
+#performanceTab .chart-description p {
+    margin-bottom: 0 !important;
+}
+
+/* Card-specific chart description colors */
+#performanceTab .card-header.bg-primary + .card-body .chart-description {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-left: 3px solid #0d6efd;
+}
+
+#performanceTab .card-header.bg-info + .card-body .chart-description {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-left: 3px solid #17a2b8;
+}
+
+#performanceTab .card-header.bg-warning + .card-body .chart-description {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-left: 3px solid #ffc107;
+}
+
+/* Standard chart height for all performance charts */
+#performanceTab #rollingReturnsChart,
+#performanceTab #topHoldingsChart,
+#performanceTab #growthAnalysisChart,
+#performanceTab #monthlyPerformanceChart {
+    flex: 1;
+    width: 100%;
+    height: 380px !important;
+    margin-bottom: 15px;
+}
+
+/* Responsive adjustments for small screens */
+@media (max-width: 767.98px) {
+    #performanceTab #rollingReturnsChart,
+    #performanceTab #topHoldingsChart,
+    #performanceTab #growthAnalysisChart,
+    #performanceTab #monthlyPerformanceChart {
+        height: 450px !important;
+    }
+    
+    #performanceTab .chart-description {
+        padding: 0.5rem;
+    }
+    
+    #performanceTab .chart-description p {
+        font-size: 0.85rem;
+    }
+}
+
+/* Make sure charts occupy full width in their containers */
+/*#performanceTab .card-body > div {
+    width: 100%;
+    max-width: none;
+    min-width: 100%;
+    display: block;
+    margin-bottom: 15px;
+}*/
+
 .chart-description p {
     color: #ffffff !important;
     font-size: 14px !important;
@@ -817,6 +1260,81 @@ body {
     font-size: 14px !important;
 }
 
+/* Holdings Tab Styling */
+#holdingsTab .card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
+    margin-bottom: 3rem; /* Extra margin to push the footer down */
+}
+
+#holdingsTab .card-header {
+    border-bottom: none;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+
+#holdingsTab .card-body {
+    padding: 1.5rem;
+    background-color: #333333;
+    max-width: 100%;
+}
+
+/* Fix for the Holdings grid container */
+#holdingsTab .card .e-grid-container {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Additional bottom space for all tab content to ensure footer is visible */
+#dashboardTabContent {
+    margin-bottom: 60px; /* Add space at the bottom to push footer down */
+}
+
+/* Specific spacer for the Holdings tab */
+#holdingsTab .card:last-child {
+    margin-bottom: 80px; /* Extra margin for the last card in Holdings tab */
+}
+
+/* Add padding to the holdings grid content when in the card */
+#holdingsTab .card .e-gridcontent {
+    padding: 0;
+}
+
+/* Stock grid styling */
+.e-grid {
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #444;
+    margin: 15px 0;
+    max-width: 100%;
+}
+
+/* Specific height setting for holdings grid */
+#holdingsGrid {
+    min-height: 700px !important; /* Force minimum height to ensure footer visibility */
+}
+
+.e-grid .e-headercell {
+    font-weight: 600;
+    background-color: #444 !important;
+    color: #fff !important;
+}
+
+.e-grid .e-rowcell {
+    vertical-align: middle;
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #555 !important;
+}
+
+.e-grid .e-altrow {
+    background-color: #3a3a3a !important;
+}
+
 /* Ensure the grid pagination is visible */
 .e-pager {
     height: 50px !important;
@@ -829,6 +1347,19 @@ body {
 
 .e-pager .e-pagercontainer {
     background-color: #333 !important;
+    color: #fff !important;
+}
+
+.e-pager .e-icon {
+    color: #fff !important;
+}
+
+.e-pager .e-numericitem {
+    color: #ccc !important;
+}
+
+.e-pager .e-numericitem.e-currentitem {
+    background-color: #007bff !important;
     color: #fff !important;
 }
 
@@ -1291,3 +1822,191 @@ body {
         margin-bottom: 20px;
     }
 }
+.hero-container {
+    position: relative;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    overflow: hidden;
+    padding: 5rem 0;
+    margin-top: -1.5rem;
+}
+
+.chart-background-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.15;
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-text {
+    padding: 3rem 0;
+}
+
+.hero-buttons .btn {
+    padding: 0.8rem 1.8rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.chart-showcase {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    height: 300px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Sections styling */
+.section-title {
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.section-subtitle {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+/* Feature cards */
+.feature-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    background: white;
+    overflow: hidden;
+}
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+.feature-icon {
+    background: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 24px;
+    margin: 0 auto;
+}
+
+.feature-card:nth-child(2) .feature-icon {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.feature-card:nth-child(3) .feature-icon {
+    background: rgba(111, 66, 193, 0.1);
+    color: #6f42c1;
+}
+
+.feature-card .card-title {
+    font-weight: 600;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.feature-card .card-text {
+    color: #666;
+    text-align: center;
+}
+
+/* Chart showcase section */
+.chart-showcase-section {
+    background-color: #f8f9fa;
+}
+
+.chart-card {
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.demo-chart {
+    height: 300px;
+    width: 100%;
+}
+
+.feature-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+    .feature-list li {
+        margin-bottom: 0.75rem;
+        font-size: 1.1rem;
+    }
+
+/* CTA section */
+.cta-section {
+    background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+    color: white;
+    padding: 5rem 0;
+}
+
+    .cta-section h2 {
+        font-weight: 700;
+    }
+
+    .cta-section .btn-primary {
+        background-color: white;
+        color: #4361ee;
+        border: none;
+        padding: 1rem 2rem;
+        font-weight: 600;
+    }
+
+        .cta-section .btn-primary:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    .hero-container {
+        padding: 3rem 0;
+    }
+
+    .chart-showcase {
+        margin-top: 2rem;
+        height: 250px;
+    }
+
+    .demo-chart {
+        height: 250px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hero-text {
+        text-align: center;
+        padding: 2rem 0;
+    }
+
+    .feature-list li {
+        font-size: 1rem;
+    }
+}
+
+/* Fix for DatePicker popup positioning */
+.e-custom-datepicker {
+    top: auto !important;
+    position: absolute !important;
+    margin-top: 2px !important;
+}
+
