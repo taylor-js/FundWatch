@@ -282,7 +282,6 @@ button[type="submit"] {
     width: 100%;
     border-top: 1px solid #333;
     flex-shrink: 0;
-    margin-top: auto;
     min-height: 300px;
 }
 
