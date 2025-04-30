@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace FundWatch.Models
 {
-    public partial class ApplicationDbContext : IdentityDbContext<IdentityUser>
+    public partial class ApplicationDbContext : IdentityDbContext<IdentityUser>, IDataProtectionKeyContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -15,6 +16,7 @@ namespace FundWatch.Models
         public DbSet<AppStockSimulation> StockSimulations { get; set; }
         public DbSet<AppStockTransaction> StockTransactions { get; set; }
         public DbSet<AppWatchlist> Watchlists { get; set; }
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

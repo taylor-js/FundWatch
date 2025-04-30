@@ -3,6 +3,7 @@
 using FundWatch.Data;
 using FundWatch.Models;
 using FundWatch.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -92,6 +93,11 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
         options.Cookie.SameSite = SameSiteMode.Lax; // Change to 'Lax' if 'Strict' causes issues
     });
 
+    // Data Protection Configuration
+    services.AddDataProtection()
+        .PersistKeysToDbContext<ApplicationDbContext>()
+        .SetApplicationName("FundWatch");
+    
     // Syncfusion Configuration
     var directLicenseKey = "Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcc3VURWVdWE11WUA=";
     Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(directLicenseKey);
