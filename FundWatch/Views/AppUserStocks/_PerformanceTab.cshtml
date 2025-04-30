@@ -192,17 +192,27 @@
                                     chartOptions: {
                                         chart: {
                                             spacingLeft: 5,
-                                            spacingRight: 5
+                                            spacingRight: 5,
+                                            spacingTop: 10,
+                                            spacingBottom: 5
                                         },
                                         legend: {
                                             layout: 'horizontal',
                                             align: 'center',
                                             verticalAlign: 'bottom',
-                                            itemDistance: 15
+                                            itemDistance: 15,
+                                            y: -5
                                         },
                                         yAxis: {
                                             title: {
                                                 text: null
+                                            }
+                                        },
+                                        xAxis: {
+                                            labels: {
+                                                style: {
+                                                    fontSize: '10px'
+                                                }
                                             }
                                         }
                                     }
@@ -365,12 +375,12 @@
 <!-- Portfolio Performance Analysis Charts Row -->
 <div class="row mb-4 gy-4">
     <div class="col-md-6">
-        <div class="card shadow" style="height: 580px; min-height: 580px;">
+        <div class="card shadow" style="height: 650px; min-height: 650px;">
             <div class="card-header bg-warning text-dark">
                 <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
             </div>
-            <div class="card-body">
-                <div>
+            <div class="card-body d-flex flex-column">
+                <div class="flex-grow-1">
                 @{
                     // Calculate monthly growth data based on historical data
                     var today = DateTime.Today;
@@ -397,85 +407,16 @@
                         marketBenchmark *= marketGrowth;
                         
                         growthData.Add(new {
-                            Date = date,
-                            Portfolio = Math.Round(portfolioValue, 2),
-                            Market = Math.Round(marketBenchmark, 2)
+                            x = date.Ticks,
+                            date = date.ToString("MMM yyyy"),
+                            portfolio = Math.Round(portfolioValue, 2),
+                            market = Math.Round(marketBenchmark, 2)
                         });
                     }
                 }
                 
-                @(Html.EJS().Chart("growthAnalysisChart")
-                    .Width("100%")
-                    .Background("#333333")
-                    .Margin(m => m.Left(10).Right(50).Top(10).Bottom(15))
-                    .ChartArea(ca => ca.Border(b => b.Width(0)))
-                    .PrimaryXAxis(px => px
-                        .ValueType(Syncfusion.EJ2.Charts.ValueType.DateTime)
-                        .LabelFormat("MMM yyyy")
-                        .IntervalType(Syncfusion.EJ2.Charts.IntervalType.Months)
-                        .EdgeLabelPlacement(Syncfusion.EJ2.Charts.EdgeLabelPlacement.Shift)
-                        .LabelIntersectAction(Syncfusion.EJ2.Charts.LabelIntersectAction.None)
-                        .EnableTrim(false)
-                        .Border(b => b.Width(0))
-                        .MajorGridLines(gl => gl.Width(0))
-                        .MajorTickLines(tl => tl.Width(0))
-                        .LabelStyle(ls => ls.Color("#FFFFFF").Size("11px"))
-                    )
-                    .PrimaryYAxis(py => py
-                        .Title("Value ($)")
-                        .TitleStyle(style => style.Color("#FFFFFF").Size("12px").FontWeight("600"))
-                        .LabelFormat("${value}")
-                        .MajorGridLines(gl => gl.Width(1).Color("rgba(255,255,255,0.1)"))
-                        .LabelStyle(ls => ls.Color("#FFFFFF").Size("11px"))
-                    )
-                    .Series(sr => {
-                        sr.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Line)
-                        .DataSource(growthData)
-                        .XName("Date")
-                        .YName("Portfolio")
-                        .Name("Your Portfolio")
-                        .Width(3)
-                        .Marker(m => m
-                            .Visible(true)
-                            .Height(8)
-                            .Width(8)
-                            .Shape(Syncfusion.EJ2.Charts.ChartShape.Circle)
-                        )
-                        .Add();
-                        
-                        sr.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Line)
-                        .DataSource(growthData)
-                        .XName("Date")
-                        .YName("Market")
-                        .Name("Market Benchmark")
-                        .Width(3)
-                        .DashArray("5,5")
-                        .Marker(m => m
-                            .Visible(true)
-                            .Height(8)
-                            .Width(8)
-                            .Shape(Syncfusion.EJ2.Charts.ChartShape.Diamond)
-                        )
-                        .Add();
-                    })
-                    .Tooltip(tt => tt
-                        .Enable(true)
-                        .Shared(true)
-                        .Format("${series.name}: ${point.y}")
-                        .TextStyle(ts => ts.Color("#FFFFFF"))
-                    )
-                    .Crosshair(ch => ch
-                        .Enable(true)
-                        .LineType(Syncfusion.EJ2.Charts.LineType.Vertical)
-                    )
-                    .LegendSettings(lg => lg
-                        .Visible(true)
-                        .Position(Syncfusion.EJ2.Charts.LegendPosition.Top)
-                        .Background("transparent")
-                        .TextStyle(ts => ts.Color("#FFFFFF").Size("12px"))
-                    )
-                    .Render()
-                )
+                <!-- Portfolio Growth Analysis with HighCharts -->
+                <div id="growthAnalysisChart" style="width: 100%; height: 470px;"></div>
                 
                 <div class="chart-description">
                     <p class="text-center">
@@ -484,22 +425,170 @@
                 </div>
                 
                 <script>
-                    // Fix for x-axis label cutoff
                     document.addEventListener('DOMContentLoaded', function() {
-                        // Wait for chart to render
-                        setTimeout(function() {
-                            const chart = document.getElementById('growthAnalysisChart');
-                            if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
-                                // Fix x-axis labels
-                                const xAxisLabels = chart.querySelectorAll('.e-primaryxaxis-labels text');
-                                if (xAxisLabels && xAxisLabels.length > 0) {
-                                    // Label styling handled by CSS
-                                    
-                                    // Force chart refresh to apply changes
-                                    chart.ej2_instances[0].refresh();
+                        // Determine if we're on mobile
+                        const isMobile = window.innerWidth < 768;
+                        
+                        // Get the growth data from the server-side model
+                        const growthData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(growthData));
+                        
+                        // Create the Highcharts chart
+                        Highcharts.chart('growthAnalysisChart', {
+                            chart: {
+                                type: 'areaspline',
+                                backgroundColor: '#333333',
+                                style: {
+                                    fontFamily: 'Inter, sans-serif'
+                                },
+                                height: '470px'
+                            },
+                            title: {
+                                text: null
+                            },
+                            xAxis: {
+                                categories: growthData.map(item => item.date),
+                                labels: {
+                                    style: {
+                                        color: '#FFFFFF'
+                                    },
+                                    rotation: isMobile ? -45 : 0,
+                                    y: isMobile ? 20 : null
+                                },
+                                tickmarkPlacement: 'on',
+                                lineColor: '#666',
+                                gridLineWidth: 0
+                            },
+                            yAxis: {
+                                title: {
+                                    text: 'Value ($)',
+                                    style: {
+                                        color: '#FFFFFF',
+                                        fontWeight: 'bold'
+                                    }
+                                },
+                                labels: {
+                                    formatter: function() {
+                                        return '$' + Highcharts.numberFormat(this.value, 0);
+                                    },
+                                    style: {
+                                        color: '#FFFFFF'
+                                    }
+                                },
+                                gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            tooltip: {
+                                shared: true,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                style: {
+                                    color: '#FFFFFF'
+                                },
+                                valuePrefix: '$',
+                                valueDecimals: 2
+                            },
+                            plotOptions: {
+                                areaspline: {
+                                    fillOpacity: 0.2,
+                                    marker: {
+                                        enabled: true,
+                                        symbol: 'circle',
+                                        radius: isMobile ? 3 : 4
+                                    },
+                                    lineWidth: isMobile ? 2 : 3
+                                },
+                                series: {
+                                    states: {
+                                        hover: {
+                                            lineWidth: isMobile ? 3 : 4
+                                        }
+                                    }
                                 }
+                            },
+                            series: [{
+                                name: 'Your Portfolio',
+                                data: growthData.map(item => item.portfolio),
+                                color: '#4361EE', // Blue
+                                fillColor: {
+                                    linearGradient: {
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 0,
+                                        y2: 1
+                                    },
+                                    stops: [
+                                        [0, Highcharts.color('#4361EE').setOpacity(0.4).get()],
+                                        [1, Highcharts.color('#4361EE').setOpacity(0).get()]
+                                    ]
+                                }
+                            }, {
+                                name: 'Market Benchmark',
+                                data: growthData.map(item => item.market),
+                                color: '#FF6B6B', // Red
+                                dashStyle: 'shortdash',
+                                fillColor: {
+                                    linearGradient: {
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 0,
+                                        y2: 1
+                                    },
+                                    stops: [
+                                        [0, Highcharts.color('#FF6B6B').setOpacity(0.2).get()],
+                                        [1, Highcharts.color('#FF6B6B').setOpacity(0).get()]
+                                    ]
+                                }
+                            }],
+                            legend: {
+                                itemStyle: {
+                                    color: '#FFFFFF'
+                                },
+                                itemHoverStyle: {
+                                    color: '#DDDDDD'
+                                },
+                                layout: 'horizontal',
+                                align: 'center',
+                                verticalAlign: 'bottom',
+                                itemDistance: isMobile ? 20 : 40,
+                                itemMarginTop: isMobile ? 5 : 10,
+                                itemMarginBottom: isMobile ? 5 : 10
+                            },
+                            credits: {
+                                enabled: false
+                            },
+                            responsive: {
+                                rules: [{
+                                    condition: {
+                                        maxWidth: 500
+                                    },
+                                    chartOptions: {
+                                        chart: {
+                                            spacingLeft: 5,
+                                            spacingRight: 5,
+                                            spacingTop: 10,
+                                            spacingBottom: 5
+                                        },
+                                        legend: {
+                                            layout: 'horizontal',
+                                            align: 'center',
+                                            verticalAlign: 'bottom',
+                                            itemDistance: 15,
+                                            y: -5
+                                        },
+                                        yAxis: {
+                                            title: {
+                                                text: null
+                                            }
+                                        },
+                                        xAxis: {
+                                            labels: {
+                                                style: {
+                                                    fontSize: '10px'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }]
                             }
-                        }, 500);
+                        });
                     });
                 </script>
                 </div><!-- Close wrapper div -->
@@ -509,12 +598,12 @@
     
     <!-- Monthly Performance Chart -->
     <div class="col-md-6">
-        <div class="card shadow" style="height: 580px; min-height: 580px;">
+        <div class="card shadow" style="height: 650px; min-height: 650px;">
             <div class="card-header bg-info text-white">
                 <h5 class="card-title mb-0">Monthly Performance</h5>
             </div>
-            <div class="card-body">
-                <div>
+            <div class="card-body d-flex flex-column">
+                <div class="flex-grow-1">
                 @{
                     // Generate monthly performance data
                     var monthlyData = new List<object>();
@@ -531,83 +620,15 @@
                         var benchmarkPerf = Math.Round((rnd.NextDouble() * 6) - 2, 2);   // -2% to 4%
                         
                         monthlyData.Add(new {
-                            Month = monthName,
-                            Portfolio = portfolioPerf,
-                            Benchmark = benchmarkPerf
+                            month = monthName,
+                            portfolio = portfolioPerf,
+                            benchmark = benchmarkPerf
                         });
                     }
                 }
                 
-                @(Html.EJS().Chart("monthlyPerformanceChart")
-                    .Width("100%")
-                    .Background("#333333")
-                    .Margin(m => m.Left(10).Right(30).Top(10).Bottom(15))
-                    .ChartArea(ca => ca.Border(b => b.Width(0)))
-                    .PrimaryXAxis(px => px
-                        .ValueType(Syncfusion.EJ2.Charts.ValueType.Category)
-                        .Title("Month")
-                        .TitleStyle(style => style.Color("#FFFFFF").Size("12px").FontWeight("600"))
-                        .LabelStyle(style => style.Color("#FFFFFF").Size("11px"))
-                        .LabelIntersectAction(Syncfusion.EJ2.Charts.LabelIntersectAction.None)
-                        .EnableTrim(false)
-                        .EdgeLabelPlacement(Syncfusion.EJ2.Charts.EdgeLabelPlacement.Shift)
-                        .MajorGridLines(gl => gl.Width(0))
-                        .Border(b => b.Width(0))
-                    )
-                    .PrimaryYAxis(py => py
-                        .Title("Return (%)")
-                        .TitleStyle(style => style.Color("#FFFFFF").Size("12px").FontWeight("600"))
-                        .LabelFormat("{value}%")
-                        .MajorGridLines(gl => gl.Width(1).Color("rgba(255,255,255,0.1)"))
-                        .LabelStyle(ls => ls.Color("#FFFFFF").Size("11px"))
-                        .RangePadding(Syncfusion.EJ2.Charts.ChartRangePadding.Normal)
-                    )
-                    .Series(sr => {
-                        // Portfolio Performance
-                        sr.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Column)
-                        .DataSource(monthlyData)
-                        .XName("Month")
-                        .YName("Portfolio")
-                        .Name("Your Portfolio")
-                        .ColumnWidth(0.7)
-                        .EnableTooltip(true)
-                        .Fill("#4361EE")
-                        .Animation(a => a.Enable(true))
-                        .Marker(m => m
-                            .DataLabel(dl => dl
-                                .Visible(true)
-                                .Position(Syncfusion.EJ2.Charts.LabelPosition.Top)
-                                .Font(f => f.Color("#FFFFFF").Size("10px"))
-                                .Format("{value}%")
-                            )
-                        )
-                        .Add();
-                        
-                        // Benchmark Performance
-                        sr.Type(Syncfusion.EJ2.Charts.ChartSeriesType.Column)
-                        .DataSource(monthlyData)
-                        .XName("Month")
-                        .YName("Benchmark")
-                        .Name("Benchmark")
-                        .ColumnWidth(0.7)
-                        .EnableTooltip(true)
-                        .Fill("#FF6B6B")
-                        .Animation(a => a.Enable(true))
-                        .Add();
-                    })
-                    .Tooltip(tt => tt
-                        .Enable(true)
-                        .Format("${series.name}: ${point.y}%")
-                        .TextStyle(ts => ts.Color("#FFFFFF"))
-                    )
-                    .LegendSettings(lg => lg
-                        .Visible(true)
-                        .Position(Syncfusion.EJ2.Charts.LegendPosition.Top)
-                        .Background("transparent")
-                        .TextStyle(ts => ts.Color("#FFFFFF").Size("12px"))
-                    )
-                    .Render()
-                )
+                <!-- Monthly Performance with HighCharts -->
+                <div id="monthlyPerformanceChart" style="width: 100%; height: 470px;"></div>
                 
                 <div class="chart-description">
                     <p class="text-center">
@@ -616,28 +637,173 @@
                 </div>
                 
                 <script>
-                    // Fix for x-axis label cutoff
                     document.addEventListener('DOMContentLoaded', function() {
-                        // Wait for chart to render
-                        setTimeout(function() {
-                            const chart = document.getElementById('monthlyPerformanceChart');
-                            if (chart && chart.ej2_instances && chart.ej2_instances[0]) {
-                                // Add data-value attribute to labels for CSS targeting
-                                const labels = chart.querySelectorAll('.e-data-label');
-                                if (labels && labels.length > 0) {
-                                    labels.forEach(function(label) {
-                                        if (label.textContent) {
-                                            label.setAttribute('data-value', label.textContent);
+                        // Determine if we're on mobile
+                        const isMobile = window.innerWidth < 768;
+                        
+                        // Get the monthly data from the server-side model
+                        const monthlyData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(monthlyData));
+                        
+                        // Create arrays for each series
+                        const categories = monthlyData.map(item => item.month);
+                        const portfolioData = monthlyData.map(item => item.portfolio);
+                        const benchmarkData = monthlyData.map(item => item.benchmark);
+                        
+                        // Color each bar based on positive/negative value
+                        const portfolioColors = portfolioData.map(value => 
+                            value >= 0 ? '#4CC38A' : '#F25F5C');
+                        
+                        const benchmarkColors = benchmarkData.map(value => 
+                            value >= 0 ? '#36A2EB' : '#FF6384');
+                        
+                        // Create the Highcharts chart
+                        Highcharts.chart('monthlyPerformanceChart', {
+                            chart: {
+                                type: 'column',
+                                backgroundColor: '#333333',
+                                style: {
+                                    fontFamily: 'Inter, sans-serif'
+                                },
+                                height: '470px'
+                            },
+                            title: {
+                                text: null
+                            },
+                            xAxis: {
+                                categories: categories,
+                                crosshair: true,
+                                labels: {
+                                    style: {
+                                        color: '#FFFFFF'
+                                    },
+                                    rotation: isMobile ? -45 : 0,
+                                    y: isMobile ? 20 : null
+                                },
+                                lineColor: '#666',
+                                tickLength: 0
+                            },
+                            yAxis: {
+                                title: {
+                                    text: 'Return (%)',
+                                    style: {
+                                        color: '#FFFFFF',
+                                        fontWeight: 'bold'
+                                    }
+                                },
+                                labels: {
+                                    format: '{value}%',
+                                    style: {
+                                        color: '#FFFFFF'
+                                    }
+                                },
+                                gridLineColor: 'rgba(255, 255, 255, 0.1)',
+                                plotLines: [{
+                                    value: 0,
+                                    width: 1,
+                                    color: '#AAAAAA',
+                                    zIndex: 5
+                                }]
+                            },
+                            tooltip: {
+                                shared: true,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                style: {
+                                    color: '#FFFFFF'
+                                },
+                                headerFormat: '<span style="font-size: 12px"><b>{point.key}</b></span><br/>',
+                                pointFormat: '<span style="color:{series.color}">● {series.name}</span>: <b>{point.y}%</b><br/>',
+                                valueDecimals: 2,
+                                valueSuffix: '%'
+                            },
+                            plotOptions: {
+                                column: {
+                                    borderRadius: 3,
+                                    pointPadding: 0.2,
+                                    groupPadding: 0.1,
+                                    dataLabels: {
+                                        enabled: true,
+                                        color: '#FFFFFF',
+                                        crop: false,
+                                        overflow: 'none',
+                                        format: '{point.y}%',
+                                        style: {
+                                            fontSize: '10px',
+                                            fontWeight: 'normal',
+                                            textOutline: 'none'
                                         }
-                                    });
+                                    }
+                                },
+                                series: {
+                                    animation: {
+                                        duration: 1000
+                                    },
+                                    states: {
+                                        hover: {
+                                            brightness: 0.1
+                                        }
+                                    }
                                 }
-                                
-                                // Label positioning handled by CSS
-                                
-                                // Force chart refresh to apply changes
-                                chart.ej2_instances[0].refresh();
+                            },
+                            series: [{
+                                name: 'Your Portfolio',
+                                data: portfolioData.map((value, index) => ({
+                                    y: value,
+                                    color: portfolioColors[index]
+                                }))
+                            }, {
+                                name: 'Benchmark',
+                                data: benchmarkData.map((value, index) => ({
+                                    y: value,
+                                    color: benchmarkColors[index]
+                                }))
+                            }],
+                            legend: {
+                                itemStyle: {
+                                    color: '#FFFFFF'
+                                },
+                                itemHoverStyle: {
+                                    color: '#DDDDDD'
+                                },
+                                layout: 'horizontal',
+                                align: 'center',
+                                verticalAlign: 'bottom',
+                                itemDistance: isMobile ? 20 : 40
+                            },
+                            credits: {
+                                enabled: false
+                            },
+                            responsive: {
+                                rules: [{
+                                    condition: {
+                                        maxWidth: 500
+                                    },
+                                    chartOptions: {
+                                        chart: {
+                                            spacingLeft: 5,
+                                            spacingRight: 5
+                                        },
+                                        legend: {
+                                            layout: 'horizontal',
+                                            align: 'center',
+                                            verticalAlign: 'bottom',
+                                            itemDistance: 15
+                                        },
+                                        yAxis: {
+                                            title: {
+                                                text: null
+                                            }
+                                        },
+                                        plotOptions: {
+                                            column: {
+                                                dataLabels: {
+                                                    enabled: false
+                                                }
+                                            }
+                                        }
+                                    }
+                                }]
                             }
-                        }, 500);
+                        });
                     });
                 </script>
                 </div>
