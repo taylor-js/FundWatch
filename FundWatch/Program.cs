@@ -94,20 +94,10 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
         options.Cookie.SameSite = SameSiteMode.Lax; // Change to 'Lax' if 'Strict' causes issues
     });
 
-    // Data Protection Configuration - temporary setup with fallback
-    var dataProtection = services.AddDataProtection()
-        .SetApplicationName("FundWatch");
-    
-    try
-    {
-        // Try to use database storage, but fall back to local file if needed
-        dataProtection.PersistKeysToDbContext<ApplicationDbContext>();
-    }
-    catch
-    {
-        // Fallback to file-based keys until database is updated
-        dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FundWatch", "DataProtection-Keys")));
-    }
+    // Data Protection Configuration - using file system for now
+    services.AddDataProtection()
+        .SetApplicationName("FundWatch")
+        .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FundWatch", "DataProtection-Keys")));
     
     // Syncfusion Configuration
     var directLicenseKey = "Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcc3VURWVdWE11WUA=";
