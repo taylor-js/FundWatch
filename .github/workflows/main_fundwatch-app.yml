@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - fundwatch-app
+name: Build and deploy ASP.Net Core app to Azure Web App - fundwatch-app-east
 
 on:
   push:
@@ -60,7 +60,7 @@ jobs:
 
       - name: Restart Azure Web App
         run: |
-          az webapp restart --name fundwatch-app --resource-group FundWatch
+          az webapp restart --name fundwatch-app-east --resource-group FundWatch
           echo "Waiting for 30 seconds after restart to ensure app is fully restarted..."
           sleep 30
 
@@ -68,6 +68,6 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'fundwatch-app'
+          app-name: 'fundwatch-app-east'
           slot-name: 'Production'
           package: .
