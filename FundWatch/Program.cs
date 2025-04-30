@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Syncfusion.Blazor;
+using System.IO;
 using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -93,10 +94,20 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
         options.Cookie.SameSite = SameSiteMode.Lax; // Change to 'Lax' if 'Strict' causes issues
     });
 
-    // Data Protection Configuration
-    services.AddDataProtection()
-        .PersistKeysToDbContext<ApplicationDbContext>()
+    // Data Protection Configuration - temporary setup with fallback
+    var dataProtection = services.AddDataProtection()
         .SetApplicationName("FundWatch");
+    
+    try
+    {
+        // Try to use database storage, but fall back to local file if needed
+        dataProtection.PersistKeysToDbContext<ApplicationDbContext>();
+    }
+    catch
+    {
+        // Fallback to file-based keys until database is updated
+        dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FundWatch", "DataProtection-Keys")));
+    }
     
     // Syncfusion Configuration
     var directLicenseKey = "Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcc3VURWVdWE11WUA=";
