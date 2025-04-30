@@ -20,7 +20,7 @@
             <h3 class="mb-0">@(Model.Id == 0 ? "Create" : "Edit") Stock Position</h3>
         </div>
         <div class="card-body p-4">
-            <form asp-action="CreateOrEdit" method="post" class="container-fluid">
+            <form asp-action="CreateOrEdit" method="post">
                 @Html.AntiForgeryToken()
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
