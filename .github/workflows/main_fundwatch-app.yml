@@ -54,10 +54,7 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_EAST }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_EAST }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EAST }}
-          client-secret: ${{ secrets.AZUREAPPSERVICE_CLIENTSECRET_EAST }}
+          creds: '{"clientId":"${{ secrets.AZUREAPPSERVICE_CLIENTID_EAST }}","clientSecret":"${{ secrets.AZUREAPPSERVICE_CLIENTSECRET_EAST }}","subscriptionId":"${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EAST }}","tenantId":"${{ secrets.AZUREAPPSERVICE_TENANTID_EAST }}"}'
 
       - name: Restart Azure Web App
         run: |
