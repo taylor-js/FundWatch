@@ -67,7 +67,10 @@
                         // Create direct access to risk data
                         var riskChartData = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(riskData).Replace("'", "\\'"))');
                         
-                        // Prepare data for Highcharts bubble chart
+                        // Prepare data for Highcharts bubble chart and ensure labels don't overlap
+                        // Sort the data to place larger bubbles in the back
+                        riskChartData.sort((a, b) => b.size - a.size);
+                        
                         var bubbleData = riskChartData.map(function(point) {
                             return {
                                 x: point.x,
@@ -81,7 +84,29 @@
                         });
                         
                         // Create the Highcharts bubble chart
-                        Highcharts.chart('riskAnalysisChart', {
+                        // Create the chart and store reference
+                        const riskChart = Highcharts.chart('riskAnalysisChart', {
+                            // Run after chart is fully rendered to ensure labels are visible
+                            events: {
+                                load: function() {
+                                    // Fix any hidden or overlapping labels
+                                    setTimeout(() => {
+                                        if (this.series && this.series[0] && this.series[0].dataLabelsGroup) {
+                                            const labelGroups = this.series[0].dataLabelsGroup.element.querySelectorAll('g');
+                                            labelGroups.forEach(labelGroup => {
+                                                // Force visibility for all text elements and groups
+                                                labelGroup.setAttribute('visibility', 'visible');
+                                                labelGroup.setAttribute('filter', 'none');
+                                                
+                                                const textEl = labelGroup.querySelector('text');
+                                                if (textEl) {
+                                                    textEl.setAttribute('visibility', 'visible');
+                                                }
+                                            });
+                                        }
+                                    }, 100);
+                                }
+                            },
                             chart: {
                                 type: 'bubble',
                                 backgroundColor: '#333333',
@@ -145,12 +170,20 @@
                                     maxSize: 50,
                                     dataLabels: {
                                         enabled: true,
-                                        format: '{point.name}',
+                                        formatter: function() {
+                                            // Return the point name for labels
+                                            return this.point.name;
+                                        },
                                         style: {
                                             color: 'white',
                                             textOutline: 'none',
-                                            fontWeight: 'bold'
-                                        }
+                                            fontWeight: 'bold',
+                                            fontSize: '0.8em' 
+                                        },
+                                        padding: 5,
+                                        allowOverlap: false,
+                                        crop: false,
+                                        overflow: 'allow'
                                     },
                                     marker: {
                                         fillOpacity: 0.7,

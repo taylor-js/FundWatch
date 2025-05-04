@@ -195,8 +195,33 @@
                 // Handle specific tabs with special needs
                 if (targetTab === '#analyticsTab') {
                     setTimeout(function() {
-                        // Get risk chart and refresh if it exists
+                        // Refresh Highcharts risk analysis chart
                         const riskChartElement = document.getElementById('riskAnalysisChart');
+                        
+                        // For Highcharts
+                        const riskChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === 'riskAnalysisChart');
+                        if (riskChart) {
+                            // Fix any hidden labels
+                            riskChart.series.forEach(series => {
+                                if (series.dataLabelsGroup) {
+                                    series.dataLabelsGroup.element.querySelectorAll('g').forEach(labelGroup => {
+                                        // Force visibility for all text elements
+                                        const textElement = labelGroup.querySelector('text');
+                                        if (textElement) {
+                                            textElement.setAttribute('visibility', 'visible');
+                                            labelGroup.setAttribute('visibility', 'visible');
+                                            labelGroup.setAttribute('filter', 'none');
+                                        }
+                                    });
+                                }
+                            });
+                            
+                            // Redraw chart to apply changes
+                            riskChart.redraw();
+                            console.log('Highcharts risk analysis chart refreshed');
+                        }
+                        
+                        // For Syncfusion (if it exists)
                         if (riskChartElement && riskChartElement.ej2_instances && riskChartElement.ej2_instances[0]) {
                             riskChartElement.ej2_instances[0].refresh();
                             console.log('Risk Analysis chart refreshed');
