@@ -80,7 +80,8 @@
                                 style: {
                                     'fontFamily': 'Inter, sans-serif'
                                 },
-                                height: '400px'
+                                height: 350,
+                                spacingBottom: 85
                             },
                             title: {
                                 text: null
@@ -91,8 +92,13 @@
                                     style: {
                                         color: '#FFFFFF'
                                     },
-                                    rotation: window.innerWidth < 768 ? -45 : 0,
-                                    y: window.innerWidth < 768 ? 20 : null
+                                    rotation: 90,
+                                    y: 5,
+                                    x: 0,
+                                    overflow: 'allow',
+                                    formatter: function() {
+                                        return this.value; // Display full month and year
+                                    }
                                 },
                                 tickmarkPlacement: 'on',
                                 lineColor: '#666',
@@ -134,16 +140,9 @@
                                     marker: {
                                         enabled: true,
                                         symbol: 'circle',
-                                        radius: window.innerWidth < 768 ? 3 : 4
+                                        radius: 4
                                     },
-                                    lineWidth: window.innerWidth < 768 ? 2 : 3
-                                },
-                                series: {
-                                    states: {
-                                        hover: {
-                                            lineWidth: window.innerWidth < 768 ? 3 : 4
-                                        }
-                                    }
+                                    lineWidth: 3
                                 }
                             },
                             series: [{
@@ -168,6 +167,7 @@
                                 zIndex: 1
                             }],
                             legend: {
+                                backgroundColor: '#333333',
                                 itemStyle: {
                                     color: '#FFFFFF'
                                 },
@@ -177,9 +177,8 @@
                                 layout: 'horizontal',
                                 align: 'center',
                                 verticalAlign: 'bottom',
-                                itemDistance: window.innerWidth < 768 ? 20 : 40,
-                                itemMarginTop: window.innerWidth < 768 ? 5 : 10,
-                                itemMarginBottom: window.innerWidth < 768 ? 5 : 10
+                                y: 60,
+                                borderWidth: 0
                             },
                             credits: {
                                 enabled: false
@@ -194,14 +193,18 @@
                                             spacingLeft: 5,
                                             spacingRight: 5,
                                             spacingTop: 10,
-                                            spacingBottom: 5
+                                            spacingBottom: 35
                                         },
                                         legend: {
                                             layout: 'horizontal',
                                             align: 'center',
                                             verticalAlign: 'bottom',
                                             itemDistance: 15,
-                                            y: -5
+                                            y: 0,
+                                            margin: 20,
+                                            itemStyle: {
+                                                fontSize: '10px'
+                                            }
                                         },
                                         yAxis: {
                                             title: {
@@ -267,7 +270,7 @@
                 <!-- Templates removed since we're using Highcharts instead of Syncfusion TreeMap -->
                 
                 <!-- Portfolio visualization with HighCharts Treemap -->
-                <div id="portfolioTreemap" style="width: 100%; height: 400px;"></div>
+                <div id="portfolioTreemap" style="width: 100%; height: 360px;"></div>
                 
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
@@ -349,6 +352,19 @@
                                     [1, '#00C853']    // 10%+ gain
                                 ]
                             },
+                            legend: {
+                                enabled: true,
+                                align: 'center',
+                                verticalAlign: 'bottom',
+                                layout: 'horizontal',
+                                backgroundColor: '#333333',
+                                itemStyle: {
+                                    color: '#FFFFFF'
+                                },
+                                itemHoverStyle: {
+                                    color: '#DDDDDD'
+                                }
+                            },
                             title: {
                                 text: null
                             },
@@ -375,11 +391,16 @@
 <!-- Portfolio Performance Analysis Charts Row -->
 <div class="row mb-4 gy-4">
     <div class="col-md-6">
-        <div class="card shadow" style="height: 650px; min-height: 650px;">
+        <div class="card shadow" style="height: 580px; min-height: 580px;">
             <div class="card-header bg-warning text-dark">
                 <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
             </div>
             <div class="card-body d-flex flex-column">
+                <div class="chart-description">
+                    <p class="text-center">
+                        This chart compares your portfolio growth against market benchmarks over the past 6 months.
+                    </p>
+                </div>
                 <div class="flex-grow-1">
                 @{
                     // Calculate monthly growth data based on historical data
@@ -416,13 +437,7 @@
                 }
                 
                 <!-- Portfolio Growth Analysis with HighCharts -->
-                <div id="growthAnalysisChart" style="width: 100%; height: 470px;"></div>
-                
-                <div class="chart-description">
-                    <p class="text-center">
-                        This chart compares your portfolio growth against market benchmarks over the past 6 months.
-                    </p>
-                </div>
+                <div id="growthAnalysisChart" style="width: 100%; height: 420px;"></div>
                 
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
@@ -440,7 +455,8 @@
                                 style: {
                                     fontFamily: 'Inter, sans-serif'
                                 },
-                                height: '470px'
+                                height: '380px',
+                                spacingBottom: 30
                             },
                             title: {
                                 text: null
@@ -564,14 +580,18 @@
                                             spacingLeft: 5,
                                             spacingRight: 5,
                                             spacingTop: 10,
-                                            spacingBottom: 5
+                                            spacingBottom: 35
                                         },
                                         legend: {
                                             layout: 'horizontal',
                                             align: 'center',
                                             verticalAlign: 'bottom',
                                             itemDistance: 15,
-                                            y: -5
+                                            y: 0,
+                                            margin: 20,
+                                            itemStyle: {
+                                                fontSize: '10px'
+                                            }
                                         },
                                         yAxis: {
                                             title: {
@@ -598,11 +618,16 @@
     
     <!-- Monthly Performance Chart -->
     <div class="col-md-6">
-        <div class="card shadow" style="height: 650px; min-height: 650px;">
+        <div class="card shadow" style="height: 580px; min-height: 580px;">
             <div class="card-header bg-info text-white">
                 <h5 class="card-title mb-0">Monthly Performance</h5>
             </div>
             <div class="card-body d-flex flex-column">
+                <div class="chart-description">
+                    <p class="text-center">
+                        Month-by-month performance comparison showing your portfolio against market benchmarks.
+                    </p>
+                </div>
                 <div class="flex-grow-1">
                 @{
                     // Generate monthly performance data
@@ -628,13 +653,7 @@
                 }
                 
                 <!-- Monthly Performance with HighCharts -->
-                <div id="monthlyPerformanceChart" style="width: 100%; height: 470px;"></div>
-                
-                <div class="chart-description">
-                    <p class="text-center">
-                        Month-by-month performance comparison showing your portfolio against market benchmarks.
-                    </p>
-                </div>
+                <div id="monthlyPerformanceChart" style="width: 100%; height: 420px;"></div>
                 
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
@@ -664,7 +683,8 @@
                                 style: {
                                     fontFamily: 'Inter, sans-serif'
                                 },
-                                height: '470px'
+                                height: '380px',
+                                spacingBottom: 30
                             },
                             title: {
                                 text: null

@@ -677,10 +677,18 @@ button[type="submit"] {
 }
 
 /* Overview metrics */
+.overview-scalar-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .overview-scalar-card .card-body {
     padding: 1rem;
-    min-height: auto;
-    height: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 #overviewTab .overview-scalar-card .card-body {
@@ -967,11 +975,28 @@ button[type="submit"] {
 }
 
 .hero-text {
-    padding: 3rem 0;
+    padding: 2rem 0;
 }
 
+    .hero-text .lead {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1.5rem;
+    }
+
+        .hero-text .lead p {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-text .lead i {
+            width: 24px;
+            color: #4361ee;
+        }
+
 .hero-buttons .btn {
-    padding: 0.8rem 1.8rem;
+    padding: 0.7rem 1.5rem;
     border-radius: 4px;
     font-weight: 500;
 }
@@ -1205,50 +1230,59 @@ button[type="submit"] {
 @media (max-width: 767.98px) {
     .hero-text {
         text-align: center;
-        padding: 2rem 0;
+        padding: 1.5rem 0;
     }
 
-    .feature-list li {
-        font-size: 1rem;
-    }
-
-    #performanceTab #rollingReturnsChart,
-    #performanceTab #topHoldingsChart,
-    #performanceTab #growthAnalysisChart,
-    #performanceTab #monthlyPerformanceChart,
-    #performanceTab #portfolioTreemap {
-        height: 350px !important;
-    }
-    
-    #performanceTab .card {
-        height: auto !important;
-        min-height: auto !important;
-        margin-bottom: 30px !important;
-    }
-
-    #performanceTab .chart-description {
-        padding: 0.5rem;
-    }
-
-        #performanceTab .chart-description p {
-            font-size: 0.85rem;
+        .hero-text h1 {
+            font-size: 2.5rem;
+            line-height: 1.2;
         }
 
-    .sector-distribution-container {
-        flex-direction: column;
+        .hero-text .lead p {
+            justify-content: center;
+        }
+}
+
+.feature-list li {
+    font-size: 1rem;
+}
+
+#performanceTab #rollingReturnsChart,
+#performanceTab #topHoldingsChart,
+#performanceTab #growthAnalysisChart,
+#performanceTab #monthlyPerformanceChart,
+#performanceTab #portfolioTreemap {
+    height: 350px !important;
+}
+
+#performanceTab .card {
+    height: auto !important;
+    min-height: auto !important;
+    margin-bottom: 30px !important;
+}
+
+#performanceTab .chart-description {
+    padding: 0.5rem;
+}
+
+    #performanceTab .chart-description p {
+        font-size: 0.85rem;
     }
 
-    .mobile-friendly-table {
-        height: auto !important;
-        max-height: none !important;
-        margin-top: 20px;
-    }
+.sector-distribution-container {
+    flex-direction: column;
+}
 
-    #sectorChartHoldings {
-        height: 300px !important;
-        width: 300px !important;
-        margin: 0 auto !important;
-    }
+.mobile-friendly-table {
+    height: auto !important;
+    max-height: none !important;
+    margin-top: 20px;
+}
+
+#sectorChartHoldings {
+    height: 300px !important;
+    width: 300px !important;
+    margin: 0 auto !important;
 }
 
 @media (max-width: 575.98px) {
