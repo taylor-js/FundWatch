@@ -628,12 +628,6 @@ button[type="submit"] {
         opacity: 0.8;
     }
 
-/* Dashboard Tab Navigation */
-#dashboardTabContent {
-    padding: 0 15px;
-    margin-bottom: 60px;
-}
-
 #overviewTab, #performanceTab, #analyticsTab, #holdingsTab {
     margin: 0;
     padding: 20px 0;
@@ -663,6 +657,8 @@ button[type="submit"] {
 #dashboardTabContent .card-body {
     background-color: #333333;
     padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Performance metrics styling */
