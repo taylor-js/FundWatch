@@ -49,5 +49,44 @@
 </div>
 
 @section Scripts {
+    @await Html.PartialAsync("_DashboardCommonScripts")
     @await Html.PartialAsync("_DashboardScripts")
+    @await Html.PartialAsync("_DirectChartInit", Model)
+    
+    <script>
+        // Initialize Highcharts when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard view loaded - main script');
+            
+            // Force a tab view on dashboard load to ensure charts render
+            setTimeout(function() {
+                // Get the active tab or default to overview
+                let activeTab = document.querySelector('.nav-link.active[data-bs-toggle="tab"]');
+                if (!activeTab) {
+                    activeTab = document.querySelector('#overview-tab');
+                }
+                
+                // Simulate click to trigger the tab's shown event
+                if (activeTab) {
+                    activeTab.click();
+                    console.log('Triggered active tab:', activeTab.id);
+                }
+                
+                // Force performance tab charts to render by showing that tab and switching back
+                const performanceTab = document.querySelector('#performance-tab');
+                if (performanceTab) {
+                    setTimeout(() => {
+                        performanceTab.click();
+                        console.log('Forcing performance tab render');
+                        
+                        // Switch back to previous tab after a delay
+                        setTimeout(() => {
+                            activeTab.click();
+                            console.log('Switching back to original tab');
+                        }, 1000);
+                    }, 1500);
+                }
+            }, 500);
+        });
+    </script>
 }

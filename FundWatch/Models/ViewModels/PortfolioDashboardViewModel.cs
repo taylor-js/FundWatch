@@ -14,13 +14,25 @@ namespace FundWatch.Models.ViewModels
             HistoricalData = new Dictionary<string, List<StockDataPoint>>();
             SectorDistribution = new Dictionary<string, decimal>();
             CompanyDetails = new Dictionary<string, CompanyDetails>();
+            MonthlyPerformanceData = new List<MonthlyPerformanceData>();
+            RollingReturnsData = new List<RollingReturnsData>();
+            PortfolioGrowthData = new List<PortfolioGrowthPoint>();
+            RiskMetrics = new List<RiskAnalysisData>();
+            DrawdownData = new List<DrawdownPoint>();
         }
 
         public List<AppUserStock> UserStocks { get; set; }
         public PortfolioMetrics PortfolioMetrics { get; set; }
         public Dictionary<string, List<PerformancePoint>> PerformanceData { get; set; }
-        public Dictionary<string, List<StockDataPoint>> HistoricalData { get; set; } // Add this property
+        public Dictionary<string, List<StockDataPoint>> HistoricalData { get; set; }
         public Dictionary<string, decimal> SectorDistribution { get; set; }
         public Dictionary<string, CompanyDetails> CompanyDetails { get; set; }
+        
+        // Real chart data properties
+        public List<MonthlyPerformanceData> MonthlyPerformanceData { get; set; }
+        public List<RollingReturnsData> RollingReturnsData { get; set; }
+        public List<PortfolioGrowthPoint> PortfolioGrowthData { get; set; }
+        public List<RiskAnalysisData> RiskMetrics { get; set; }
+        public List<DrawdownPoint> DrawdownData { get; set; }
     }
 }

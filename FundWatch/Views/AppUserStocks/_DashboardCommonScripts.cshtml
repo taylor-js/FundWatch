@@ -1,0 +1,56 @@
+@* Common dashboard scripts that should load first *@
+
+<script>
+    // Initialize Highcharts and add console logging to help with debugging
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Dashboard DOM loaded - initializing charts');
+        
+        // Check if Highcharts is loaded
+        if (typeof Highcharts === 'undefined') {
+            console.error('Highcharts is not loaded!');
+        } else {
+            console.log('Highcharts is loaded correctly, version:', Highcharts.version);
+            
+            // Check if our ChartManager exists in site.js
+            if (typeof ChartManager === 'undefined') {
+                console.error('ChartManager is not defined! Check site.js');
+            } else {
+                console.log('ChartManager is defined - chart rendering available');
+            }
+        }
+        
+        // Dashboard tab handling
+        const dashboardTabs = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
+        if (dashboardTabs.length > 0) {
+            console.log('Dashboard tabs found:', dashboardTabs.length);
+            
+            // When a tab is shown, trigger chart redraw to fix hidden charts
+            dashboardTabs.forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function(event) {
+                    const targetId = event.target.getAttribute('data-bs-target');
+                    const targetTab = document.querySelector(targetId);
+                    
+                    console.log('Tab shown:', targetId);
+                    
+                    // For Performance and Analytics tabs, ensure all charts are redrawn
+                    if (targetId === '#performanceTab' || targetId === '#analyticsTab') {
+                        console.log('Redrawing charts in tab:', targetId);
+                        
+                        // Allow a small delay for tab transition to complete
+                        setTimeout(() => {
+                            // Force all charts to redraw in the tab
+                            if (Highcharts.charts) {
+                                Highcharts.charts.forEach(chart => {
+                                    if (chart && chart.renderTo && targetTab.contains(chart.renderTo)) {
+                                        chart.reflow();
+                                        console.log('Redrawn chart:', chart.renderTo.id);
+                                    }
+                                });
+                            }
+                        }, 300);
+                    }
+                });
+            });
+        }
+    });
+</script>

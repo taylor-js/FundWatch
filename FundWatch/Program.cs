@@ -68,6 +68,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     });
     services.AddLogging();
     services.AddScoped<StockService>();
+    services.AddScoped<ChartDataService>();
     services.AddHostedService<StockDataBackgroundService>();
 
     // Email Service (Mock for development)

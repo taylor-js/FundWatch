@@ -21,6 +21,7 @@ namespace FundWatch.Controllers
         private readonly ILogger<AppUserStocksController> _logger;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly StockService _stockService;
+        private readonly ChartDataService _chartDataService;
         private readonly IMemoryCache _cache;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private const int CACHE_DURATION_MINUTES = 15;
@@ -30,12 +31,14 @@ namespace FundWatch.Controllers
         ILogger<AppUserStocksController> logger,
         UserManager<IdentityUser> userManager,
         StockService stockService,
+        ChartDataService chartDataService,
         IMemoryCache cache)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _stockService = stockService ?? throw new ArgumentNullException(nameof(stockService));
+            _chartDataService = chartDataService ?? throw new ArgumentNullException(nameof(chartDataService));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
@@ -102,8 +105,20 @@ namespace FundWatch.Controllers
                 var pricesTask = GetCachedPrices(symbols);
                 var detailsTask = GetCachedCompanyDetails(symbols);
                 var historicalDataTask = GetCachedHistoricalData(symbols);
+                
+                // Fetch real chart data in parallel
+                var monthlyPerformanceTask = _chartDataService.CalculateMonthlyPerformanceAsync(userStocks);
+                var rollingReturnsTask = _chartDataService.CalculateRollingReturnsAsync(userStocks);
+                var portfolioGrowthTask = _chartDataService.CalculatePortfolioGrowthAsync(userStocks);
+                var riskMetricsTask = _chartDataService.CalculateRiskMetricsAsync(userStocks);
+                var drawdownDataTask = _chartDataService.CalculateDrawdownSeriesAsync(userStocks);
 
-                await Task.WhenAll(pricesTask, detailsTask, historicalDataTask);
+                // Wait for all data to be fetched
+                await Task.WhenAll(
+                    pricesTask, detailsTask, historicalDataTask,
+                    monthlyPerformanceTask, rollingReturnsTask, portfolioGrowthTask, 
+                    riskMetricsTask, drawdownDataTask
+                );
 
                 var cachedPrices = await pricesTask;
                 var cachedDetails = await detailsTask;
@@ -140,6 +155,21 @@ namespace FundWatch.Controllers
                 
                 viewModel.PerformanceData = performanceData;
                 viewModel.HistoricalData = historicalData;
+                
+                // Set real chart data from ChartDataService
+                viewModel.MonthlyPerformanceData = await monthlyPerformanceTask;
+                viewModel.RollingReturnsData = await rollingReturnsTask;
+                viewModel.PortfolioGrowthData = await portfolioGrowthTask;
+                viewModel.RiskMetrics = await riskMetricsTask;
+                viewModel.DrawdownData = await drawdownDataTask;
+                
+                _logger.LogInformation(
+                    "Chart data metrics - Monthly: {MonthlyCount}, Rolling: {RollingCount}, Growth: {GrowthCount}, Risk: {RiskCount}, Drawdown: {DrawdownCount}",
+                    viewModel.MonthlyPerformanceData?.Count ?? 0,
+                    viewModel.RollingReturnsData?.Count ?? 0,
+                    viewModel.PortfolioGrowthData?.Count ?? 0,
+                    viewModel.RiskMetrics?.Count ?? 0,
+                    viewModel.DrawdownData?.Count ?? 0);
                 
                 // Cache the performance data separately with longer duration
                 var performanceDataCacheKey = $"PerformanceData_{userId}";

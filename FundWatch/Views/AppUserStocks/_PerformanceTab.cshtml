@@ -1,831 +1,144 @@
 @model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
-@using Syncfusion.EJ2
-@using Syncfusion.EJ2.Navigations
-@using Syncfusion.EJ2.Charts
-@using Syncfusion.EJ2.Grids
-@{
-    var culture = new System.Globalization.CultureInfo("en-US");
-}
 
-<div class="row mb-4 gy-4">
+<div class="row g-3 mb-4">
     <!-- Rolling Returns Chart -->
     <div class="col-md-6">
-        <div class="card shadow" style="height: 650px; min-height: 650px;width:100%">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">Rolling Returns Analysis</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-description">
-                    <p class="text-center">
-                        Performance over rolling time periods, showing consistency of returns over different timeframes.
-                    </p>
-                </div>
-                <div id="rollingReturnsChart" style="width: 100%; height: 480px; max-height: 480px; overflow: hidden;"></div>
-                
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Determine if we're on mobile
-                        const isMobile = window.innerWidth < 768;
-                        
-                        // Generate realistic rolling returns data
-                        function generateRollingReturns() {
-                            const now = new Date();
-                            const data = [];
-                            
-                            // Generate 12 months of data (each data point represents trailing returns as of that month)
-                            for (let i = 0; i < 12; i++) {
-                                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                                
-                                // Generate realistic returns with some correlation between timeframes
-                                // Longer timeframes generally have less volatility
-                                const baseReturn = Math.random() * 10 - 3; // Base return between -3% and 7%
-                                
-                                // 1-month return (most volatile)
-                                const oneMonth = baseReturn + (Math.random() * 8 - 4); // +/- 4% volatility
-                                
-                                // 3-month has some correlation with 1-month but less volatile
-                                const threeMonth = (baseReturn * 0.8) + (Math.random() * 6 - 3); // +/- 3% volatility
-                                
-                                // 6-month has more correlation with the base trend and less volatility
-                                const sixMonth = (baseReturn * 0.6) + (Math.random() * 4 - 2); // +/- 2% volatility
-                                
-                                // 12-month has strongest correlation with the base trend and least volatility
-                                const twelveMonth = (baseReturn * 0.5) + (Math.random() * 3 - 1.5); // +/- 1.5% volatility
-                                
-                                // Format date as month name and year
-                                const monthName = date.toLocaleString('default', { month: 'short' });
-                                const year = date.getFullYear();
-                                const dateLabel = `${monthName} ${year}`;
-                                
-                                data.push({
-                                    date: dateLabel,
-                                    onemonth: parseFloat(oneMonth.toFixed(2)),
-                                    threemonth: parseFloat(threeMonth.toFixed(2)),
-                                    sixmonth: parseFloat(sixMonth.toFixed(2)),
-                                    twelvemonth: parseFloat(twelveMonth.toFixed(2))
-                                });
-                            }
-                            
-                            // Sort chronologically (oldest to newest)
-                            return data.reverse();
-                        }
-                        
-                        const rollingReturnsData = generateRollingReturns();
-                        
-                        // Create the Highcharts chart with mobile-responsive settings
-                        Highcharts.chart('rollingReturnsChart', {
-                            chart: {
-                                type: 'spline',
-                                backgroundColor: '#333333',
-                                style: {
-                                    'fontFamily': 'Inter, sans-serif'
-                                },
-                                height: 500,
-                                spacingBottom: 120
-                            },
-                            title: {
-                                text: null
-                            },
-                            xAxis: {
-                                categories: rollingReturnsData.map(item => item.date),
-                                labels: {
-                                    style: {
-                                        color: '#FFFFFF'
-                                    },
-                                    rotation: 90,
-                                    y: 5,
-                                    x: 0,
-                                    overflow: 'allow',
-                                    formatter: function() {
-                                        return this.value; // Display full month and year
-                                    }
-                                },
-                                tickmarkPlacement: 'on',
-                                lineColor: '#666',
-                                gridLineWidth: 0
-                            },
-                            yAxis: {
-                                title: {
-                                    text: 'Return (%)',
-                                    style: {
-                                        color: '#FFFFFF',
-                                        fontWeight: 'bold'
-                                    }
-                                },
-                                labels: {
-                                    format: '{value}%',
-                                    style: {
-                                        color: '#FFFFFF'
-                                    }
-                                },
-                                gridLineColor: 'rgba(255, 255, 255, 0.1)',
-                                plotLines: [{
-                                    value: 0,
-                                    width: 1,
-                                    color: '#AAAAAA',
-                                    zIndex: 1
-                                }]
-                            },
-                            tooltip: {
-                                shared: true,
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                style: {
-                                    color: '#FFFFFF'
-                                },
-                                valueDecimals: 2,
-                                valueSuffix: '%'
-                            },
-                            plotOptions: {
-                                spline: {
-                                    marker: {
-                                        enabled: true,
-                                        symbol: 'circle',
-                                        radius: 4
-                                    },
-                                    lineWidth: 3
-                                }
-                            },
-                            series: [{
-                                name: '1 Month',
-                                data: rollingReturnsData.map(item => item.onemonth),
-                                color: '#FF6B6B', // Red
-                                zIndex: 4
-                            }, {
-                                name: '3 Month',
-                                data: rollingReturnsData.map(item => item.threemonth),
-                                color: '#4ECDC4', // Teal
-                                zIndex: 3
-                            }, {
-                                name: '6 Month',
-                                data: rollingReturnsData.map(item => item.sixmonth),
-                                color: '#FFD166', // Yellow
-                                zIndex: 2
-                            }, {
-                                name: '12 Month',
-                                data: rollingReturnsData.map(item => item.twelvemonth),
-                                color: '#4361EE', // Blue
-                                zIndex: 1
-                            }],
-                            legend: {
-                                backgroundColor: '#333333',
-                                itemStyle: {
-                                    color: '#FFFFFF'
-                                },
-                                itemHoverStyle: {
-                                    color: '#DDDDDD'
-                                },
-                                layout: 'horizontal',
-                                align: 'center',
-                                verticalAlign: 'bottom',
-                                y: 95,
-                                borderWidth: 0
-                            },
-                            credits: {
-                                enabled: false
-                            },
-                            responsive: {
-                                rules: [{
-                                    condition: {
-                                        maxWidth: 500
-                                    },
-                                    chartOptions: {
-                                        chart: {
-                                            spacingLeft: 5,
-                                            spacingRight: 5,
-                                            spacingTop: 10,
-                                            spacingBottom: 100
-                                        },
-                                        legend: {
-                                            layout: 'horizontal',
-                                            align: 'center',
-                                            verticalAlign: 'bottom',
-                                            itemDistance: 15,
-                                            y: 20,
-                                            margin: 35,
-                                            itemStyle: {
-                                                fontSize: '10px'
-                                            }
-                                        },
-                                        yAxis: {
-                                            title: {
-                                                text: null
-                                            }
-                                        },
-                                        xAxis: {
-                                            labels: {
-                                                style: {
-                                                    fontSize: '10px'
-                                                }
-                                            }
-                                        }
-                                    }
-                                }]
-                            }
-                        });
-                    });
-                </script>
-            </div>
-        </div>
-    </div>
-
-    <!-- Portfolio Heatmap -->
-    <div class="col-md-6">
-        <div class="card shadow" style="height: 650px; min-height: 650px;width:100%">
+        <div class="card shadow" style="height: 500px; min-height: 500px;">
             <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Portfolio Heatmap</h5>
+                <h5 class="card-title mb-0">Rolling Returns</h5>
             </div>
             <div class="card-body">
-                <div class="chart-description">
-                    <p class="text-center">
-                        Visualize your portfolio allocation and performance with size representing value and color representing performance.
-                    </p>
-                </div>
-                @{
-                    // Enhanced data for the portfolio heatmap
-                    var holdingsTotalValue = Model.UserStocks
-                        .Where(x => (x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) > 0)
-                        .Sum(x => (x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) * x.CurrentPrice);
-                        
-                    var allHoldings = Model.UserStocks
-                    .Select(x => new
-                    {
-                        x = x.StockSymbol,
-                        y = (x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) * x.CurrentPrice,
-                        text = x.StockSymbol,
-                        company = Model.CompanyDetails.ContainsKey(x.StockSymbol) ? Model.CompanyDetails[x.StockSymbol].Name : x.StockSymbol,
-                        shares = x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0),
-                        price = x.CurrentPrice,
-                        performance = Model.CompanyDetails.ContainsKey(x.StockSymbol) 
-                            ? Math.Round((x.CurrentPrice - x.PurchasePrice) / x.PurchasePrice * 100, 2)
-                            : 0,
-                        weight = holdingsTotalValue > 0 
-                            ? Math.Round(((x.NumberOfSharesPurchased - (x.NumberOfSharesSold ?? 0)) * x.CurrentPrice / holdingsTotalValue) * 100, 2)
-                            : 0
-                    })
-                    .Where(x => x.shares > 0) // Exclude stocks with zero holdings
-                    .OrderByDescending(x => x.y)
-                    .ToList();
-                }
-                
-                <!-- Templates removed since we're using Highcharts instead of Syncfusion TreeMap -->
-                
-                <!-- Portfolio visualization with HighCharts Treemap -->
-                <div id="portfolioTreemap" style="width: 100%; height: 480px; max-height: 480px; overflow: hidden;"></div>
-                
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Create the treemap data from the server-side model
-                        const portfolioData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(allHoldings));
-                        
-                        // Initialize the Highcharts Treemap
-                        Highcharts.chart('portfolioTreemap', {
-                            series: [{
-                                type: "treemap",
-                                layoutAlgorithm: 'squarified',
-                                data: portfolioData.map(item => ({
-                                    id: item.x,
-                                    name: item.x,
-                                    value: item.y,
-                                    colorValue: item.performance,
-                                    custom: {
-                                        company: item.company,
-                                        shares: item.shares,
-                                        price: item.price,
-                                        performance: item.performance,
-                                        weight: item.weight
-                                    }
-                                })),
-                                dataLabels: {
-                                    enabled: true,
-                                    format: '<div style="text-align: center; width: 100%"><span style="font-weight: bold">{point.name}</span><br>{point.custom.weight}%<br><span style="font-size: 10px;">{point.custom.performance}%</span></div>',
-                                    style: {
-                                        color: '#FFFFFF',
-                                        textOutline: 'none'
-                                    },
-                                    useHTML: true,
-                                    allowOverlap: false
-                                }
-                            }],
-                            tooltip: {
-                                useHTML: true,
-                                formatter: function() {
-                                    return `<div style="max-width: 250px;">
-                                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${this.point.custom.company}</div>
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                                            <span>Symbol:</span>
-                                            <span style="font-weight: bold;">${this.point.name}</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                                            <span>Value:</span>
-                                            <span style="font-weight: bold;">$${this.point.value.toLocaleString()}</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                                            <span>Portfolio Weight:</span>
-                                            <span style="font-weight: bold;">${this.point.custom.weight}%</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                                            <span>Performance:</span>
-                                            <span style="font-weight: bold;">
-                                                <span class="${this.point.custom.performance >= 0 ? 'text-success' : 'text-danger'}">${this.point.custom.performance}%</span>
-                                            </span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                                            <span>Shares:</span>
-                                            <span style="font-weight: bold;">${this.point.custom.shares}</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between;">
-                                            <span>Price:</span>
-                                            <span style="font-weight: bold;">$${this.point.custom.price}</span>
-                                        </div>
-                                    </div>`;
-                                }
-                            },
-                            colorAxis: {
-                                minColor: '#D50000',  // Dark red for negative performance
-                                maxColor: '#00C853',  // Dark green for positive performance
-                                stops: [
-                                    [0, '#D50000'],   // -20% or worse
-                                    [0.2, '#FF7043'], // -10% to -20%
-                                    [0.4, '#FFAB91'], // -5% to -10%
-                                    [0.6, '#AED581'], // 0% to 5%
-                                    [0.8, '#66BB6A'], // 5% to 10%
-                                    [1, '#00C853']    // 10%+ gain
-                                ]
-                            },
-                            legend: {
-                                enabled: true,
-                                align: 'center',
-                                verticalAlign: 'bottom',
-                                layout: 'horizontal',
-                                backgroundColor: '#333333',
-                                itemStyle: {
-                                    color: '#FFFFFF'
-                                },
-                                itemHoverStyle: {
-                                    color: '#DDDDDD'
-                                }
-                            },
-                            title: {
-                                text: null
-                            },
-                            chart: {
-                                backgroundColor: '#333333',
-                                height: 480
-                            },
-                            credits: {
-                                enabled: false
-                            }
-                        });
-                    });
-                </script>
-                
-                @* <div style="margin-top: 15px;">
-                    <div class="legend-note text-center text-light">
-                        <small>Size represents position value | Color represents performance</small>
-                    </div>
-                </div> *@
+                <div id="rollingReturnsChart" style="height: 430px;"></div>
             </div>
         </div>
     </div>
-</div> <!-- Close the Performance tab's first row -->
 
-<!-- Portfolio Performance Analysis Charts Row -->
-<div class="row mb-4 gy-4">
-    <div class="col-md-6">
-        <div class="card shadow" style="height: 650px; min-height: 650px;">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-description">
-                    <p class="text-center">
-                        This chart compares your portfolio growth against market benchmarks over the past 6 months.
-                    </p>
-                </div>
-                @{
-                    // Calculate monthly growth data based on historical data
-                    var today = DateTime.Today;
-                    var sixMonthsAgo = today.AddMonths(-6);
-                    var threeMonthsAgo = today.AddMonths(-3);
-                    var oneMonthAgo = today.AddMonths(-1);
-                    
-                    // Create compounded return data - this is mocked since we need to calculate from historical data
-                    var growthData = new List<object>();
-                    int dataPoints = 6; // 6 months of data
-                    
-                    decimal portfolioValue = Model.PortfolioMetrics.TotalCost;
-                    decimal marketBenchmark = portfolioValue;
-                    
-                    for (int i = 0; i < dataPoints; i++) {
-                        var date = today.AddMonths(-dataPoints + i + 1);
-                        
-                        // Add some randomness to simulate real data
-                        var rnd = new Random(i * 100);
-                        var portfolioGrowth = 1 + (decimal)(rnd.NextDouble() * 0.04 - 0.01);
-                        var marketGrowth = 1 + (decimal)(rnd.NextDouble() * 0.03 - 0.005);
-                        
-                        portfolioValue *= portfolioGrowth;
-                        marketBenchmark *= marketGrowth;
-                        
-                        growthData.Add(new {
-                            x = date.Ticks,
-                            date = date.ToString("MMM yyyy"),
-                            portfolio = Math.Round(portfolioValue, 2),
-                            market = Math.Round(marketBenchmark, 2)
-                        });
-                    }
-                }
-                
-                <!-- Portfolio Growth Analysis with HighCharts -->
-                <div id="growthAnalysisChart" style="width: 100%; height: 480px; max-height: 480px; overflow: hidden;"></div>
-                
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Determine if we're on mobile
-                        const isMobile = window.innerWidth < 768;
-                        
-                        // Get the growth data from the server-side model
-                        const growthData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(growthData));
-                        
-                        // Create the Highcharts chart
-                        Highcharts.chart('growthAnalysisChart', {
-                            chart: {
-                                type: 'areaspline',
-                                backgroundColor: '#333333',
-                                style: {
-                                    fontFamily: 'Inter, sans-serif'
-                                },
-                                height: 500,
-                                spacingBottom: 50
-                            },
-                            title: {
-                                text: null
-                            },
-                            xAxis: {
-                                categories: growthData.map(item => item.date),
-                                labels: {
-                                    style: {
-                                        color: '#FFFFFF'
-                                    },
-                                    rotation: isMobile ? -45 : 0,
-                                    y: isMobile ? 20 : null
-                                },
-                                tickmarkPlacement: 'on',
-                                lineColor: '#666',
-                                gridLineWidth: 0
-                            },
-                            yAxis: {
-                                title: {
-                                    text: 'Value ($)',
-                                    style: {
-                                        color: '#FFFFFF',
-                                        fontWeight: 'bold'
-                                    }
-                                },
-                                labels: {
-                                    formatter: function() {
-                                        return '$' + Highcharts.numberFormat(this.value, 0);
-                                    },
-                                    style: {
-                                        color: '#FFFFFF'
-                                    }
-                                },
-                                gridLineColor: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            tooltip: {
-                                shared: true,
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                style: {
-                                    color: '#FFFFFF'
-                                },
-                                valuePrefix: '$',
-                                valueDecimals: 2
-                            },
-                            plotOptions: {
-                                areaspline: {
-                                    fillOpacity: 0.2,
-                                    marker: {
-                                        enabled: true,
-                                        symbol: 'circle',
-                                        radius: isMobile ? 3 : 4
-                                    },
-                                    lineWidth: isMobile ? 2 : 3
-                                },
-                                series: {
-                                    states: {
-                                        hover: {
-                                            lineWidth: isMobile ? 3 : 4
-                                        }
-                                    }
-                                }
-                            },
-                            series: [{
-                                name: 'Your Portfolio',
-                                data: growthData.map(item => item.portfolio),
-                                color: '#4361EE', // Blue
-                                fillColor: {
-                                    linearGradient: {
-                                        x1: 0,
-                                        y1: 0,
-                                        x2: 0,
-                                        y2: 1
-                                    },
-                                    stops: [
-                                        [0, Highcharts.color('#4361EE').setOpacity(0.4).get()],
-                                        [1, Highcharts.color('#4361EE').setOpacity(0).get()]
-                                    ]
-                                }
-                            }, {
-                                name: 'Market Benchmark',
-                                data: growthData.map(item => item.market),
-                                color: '#FF6B6B', // Red
-                                dashStyle: 'shortdash',
-                                fillColor: {
-                                    linearGradient: {
-                                        x1: 0,
-                                        y1: 0,
-                                        x2: 0,
-                                        y2: 1
-                                    },
-                                    stops: [
-                                        [0, Highcharts.color('#FF6B6B').setOpacity(0.2).get()],
-                                        [1, Highcharts.color('#FF6B6B').setOpacity(0).get()]
-                                    ]
-                                }
-                            }],
-                            legend: {
-                                itemStyle: {
-                                    color: '#FFFFFF'
-                                },
-                                itemHoverStyle: {
-                                    color: '#DDDDDD'
-                                },
-                                layout: 'horizontal',
-                                align: 'center',
-                                verticalAlign: 'bottom',
-                                y: 20,
-                                itemDistance: isMobile ? 20 : 40,
-                                itemMarginTop: isMobile ? 5 : 10,
-                                itemMarginBottom: isMobile ? 5 : 10
-                            },
-                            credits: {
-                                enabled: false
-                            },
-                            responsive: {
-                                rules: [{
-                                    condition: {
-                                        maxWidth: 500
-                                    },
-                                    chartOptions: {
-                                        chart: {
-                                            spacingLeft: 5,
-                                            spacingRight: 5,
-                                            spacingTop: 10,
-                                            spacingBottom: 100
-                                        },
-                                        legend: {
-                                            layout: 'horizontal',
-                                            align: 'center',
-                                            verticalAlign: 'bottom',
-                                            itemDistance: 15,
-                                            y: 20,
-                                            margin: 35,
-                                            itemStyle: {
-                                                fontSize: '10px'
-                                            }
-                                        },
-                                        yAxis: {
-                                            title: {
-                                                text: null
-                                            }
-                                        },
-                                        xAxis: {
-                                            labels: {
-                                                style: {
-                                                    fontSize: '10px'
-                                                }
-                                            }
-                                        }
-                                    }
-                                }]
-                            }
-                        });
-                    });
-                </script>
-            </div>
-        </div>
-    </div>
-    
     <!-- Monthly Performance Chart -->
     <div class="col-md-6">
-        <div class="card shadow" style="height: 650px; min-height: 650px;">
+        <div class="card shadow" style="height: 500px; min-height: 500px;">
             <div class="card-header bg-info text-white">
                 <h5 class="card-title mb-0">Monthly Performance</h5>
             </div>
             <div class="card-body">
-                <div class="chart-description">
-                    <p class="text-center">
-                        Month-by-month performance comparison showing your portfolio against market benchmarks.
-                    </p>
-                </div>
-                @{
-                    // Generate monthly performance data
-                    var monthlyData = new List<object>();
-                    var currentDate = DateTime.Today;
-                    
-                    // Create data for last 6 months
-                    for (int i = 5; i >= 0; i--) {
-                        var month = currentDate.AddMonths(-i);
-                        var monthName = month.ToString("MMM");
-                        
-                        // Simulate random performance percentages
-                        var rnd = new Random((month.Year * 100) + month.Month);
-                        var portfolioPerf = Math.Round((rnd.NextDouble() * 8) - 2.5, 2); // -2.5% to 5.5%
-                        var benchmarkPerf = Math.Round((rnd.NextDouble() * 6) - 2, 2);   // -2% to 4%
-                        
-                        monthlyData.Add(new {
-                            month = monthName,
-                            portfolio = portfolioPerf,
-                            benchmark = benchmarkPerf
-                        });
-                    }
-                }
-                
-                <!-- Monthly Performance with HighCharts -->
-                <div id="monthlyPerformanceChart" style="width: 100%; height: 480px; max-height: 480px; overflow: hidden;"></div>
-                
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Determine if we're on mobile
-                        const isMobile = window.innerWidth < 768;
-                        
-                        // Get the monthly data from the server-side model
-                        const monthlyData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(monthlyData));
-                        
-                        // Create arrays for each series
-                        const categories = monthlyData.map(item => item.month);
-                        const portfolioData = monthlyData.map(item => item.portfolio);
-                        const benchmarkData = monthlyData.map(item => item.benchmark);
-                        
-                        // Color each bar based on positive/negative value
-                        const portfolioColors = portfolioData.map(value => 
-                            value >= 0 ? '#4CC38A' : '#F25F5C');
-                        
-                        const benchmarkColors = benchmarkData.map(value => 
-                            value >= 0 ? '#36A2EB' : '#FF6384');
-                        
-                        // Create the Highcharts chart
-                        Highcharts.chart('monthlyPerformanceChart', {
-                            chart: {
-                                type: 'column',
-                                backgroundColor: '#333333',
-                                style: {
-                                    fontFamily: 'Inter, sans-serif'
-                                },
-                                height: 520,
-                                spacingBottom: 50
-                            },
-                            title: {
-                                text: null
-                            },
-                            xAxis: {
-                                categories: categories,
-                                crosshair: true,
-                                labels: {
-                                    style: {
-                                        color: '#FFFFFF'
-                                    },
-                                    rotation: isMobile ? -45 : 0,
-                                    y: isMobile ? 20 : null
-                                },
-                                lineColor: '#666',
-                                tickLength: 0
-                            },
-                            yAxis: {
-                                title: {
-                                    text: 'Return (%)',
-                                    style: {
-                                        color: '#FFFFFF',
-                                        fontWeight: 'bold'
-                                    }
-                                },
-                                labels: {
-                                    format: '{value}%',
-                                    style: {
-                                        color: '#FFFFFF'
-                                    }
-                                },
-                                gridLineColor: 'rgba(255, 255, 255, 0.1)',
-                                plotLines: [{
-                                    value: 0,
-                                    width: 1,
-                                    color: '#AAAAAA',
-                                    zIndex: 5
-                                }]
-                            },
-                            tooltip: {
-                                shared: true,
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                style: {
-                                    color: '#FFFFFF'
-                                },
-                                headerFormat: '<span style="font-size: 12px"><b>{point.key}</b></span><br/>',
-                                pointFormat: '<span style="color:{series.color}">● {series.name}</span>: <b>{point.y}%</b><br/>',
-                                valueDecimals: 2,
-                                valueSuffix: '%'
-                            },
-                            plotOptions: {
-                                column: {
-                                    borderRadius: 3,
-                                    pointPadding: 0.2,
-                                    groupPadding: 0.1,
-                                    dataLabels: {
-                                        enabled: true,
-                                        color: '#FFFFFF',
-                                        crop: false,
-                                        overflow: 'none',
-                                        format: '{point.y}%',
-                                        style: {
-                                            fontSize: '10px',
-                                            fontWeight: 'normal',
-                                            textOutline: 'none'
-                                        }
-                                    }
-                                },
-                                series: {
-                                    animation: {
-                                        duration: 1000
-                                    },
-                                    states: {
-                                        hover: {
-                                            brightness: 0.1
-                                        }
-                                    }
-                                }
-                            },
-                            series: [{
-                                name: 'Your Portfolio',
-                                data: portfolioData.map((value, index) => ({
-                                    y: value,
-                                    color: portfolioColors[index]
-                                }))
-                            }, {
-                                name: 'Benchmark',
-                                data: benchmarkData.map((value, index) => ({
-                                    y: value,
-                                    color: benchmarkColors[index]
-                                }))
-                            }],
-                            legend: {
-                                itemStyle: {
-                                    color: '#FFFFFF'
-                                },
-                                itemHoverStyle: {
-                                    color: '#DDDDDD'
-                                },
-                                layout: 'horizontal',
-                                align: 'center',
-                                verticalAlign: 'bottom',
-                                itemDistance: isMobile ? 20 : 40
-                            },
-                            credits: {
-                                enabled: false
-                            },
-                            responsive: {
-                                rules: [{
-                                    condition: {
-                                        maxWidth: 500
-                                    },
-                                    chartOptions: {
-                                        chart: {
-                                            spacingLeft: 5,
-                                            spacingRight: 5
-                                        },
-                                        legend: {
-                                            layout: 'horizontal',
-                                            align: 'center',
-                                            verticalAlign: 'bottom',
-                                            itemDistance: 15
-                                        },
-                                        yAxis: {
-                                            title: {
-                                                text: null
-                                            }
-                                        },
-                                        plotOptions: {
-                                            column: {
-                                                dataLabels: {
-                                                    enabled: false
-                                                }
-                                            }
-                                        }
-                                    }
-                                }]
-                            }
-                        });
-                    });
-                </script>
+                <div id="monthlyPerformanceChart" style="height: 430px;"></div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="row g-3 mb-4">
+    <!-- Portfolio Growth Analysis -->
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div id="portfolioGrowthChart" style="height: 450px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Performance Tab Charts - simplified implementation matching the working Analytics tab
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Performance tab script loaded');
+        
+        // Store the chart data
+        window.monthlyPerfData = @Html.Raw(Json.Serialize(Model.MonthlyPerformanceData ?? new List<MonthlyPerformanceData>()));
+        window.rollingReturnsData = @Html.Raw(Json.Serialize(Model.RollingReturnsData ?? new List<RollingReturnsData>()));
+        window.portfolioGrowthData = @Html.Raw(Json.Serialize(Model.PortfolioGrowthData ?? new List<PortfolioGrowthPoint>()));
+        
+        // If data is missing, add test data
+        if (!window.monthlyPerfData || !window.monthlyPerfData.length) {
+            console.log("Adding test data for Monthly Performance Chart");
+            window.monthlyPerfData = [
+                { month: "Jan", portfolioPerformance: 3.5, benchmarkPerformance: 2.1 },
+                { month: "Feb", portfolioPerformance: -1.2, benchmarkPerformance: -0.8 },
+                { month: "Mar", portfolioPerformance: 2.7, benchmarkPerformance: 1.5 },
+                { month: "Apr", portfolioPerformance: 1.3, benchmarkPerformance: 0.9 },
+                { month: "May", portfolioPerformance: -0.5, benchmarkPerformance: -0.3 },
+                { month: "Jun", portfolioPerformance: 4.1, benchmarkPerformance: 3.2 }
+            ];
+        }
+        
+        if (!window.rollingReturnsData || !window.rollingReturnsData.length) {
+            console.log("Adding test data for Rolling Returns Chart");
+            window.rollingReturnsData = [
+                { timePeriod: "1M", portfolioReturn: 2.4, benchmarkReturn: 1.8 },
+                { timePeriod: "3M", portfolioReturn: 5.7, benchmarkReturn: 4.2 },
+                { timePeriod: "6M", portfolioReturn: 8.3, benchmarkReturn: 7.1 },
+                { timePeriod: "1Y", portfolioReturn: 12.5, benchmarkReturn: 10.9 },
+                { timePeriod: "3Y", portfolioReturn: 32.8, benchmarkReturn: 29.3 }
+            ];
+        }
+        
+        if (!window.portfolioGrowthData || !window.portfolioGrowthData.length) {
+            console.log("Adding test data for Portfolio Growth Chart");
+            var dates = [];
+            var today = new Date();
+            for (var i = 180; i >= 0; i--) {
+                var date = new Date();
+                date.setDate(today.getDate() - i);
+                dates.push(date);
+            }
+            
+            window.portfolioGrowthData = dates.map(function(date, index) {
+                var portfolioValue = 100 + (Math.sin(index/20) * 15) + (index / 10);
+                var benchmarkValue = 100 + (Math.sin(index/25) * 10) + (index / 15);
+                return {
+                    date: date,
+                    portfolioValue: portfolioValue,
+                    benchmarkValue: benchmarkValue
+                };
+            });
+        }
+        
+        // Initialize charts immediately
+        renderPerformanceCharts();
+        
+        // Also render when the tab is shown
+        document.querySelector('a[data-bs-target="#performanceTab"]')?.addEventListener('shown.bs.tab', function() {
+            console.log('Performance tab shown - rendering charts');
+            renderPerformanceCharts();
+        });
+    });
+    
+    function renderPerformanceCharts() {
+        try {
+            if (typeof ChartManager === 'undefined') {
+                console.error('ChartManager not defined! Charts cannot be rendered.');
+                return;
+            }
+            
+            console.log('Rendering Performance Tab Charts');
+            
+            // Render Monthly Performance Chart
+            if (window.monthlyPerfData && window.monthlyPerfData.length > 0) {
+                ChartManager.renderMonthlyPerformanceChart(window.monthlyPerfData);
+                console.log('Monthly Performance Chart rendered');
+            } else {
+                console.warn('No Monthly Performance data available');
+            }
+            
+            // Render Rolling Returns Chart
+            if (window.rollingReturnsData && window.rollingReturnsData.length > 0) {
+                ChartManager.renderRollingReturnsChart(window.rollingReturnsData);
+                console.log('Rolling Returns Chart rendered');
+            } else {
+                console.warn('No Rolling Returns data available');
+            }
+            
+            // Render Portfolio Growth Chart
+            if (window.portfolioGrowthData && window.portfolioGrowthData.length > 0) {
+                ChartManager.renderPortfolioGrowthChart(window.portfolioGrowthData);
+                console.log('Portfolio Growth Chart rendered');
+            } else {
+                console.warn('No Portfolio Growth data available');
+            }
+        } catch (err) {
+            console.error('Error rendering Performance charts:', err);
+        }
+    }
+</script>

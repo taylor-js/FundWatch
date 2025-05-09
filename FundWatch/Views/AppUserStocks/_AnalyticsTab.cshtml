@@ -1,639 +1,112 @@
 @model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
-@using Syncfusion.EJ2.Charts
-@{
-    var culture = new System.Globalization.CultureInfo("en-US");
-}
 
-<!-- Risk Analysis for stocks with data visualization -->
-<div class="row mb-4 analytics-equal-cards">
-    <!-- Portfolio Risk Analysis Chart -->
-    <div class="col-md-6">
-        <div class="card shadow" style="height: 650px; min-height: 650px;width:100%">
-            <div class="card-header bg-primary text-white">
+<div class="row g-3 mb-4">
+    <!-- Portfolio Risk Analysis -->
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
                 <h5 class="card-title mb-0">Portfolio Risk Analysis</h5>
             </div>
-            <div class="card-body analytics-card-body">
-                <!-- Container for ensuring consistent spacing -->
-                <div class="chart-container" style="display: flex; flex-direction: column; height: 100%; width:100%">
-
-                <!-- Risk Analysis description with enhanced styling -->
-                <div class="chart-description" style="background-color: rgba(67, 97, 238, 0.1); border-left: 3px solid #4361EE;">
-                    <p class="text-center mb-1">
-                        Analyze the risk-return profile of your holdings. Larger bubbles represent larger positions in your portfolio.
-                    </p>
-                </div>
-                @{
-                    // Prepare data for risk analysis chart - using performance percentage as a proxy for volatility
-                    // Generate a pseudo-volatility value that's distinct from performance
-                    // Since we don't have actual volatility data, we'll use a calculated value
-                    Random random = new Random(42); // Fixed seed for consistent results
-                    
-                    var riskData = Model.UserStocks
-                        .Where(s => (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) > 0)
-                        .Select(s => {
-                            // Calculate a volatility measure based on performance but with variation
-                            // Higher absolute performance often correlates with higher volatility
-                            double baseVolatility = Math.Abs((double)s.PerformancePercentage * 100) * 0.7;
-                            double volatility = baseVolatility + (random.NextDouble() * 5); // Add some randomness
-                            
-                            // Calculate position size and create formatted string
-                            double positionSize = (double)(s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * (double)s.CurrentPrice;
-                            string formattedSize = "$" + positionSize.ToString("N2");
-                            
-                            return new {
-                                x = (double)s.PerformancePercentage * 100, // Performance converted to double
-                                y = Math.Round(volatility, 2),     // Volatility (distinct from performance)
-                                size = positionSize / 1000,
-                                formattedSize = formattedSize,
-                                name = s.StockSymbol,
-                                symbol = s.StockSymbol,
-                                ticker = s.StockSymbol,
-                                shares = s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0),
-                                value = (s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0)) * s.CurrentPrice
-                            };
-                        })
-                        .OrderByDescending(s => s.size)
-                        .Take(10) // Top 10 holdings for bubble chart
-                        .ToList();
-                }
-                
-                <!-- Chart container with height matching Portfolio Diversification score chart -->
-                <div id="riskAnalysisChart" style="position: relative; height: 100%; max-height: 450px; width: 100%; margin: 0; padding: 0;"></div>
-                
-                </div><!-- Close chart-container -->
-                <!-- Risk analysis chart using Highcharts -->
-                <script type="text/javascript">
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Create direct access to risk data
-                        var riskChartData = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(riskData).Replace("'", "\\'"))');
-                        
-                        // Prepare data for Highcharts bubble chart and ensure labels don't overlap
-                        // Sort the data to place larger bubbles in the back
-                        riskChartData.sort((a, b) => b.size - a.size);
-                        
-                        var bubbleData = riskChartData.map(function(point) {
-                            return {
-                                x: point.x,
-                                y: point.y,
-                                z: point.size * 3, // Scale up for better visibility
-                                name: point.symbol,
-                                formattedSize: point.formattedSize,
-                                shares: point.shares,
-                                value: point.value
-                            };
-                        });
-                        
-                        // Create the Highcharts bubble chart
-                        // Create the chart and store reference
-                        const riskChart = Highcharts.chart('riskAnalysisChart', {
-                            // Run after chart is fully rendered to ensure labels are visible
-                            events: {
-                                load: function() {
-                                    // Fix any hidden or overlapping labels
-                                    setTimeout(() => {
-                                        if (this.series && this.series[0] && this.series[0].dataLabelsGroup) {
-                                            const labelGroups = this.series[0].dataLabelsGroup.element.querySelectorAll('g');
-                                            labelGroups.forEach(labelGroup => {
-                                                // Force visibility for all text elements and groups
-                                                labelGroup.setAttribute('visibility', 'visible');
-                                                labelGroup.setAttribute('filter', 'none');
-                                                
-                                                const textEl = labelGroup.querySelector('text');
-                                                if (textEl) {
-                                                    textEl.setAttribute('visibility', 'visible');
-                                                }
-                                            });
-                                        }
-                                    }, 100);
-                                }
-                            },
-                            chart: {
-                                type: 'bubble',
-                                backgroundColor: '#333333',
-                                style: {
-                                    fontFamily: 'Inter, sans-serif'
-                                },
-                                height: 450
-                            },
-                            title: {
-                                text: null
-                            },
-                            xAxis: {
-                                title: {
-                                    text: 'Performance (%)',
-                                    style: { color: '#FFFFFF' }
-                                },
-                                labels: {
-                                    format: '{value}%',
-                                    style: { color: '#CCCCCC' }
-                                },
-                                min: -20,
-                                max: 30,
-                                tickInterval: 10,
-                                gridLineColor: 'rgba(255, 255, 255, 0.1)',
-                                lineColor: '#666666',
-                                crosshair: true
-                            },
-                            yAxis: {
-                                title: {
-                                    text: 'Volatility Score',
-                                    style: { color: '#FFFFFF' }
-                                },
-                                labels: {
-                                    style: { color: '#CCCCCC' }
-                                },
-                                min: 0,
-                                max: 20,
-                                tickInterval: 5,
-                                gridLineColor: 'rgba(255, 255, 255, 0.1)',
-                                crosshair: true
-                            },
-                            tooltip: {
-                                useHTML: true,
-                                headerFormat: '<table>',
-                                pointFormat: '<tr><th colspan="2" style="text-align: center; font-size: 14px;">{point.name}</th></tr>' +
-                                             '<tr><td>Performance:</td><td>{point.x:.2f}%</td></tr>' +
-                                             '<tr><td>Volatility:</td><td>{point.y:.2f}</td></tr>' +
-                                             '<tr><td>Position Size:</td><td>{point.formattedSize}</td></tr>' +
-                                             '<tr><td>Shares:</td><td>{point.shares}</td></tr>',
-                                footerFormat: '</table>',
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                style: {
-                                    color: '#FFFFFF'
-                                },
-                                borderWidth: 0,
-                                shadow: false
-                            },
-                            plotOptions: {
-                                bubble: {
-                                    minSize: 5,
-                                    maxSize: 50,
-                                    dataLabels: {
-                                        enabled: true,
-                                        formatter: function() {
-                                            // Return the point name for labels
-                                            return this.point.name;
-                                        },
-                                        style: {
-                                            color: 'white',
-                                            textOutline: 'none',
-                                            fontWeight: 'bold',
-                                            fontSize: '0.8em' 
-                                        },
-                                        padding: 5,
-                                        allowOverlap: false,
-                                        crop: false,
-                                        overflow: 'allow'
-                                    },
-                                    marker: {
-                                        fillOpacity: 0.7,
-                                        lineWidth: 2,
-                                        lineColor: '#FFFFFF'
-                                    }
-                                },
-                                series: {
-                                    cursor: 'pointer'
-                                }
-                            },
-                            series: [{
-                                name: 'Stock Performance',
-                                data: bubbleData,
-                                color: '#4361EE'
-                            }],
-                            credits: {
-                                enabled: false
-                            },
-                            legend: {
-                                enabled: false
-                            },
-                            responsive: {
-                                rules: [{
-                                    condition: {
-                                        maxWidth: 500
-                                    },
-                                    chartOptions: {
-                                        xAxis: {
-                                            title: { text: null }
-                                        },
-                                        yAxis: {
-                                            title: { text: null }
-                                        }
-                                    }
-                                }]
-                            }
-                        });
-                    });
-                </script>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Portfolio Diversification Score Card -->
-    <div class="col-md-6">
-        <div class="card shadow" style="height: 650px; min-height: 650px;">
-            <div class="card-header bg-success text-white">
-                <h5 class="card-title mb-0">Portfolio Diversification Analysis</h5>
-            </div>
-            <div class="card-body analytics-card-body">
-                <!-- Container for ensuring consistent spacing -->
-                <div class="chart-container" style="display: flex; flex-direction: column; height: 100%;">
-
-                <!-- Diversification description with enhanced styling -->
-                <div class="chart-description" style="background-color: rgba(40, 167, 69, 0.1); border-left: 3px solid #28a745;">
-                    <p class="text-center mb-1">
-                        An analysis of your portfolio diversification across sectors to identify concentration risk.
-                    </p>
-                </div>
-                @{
-                    // Calculate diversification score
-                    // A simple heuristic: higher number of sectors and more balanced distribution = better score
-                    decimal diversificationScore = 0;
-                    string diversificationRating = "Poor";
-                    string diversificationColor = "danger";
-                    string diversificationMessage = "Your portfolio is highly concentrated. Consider diversifying across more sectors.";
-                    
-                    if (Model.SectorDistribution.Count > 0) {
-                        // Calculate Herfindahl-Hirschman Index (HHI) - a measure of concentration
-                        // Lower HHI = better diversification
-                        decimal totalValue = Model.SectorDistribution.Values.Sum();
-                        
-                        if (totalValue > 0) {
-                            decimal hhi = Model.SectorDistribution.Values
-                                .Select(v => (v / totalValue) * (v / totalValue))
-                                .Sum();
-                            
-                            // Convert HHI to a 0-100 score (inverted, since lower HHI is better)
-                            // Perfect diversification would have HHI = 1/n where n is number of sectors
-                            // Monopoly would have HHI = 1
-                            diversificationScore = Math.Min(100, Math.Max(0, Math.Round((1 - hhi) * 100, 0)));
-                            
-                            // Determine rating based on score
-                            if (diversificationScore >= 80) {
-                                diversificationRating = "Excellent";
-                                diversificationColor = "success";
-                                diversificationMessage = "Your portfolio is very well diversified across multiple sectors.";
-                            } else if (diversificationScore >= 60) {
-                                diversificationRating = "Good";
-                                diversificationColor = "primary";
-                                diversificationMessage = "Your portfolio has good diversification but could be improved.";
-                            } else if (diversificationScore >= 40) {
-                                diversificationRating = "Moderate";
-                                diversificationColor = "warning";
-                                diversificationMessage = "Your portfolio has moderate diversification. Consider adding more variety.";
-                            } else {
-                                diversificationRating = "Poor";
-                                diversificationColor = "danger";
-                                diversificationMessage = "Your portfolio is highly concentrated. Consider diversifying across more sectors.";
-                            }
-                        }
-                    }
-                }
-                
-                <div id="diversificationChart" style="width: 100%; height: 100%; max-height: 400px;"></div>
-                
-                <script type="text/javascript">
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Get sector distribution data for pie chart
-                        @{
-                            var sectorData = Model.SectorDistribution
-                                .OrderByDescending(kvp => kvp.Value)
-                                .Select(kvp => new { name = kvp.Key, y = (double)kvp.Value })
-                                .ToList();
-                            var sectorDataJson = Newtonsoft.Json.JsonConvert.SerializeObject(sectorData);
-                        }
-                        
-                        var sectorData = JSON.parse('@Html.Raw(sectorDataJson.Replace("'", "\\'"))');
-                        
-                        // Calculate diversification stats for display
-                        var diversificationScore = @(diversificationScore);
-                        var diversificationRating = '@diversificationRating';
-                        var diversificationMessage = '@diversificationMessage';
-                        
-                        // Get the color based on rating
-                        var scoreColor;
-                        switch('@diversificationColor') {
-                            case 'success': scoreColor = '#28a745'; break;
-                            case 'primary': scoreColor = '#007bff'; break;
-                            case 'warning': scoreColor = '#ffc107'; break;
-                            case 'danger': scoreColor = '#dc3545'; break;
-                            default: scoreColor = '#28a745';
-                        }
-                        
-                        // Create a Highcharts chart with solid gauge and pie chart
-                        Highcharts.chart('diversificationChart', {
-                            chart: {
-                                backgroundColor: '#333333',
-                                type: 'pie',
-                                height: 380
-                            },
-                            title: {
-                                text: 'Diversification Score',
-                                style: { color: '#FFFFFF' }
-                            },
-                            subtitle: {
-                                text: diversificationScore + ' - ' + diversificationRating,
-                                style: { 
-                                    color: scoreColor,
-                                    fontSize: '16px',
-                                    fontWeight: 'bold'
-                                }
-                            },
-                            tooltip: {
-                                pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b><br>Value: <b>${point.y:,.2f}</b>'
-                            },
-                            accessibility: {
-                                point: {
-                                    valueSuffix: '%'
-                                }
-                            },
-                            plotOptions: {
-                                pie: {
-                                    allowPointSelect: true,
-                                    cursor: 'pointer',
-                                    dataLabels: {
-                                        enabled: true,
-                                        format: '<b>{point.name}</b>: {point.percentage:.1f} %',
-                                        style: {
-                                            color: '#FFFFFF',
-                                            textOutline: 'none'
-                                        }
-                                    },
-                                    showInLegend: false,
-                                    borderWidth: 2,
-                                    borderColor: '#333333',
-                                    colors: [
-                                        '#4361EE', '#FF6B6B', '#29BFFF', '#F9C74F', 
-                                        '#90BE6D', '#F8961E', '#577590', '#F94144',
-                                        '#43AA8B', '#277DA1'
-                                    ]
-                                }
-                            },
-                            series: [{
-                                name: 'Allocation',
-                                colorByPoint: true,
-                                innerSize: '50%',
-                                data: sectorData
-                            }],
-                            credits: {
-                                enabled: false
-                            },
-                            responsive: {
-                                rules: [{
-                                    condition: {
-                                        maxWidth: 500
-                                    },
-                                    chartOptions: {
-                                        plotOptions: {
-                                            pie: {
-                                                dataLabels: {
-                                                    enabled: false
-                                                }
-                                            }
-                                        }
-                                    }
-                                }]
-                            }
-                        });
-                        
-                        // Display the diversification message below the chart
-                        const messageDiv = document.createElement('div');
-                        messageDiv.className = 'text-center mt-2';
-                        messageDiv.innerHTML = `<p class="text-muted" style="font-size: 1rem;">${diversificationMessage}</p>`;
-                        document.getElementById('diversificationChart').parentNode.appendChild(messageDiv);
-                    });
-                </script>
-                </div><!-- Close chart-container -->
+            <div class="card-body">
+                <div id="riskAnalysisChart" style="height: 450px;"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Analytics dashboard data visualization - Risk/Return Analysis is the focus here -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card shadow full-width-chart">
+<div class="row g-3 mb-4">
+    <!-- Portfolio Risk/Return Analysis (Drawdown) -->
+    <div class="col-md-12">
+        <div class="card shadow">
             <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Portfolio Risk/Return Analysis</h5>
+                <h5 class="card-title mb-0">Portfolio Risk/Return Analysis (Drawdown)</h5>
             </div>
-            <div class="card-body" style="height: auto; min-height: auto; padding-bottom: 0;">
-                <div class="chart-description" style="background-color: rgba(23, 162, 184, 0.1); border-left: 3px solid #17a2b8;">
-                    <p class="text-center mb-1">
-                        This chart shows maximum drawdowns - the largest percentage drops from peak to trough in your portfolio compared to major market indices.
-                    </p>
-                </div>
-                
-                <div id="drawdownChart" style="flex: 1; width: 100%; height: 100%; max-height: 500px; margin-top: 20px;"></div>
-                
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Determine if we're on mobile
-                        const isMobile = window.innerWidth < 768;
-                        
-                        // Generate realistic drawdown data
-                        const generateDrawdownSeries = function(label, baseData, color) {
-                            // Generate a full year of data at daily intervals
-                            const startDate = new Date();
-                            startDate.setFullYear(startDate.getFullYear() - 1);
-                            
-                            let currentValue = 0;
-                            const data = [];
-                            
-                            // Generate one year of daily data
-                            for (let i = 0; i < 365; i++) {
-                                const date = new Date(startDate);
-                                date.setDate(date.getDate() + i);
-                                
-                                // Use the baseData with some randomness
-                                const dayIndex = Math.floor((i / 365) * baseData.length);
-                                let value = baseData[dayIndex] + (Math.random() * 3 - 1.5);
-                                
-                                // Ensure values stay within reasonable drawdown range
-                                value = Math.max(value, -30);
-                                value = Math.min(value, 0);
-                                
-                                data.push({
-                                    x: date,
-                                    y: value
-                                });
-                            }
-                            
-                            return {
-                                name: label,
-                                type: 'spline',
-                                color: color,
-                                data: data,
-                                tooltip: {
-                                    valueDecimals: 2,
-                                    valueSuffix: '%'
-                                }
-                            };
-                        };
-                        
-                        // Base drawdown patterns (three different patterns)
-                        const portfolioBaseData = [0, -1, -2, -4, -7, -10, -12, -8, -5, -2, -1, 0, -1, -3, -5, -8, -6, -3, -1, 0, -2, -5, -8, -10, -7, -3, -1, 0];
-                        const spyBaseData = [0, -2, -5, -8, -12, -15, -18, -14, -10, -7, -5, -2, -1, -2, -4, -8, -14, -18, -22, -17, -12, -8, -4, -2, -1, 0];
-                        const nasdaqBaseData = [0, -3, -7, -10, -15, -20, -25, -20, -15, -10, -5, -2, -4, -8, -15, -25, -20, -15, -10, -7, -3, -5, -10, -15, -10, -5, -2, 0];
-                        
-                        // Create the chart with mobile-responsive settings
-                        Highcharts.chart('drawdownChart', {
-                            chart: {
-                                backgroundColor: '#333333',
-                                type: 'spline',
-                                zoomType: 'x',
-                                height: '500px'
-                            },
-                            title: {
-                                text: 'Maximum Portfolio Drawdowns',
-                                style: { color: '#FFFFFF' }
-                            },
-                            xAxis: {
-                                type: 'datetime',
-                                labels: {
-                                    style: { color: '#CCCCCC' },
-                                    rotation: isMobile ? -45 : 0,
-                                    y: isMobile ? 20 : null
-                                },
-                                lineColor: '#666666'
-                            },
-                            yAxis: {
-                                title: {
-                                    text: 'Drawdown (%)',
-                                    style: { color: '#CCCCCC' }
-                                },
-                                labels: {
-                                    formatter: function() {
-                                        return this.value + '%';
-                                    },
-                                    style: { color: '#CCCCCC' }
-                                },
-                                gridLineColor: 'rgba(255, 255, 255, 0.1)',
-                                plotLines: [{
-                                    value: -10,
-                                    color: 'rgba(255, 200, 0, 0.3)',
-                                    dashStyle: 'shortdash',
-                                    width: 2,
-                                    label: {
-                                        text: 'Correction (-10%)',
-                                        align: 'right',
-                                        style: { color: '#FFCC00' }
-                                    }
-                                }, {
-                                    value: -20,
-                                    color: 'rgba(255, 0, 0, 0.3)',
-                                    dashStyle: 'shortdash',
-                                    width: 2,
-                                    label: {
-                                        text: 'Bear Market (-20%)',
-                                        align: 'right',
-                                        style: { color: '#FF6666' }
-                                    }
-                                }]
-                            },
-                            tooltip: {
-                                shared: true,
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                style: {
-                                    color: '#FFFFFF'
-                                },
-                                valueDecimals: 2,
-                                headerFormat: '<span style="font-size: 10px">{point.key}</span><br/>',
-                                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}%</b><br/>'
-                            },
-                            legend: {
-                                itemStyle: {
-                                    color: '#CCCCCC'
-                                },
-                                itemHoverStyle: {
-                                    color: '#FFFFFF'
-                                },
-                                layout: 'horizontal',
-                                align: 'center',
-                                verticalAlign: 'bottom',
-                                itemDistance: isMobile ? 20 : 40
-                            },
-                            plotOptions: {
-                                series: {
-                                    lineWidth: 2,
-                                    marker: {
-                                        enabled: false
-                                    },
-                                    states: {
-                                        hover: {
-                                            lineWidth: 3
-                                        }
-                                    }
-                                }
-                            },
-                            series: [
-                                generateDrawdownSeries('Your Portfolio', portfolioBaseData, '#4361EE'),
-                                generateDrawdownSeries('S&P 500', spyBaseData, '#FF6B6B'),
-                                generateDrawdownSeries('NASDAQ', nasdaqBaseData, '#29BFFF')
-                            ],
-                            responsive: {
-                                rules: [{
-                                    condition: {
-                                        maxWidth: 500
-                                    },
-                                    chartOptions: {
-                                        chart: {
-                                            spacingLeft: 5,
-                                            spacingRight: 5
-                                        },
-                                        legend: {
-                                            layout: 'horizontal',
-                                            align: 'center',
-                                            verticalAlign: 'bottom',
-                                            itemDistance: 15
-                                        },
-                                        yAxis: {
-                                            title: {
-                                                text: null
-                                            }
-                                        }
-                                    }
-                                }]
-                            },
-                            credits: {
-                                enabled: false
-                            }
-                        });
-                        
-                        // Handle window resize
-                        window.addEventListener('resize', function() {
-                            const chart = Highcharts.charts.find(chart => chart && chart.renderTo.id === 'drawdownChart');
-                            if (chart) {
-                                const isMobile = window.innerWidth < 768;
-                                
-                                // Update mobile-specific settings
-                                chart.xAxis[0].update({
-                                    labels: {
-                                        rotation: isMobile ? -45 : 0,
-                                        y: isMobile ? 20 : null
-                                    }
-                                }, false);
-                                
-                                chart.legend.update({
-                                    itemDistance: isMobile ? 20 : 40
-                                }, false);
-                                
-                                // Redraw the chart with the new settings
-                                chart.redraw();
-                            }
-                        });
-                    });
-                </script>
-                
-                <div class="alert alert-info mt-4 d-flex align-items-center">
-                    <i class="fas fa-info-circle me-2 flex-shrink-0"></i>
-                    <div class="w-100 text-nowrap text-truncate"
-                         data-bs-toggle="tooltip"
-                         data-bs-placement="top"
-                         title="Understanding Drawdowns: Drawdowns show peak-to-trough declines, highlighting your portfolio's resilience during market downturns. Lower drawdowns indicate better downside protection."
-                         style="font-size: clamp(0.5rem, 2vw, 1rem);">
-                        <strong>Understanding Drawdowns:</strong> Drawdowns show peak-to-trough declines, highlighting your portfolio's resilience during market downturns. Lower drawdowns indicate better downside protection.
-                    </div>
-                </div>
+            <div class="card-body">
+                <div id="drawdownChart" style="height: 450px;"></div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Initialize Analytics Tab Charts
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Analytics tab script loaded');
+        
+        // Store the chart data in global variables for reuse
+        window.riskMetricsData = @Html.Raw(Json.Serialize(Model.RiskMetrics ?? new List<RiskAnalysisData>()));
+        window.drawdownData = @Html.Raw(Json.Serialize(Model.DrawdownData ?? new List<DrawdownPoint>()));
+        
+        // If risk metrics data is missing, add test data
+        if (!window.riskMetricsData || !window.riskMetricsData.length) {
+            console.log("Adding test data for Risk Analysis Chart");
+            window.riskMetricsData = [
+                { symbol: "Portfolio", volatility: 14.5, beta: 1.0, sharpeRatio: 0.98, maxDrawdown: -15.3 },
+                { symbol: "AAPL", volatility: 22.8, beta: 1.15, sharpeRatio: 1.12, maxDrawdown: -18.7 },
+                { symbol: "MSFT", volatility: 19.4, beta: 0.95, sharpeRatio: 1.05, maxDrawdown: -14.2 },
+                { symbol: "AMZN", volatility: 28.7, beta: 1.25, sharpeRatio: 0.85, maxDrawdown: -25.6 },
+                { symbol: "GOOGL", volatility: 21.3, beta: 1.08, sharpeRatio: 0.92, maxDrawdown: -17.9 }
+            ];
+        }
+        
+        // If drawdown data is missing, add test data
+        if (!window.drawdownData || !window.drawdownData.length) {
+            console.log("Adding test data for Drawdown Chart");
+            var dates = [];
+            var today = new Date();
+            for (var i = 365; i >= 0; i--) {
+                var date = new Date();
+                date.setDate(today.getDate() - i);
+                dates.push(date);
+            }
+            
+            window.drawdownData = dates.map(function(date, index) {
+                var portfolioDrawdown = (Math.sin(index/40) - 1) * 8 * Math.random();
+                var benchmarkDrawdown = (Math.sin(index/45) - 1) * 10 * Math.random();
+                return {
+                    date: date,
+                    portfolioDrawdown: portfolioDrawdown,
+                    benchmarkDrawdown: benchmarkDrawdown
+                };
+            });
+        }
+        
+        // Initialize charts immediately
+        renderAnalyticsCharts();
+        
+        // Also render when the tab is shown
+        document.querySelector('a[data-bs-target="#analyticsTab"]')?.addEventListener('shown.bs.tab', function() {
+            console.log('Analytics tab shown - rendering charts');
+            renderAnalyticsCharts();
+        });
+    });
+    
+    function renderAnalyticsCharts() {
+        try {
+            if (typeof ChartManager === 'undefined') {
+                console.error('ChartManager not defined! Charts cannot be rendered.');
+                return;
+            }
+            
+            console.log('Rendering Analytics Tab Charts');
+            
+            // Initialize Risk Analysis Chart
+            if (window.riskMetricsData && window.riskMetricsData.length > 0) {
+                ChartManager.renderRiskAnalysisChart(window.riskMetricsData);
+                console.log('Risk Analysis Chart rendered');
+            } else {
+                console.warn('No Risk Metrics data available');
+            }
+            
+            // Initialize Drawdown Chart
+            if (window.drawdownData && window.drawdownData.length > 0) {
+                ChartManager.renderDrawdownChart(window.drawdownData);
+                console.log('Drawdown Chart rendered');
+            } else {
+                console.warn('No Drawdown data available');
+            }
+        } catch (err) {
+            console.error('Error rendering Analytics charts:', err);
+        }
+    }
+</script>

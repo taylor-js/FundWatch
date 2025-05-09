@@ -2,9 +2,11 @@
 @{
     // This partial view contains tab navigation for the dashboard
     var portfolioValue = Model.PortfolioMetrics.TotalValue;
-    var portfolioGain = Model.PortfolioMetrics.TotalGain;
-    var portfolioGainPercentage = Model.PortfolioMetrics.TotalPerformance;
+    var portfolioTotalCost = Model.PortfolioMetrics.TotalCost;
     var portfolioStockCount = Model.UserStocks.Count;
+    var averageCostPerStock = portfolioStockCount > 0 ? portfolioTotalCost / portfolioStockCount : 0;
+    var bestStock = Model.PortfolioMetrics.BestPerformingStock;
+    var worstStock = Model.PortfolioMetrics.WorstPerformingStock;
 }
 
 <!-- Dashboard Hero Section -->
@@ -23,16 +25,12 @@
                             <div class="label">Portfolio Value</div>
                         </div>
                         <div class="dashboard-metric">
-                            <div class="value @(portfolioGain >= 0 ? "text-success" : "text-danger")">
-                                @(portfolioGain >= 0 ? "+" : "")@portfolioGain.ToString("C0")
-                            </div>
-                            <div class="label">Total Gain/Loss</div>
+                            <div class="value">@portfolioTotalCost.ToString("C0")</div>
+                            <div class="label">Total Cost Basis</div>
                         </div>
                         <div class="dashboard-metric">
-                            <div class="value @(portfolioGainPercentage >= 0 ? "text-success" : "text-danger")">
-                                @(portfolioGainPercentage >= 0 ? "+" : "")@portfolioGainPercentage.ToString("0.00")%
-                            </div>
-                            <div class="label">Percentage</div>
+                            <div class="value">@averageCostPerStock.ToString("C0")</div>
+                            <div class="label">Avg Cost Per Stock</div>
                         </div>
                         <div class="dashboard-metric">
                             <div class="value">@portfolioStockCount</div>
