@@ -511,19 +511,6 @@ button[type="submit"] {
 }
 
 /* ============================
-   SYNCFUSION DATEPICKER FIX
-   ============================ */
-/* Fix for datepicker popup positioning */
-.e-datepicker.e-popup-wrapper.e-popup.e-popup-open {
-    position: absolute !important;
-    z-index: 1050 !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    transform: none !important;
-}
-
-/* ============================
    RESPONSIVE ADJUSTMENTS
    ============================ */
 @media (max-width: 991.98px) {

@@ -70,12 +70,19 @@
 
                 <div class="row g-2">
                     <div class="col-md-6 mb-2">
+                        @{
+                            var fiveYearsAgo = DateTime.Today.AddYears(-5);
+                        }
                         @(Html.EJS().DatePicker("DatePurchased")
                             .Format("MM/dd/yyyy")
                             .FloatLabelType(FloatLabelType.Always)
                             .Placeholder("Purchase Date")
                             .Width("100%")
-                            .Value(Model.DatePurchased)
+                            .ShowClearButton(true)
+                            .OpenOnFocus(false)
+                            .Start(CalendarView.Year)
+                            .Depth(CalendarView.Month)
+                            .Value(Model.DatePurchased != default(DateTime) ? Model.DatePurchased : fiveYearsAgo)
                             .Render())
                         <span asp-validation-for="DatePurchased" class="text-danger"></span>
                     </div>
@@ -100,7 +107,11 @@
                             .FloatLabelType(FloatLabelType.Always)
                             .Placeholder("Sale Date (Optional)")
                             .Width("100%")
-                            .Value(Model.DateSold)
+                            .ShowClearButton(true)
+                            .OpenOnFocus(false)
+                            .Start(CalendarView.Year)
+                            .Depth(CalendarView.Month)
+                            .Value(Model.DateSold.HasValue ? Model.DateSold : DateTime.Today)
                             .Render())
                         <span asp-validation-for="DateSold" class="text-danger"></span>
                     </div>
@@ -321,39 +332,216 @@
                 
                 function checkAllPricesLoaded() {
                     if (purchasePriceLoaded && currentPriceLoaded) {
-                        // Re-enable submit button only when both prices are loaded
-                        submitButton.disabled = false;
+                        const stockSelected = dropdownList.value && dropdownList.value.trim() !== "";
+                        
+                        // Only validate purchase price if a stock is selected and API requests completed
+                        if (stockSelected && datePurchasedPicker.value && purchasePriceInput.value <= 0) {
+                            // Mark purchase date as invalid if price is zero
+                            datePurchasedPicker.element.classList.add('is-invalid');
+                            const validationSpan = document.querySelector('span[data-valmsg-for="DatePurchased"]');
+                            if (validationSpan) {
+                                validationSpan.textContent = "No data available. Select a trading date.";
+                                validationSpan.style.display = "block";
+                            }
+                            submitButton.disabled = true;
+                        } else if (datePurchasedPicker.value && purchasePriceInput.value > 0) {
+                            // Clear validation if price is valid
+                            const validationSpan = document.querySelector('span[data-valmsg-for="DatePurchased"]');
+                            if (validationSpan && validationSpan.textContent.includes("No data available")) {
+                                validationSpan.textContent = "";
+                                validationSpan.style.display = "none";
+                                datePurchasedPicker.element.classList.remove('is-invalid');
+                            }
+                        }
+                        
+                        // Only validate sale/current price if a stock is selected and API requests completed
+                        if (stockSelected && dateSoldPicker.value && currentPriceInput.value <= 0) {
+                            // Mark sale date as invalid if price is zero
+                            dateSoldPicker.element.classList.add('is-invalid');
+                            const validationSpan = document.querySelector('span[data-valmsg-for="DateSold"]');
+                            if (validationSpan) {
+                                validationSpan.textContent = "No data available. Select a trading date.";
+                                validationSpan.style.display = "block";
+                            }
+                            submitButton.disabled = true;
+                        } else if (dateSoldPicker.value && currentPriceInput.value > 0) {
+                            // Clear validation if price is valid
+                            const validationSpan = document.querySelector('span[data-valmsg-for="DateSold"]');
+                            if (validationSpan && validationSpan.textContent.includes("No data available")) {
+                                validationSpan.textContent = "";
+                                validationSpan.style.display = "none";
+                                dateSoldPicker.element.classList.remove('is-invalid');
+                            }
+                        }
+                        
+                        // Determine if submit button should be enabled
+                        if (stockSelected) {
+                            // If stock is selected, both prices must be valid
+                            if (purchasePriceInput.value > 0 && 
+                                (dateSoldPicker.value ? currentPriceInput.value > 0 : true)) {
+                                submitButton.disabled = false;
+                            }
+                        } else {
+                            // If no stock selected yet, don't show price validation errors
+                            submitButton.disabled = true;
+                        }
                     }
                 }
             }
 
             // This will be replaced by the stock existence check
 
-            // Date change handlers
-            datePurchasedPicker.change = function () {
+            // Date change handlers with mobile safeguards
+            datePurchasedPicker.change = function (e) {
+                // Prevent default form behavior on mobile to avoid resets
+                if (e && e.event) {
+                    e.event.preventDefault();
+                    e.event.stopPropagation();
+                }
+                
+                // Store the value immediately in localStorage as a backup
+                try {
+                    const formBackup = JSON.parse(localStorage.getItem('fundWatchFormData') || '{}');
+                    formBackup.datePurchased = datePurchasedPicker.value ? datePurchasedPicker.value.toISOString() : null;
+                    localStorage.setItem('fundWatchFormData', JSON.stringify(formBackup));
+                } catch (error) {
+                    console.warn('Could not save date to localStorage:', error);
+                }
+                
                 validateDates();
-                updatePrices();
+                
+                // Use setTimeout to ensure the UI updates before making API calls
+                setTimeout(() => {
+                    updatePrices();
+                }, 50);
             };
 
-            dateSoldPicker.change = function () {
+            dateSoldPicker.change = function (e) {
+                // Prevent default form behavior on mobile to avoid resets
+                if (e && e.event) {
+                    e.event.preventDefault();
+                    e.event.stopPropagation();
+                }
+                
+                // Store the value immediately in localStorage as a backup
+                try {
+                    const formBackup = JSON.parse(localStorage.getItem('fundWatchFormData') || '{}');
+                    formBackup.dateSold = dateSoldPicker.value ? dateSoldPicker.value.toISOString() : null;
+                    localStorage.setItem('fundWatchFormData', JSON.stringify(formBackup));
+                } catch (error) {
+                    console.warn('Could not save date to localStorage:', error);
+                }
+                
                 validateDates();
-                updatePrices();
-                validateShares(); // Also validate shares when date sold changes
+                
+                // Use setTimeout to ensure the UI updates before making API calls
+                setTimeout(() => {
+                    updatePrices();
+                    validateShares(); // Also validate shares when date sold changes
+                }, 50);
             };
 
             function validateDates() {
+                // Set the date range constraints for Polygon.io API (5 years maximum)
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+                
+                // Calculate date 5 years ago
+                const fiveYearsAgo = new Date();
+                fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+                fiveYearsAgo.setHours(0, 0, 0, 0);
+                
+                // Use stock first trading date if available, otherwise use 5 years ago
+                const minDate = stockFirstTradingDate || fiveYearsAgo;
+                
+                // Set max/min dates for both pickers
+                datePurchasedPicker.max = today;
+                datePurchasedPicker.min = minDate;
+                dateSoldPicker.max = today;
+                
+                // Clear validation state
+                let purchaseDateValid = true;
+                let saleDateValid = true;
+                
+                // Validate purchase date against min date limit
+                if (datePurchasedPicker.value && datePurchasedPicker.value < minDate) {
+                    // Visual indication of invalid date
+                    datePurchasedPicker.element.classList.add('is-invalid');
+                    const validationSpan = document.querySelector('span[data-valmsg-for="DatePurchased"]');
+                    if (validationSpan) {
+                        validationSpan.textContent = "Date must be within the last 5 years due to API limitations";
+                        validationSpan.style.display = "block";
+                    }
+                    purchaseDateValid = false;
+                } else {
+                    datePurchasedPicker.element.classList.remove('is-invalid');
+                    const validationSpan = document.querySelector('span[data-valmsg-for="DatePurchased"]');
+                    if (validationSpan && validationSpan.textContent.includes("5 years")) {
+                        validationSpan.textContent = "";
+                        validationSpan.style.display = "none";
+                    }
+                }
+                
+                // If purchase date is set, update sale date constraints
                 if (datePurchasedPicker.value) {
                     dateSoldPicker.min = datePurchasedPicker.value;
+                    // Clear sale date if it's before purchase date
                     if (dateSoldPicker.value && dateSoldPicker.value < datePurchasedPicker.value) {
                         dateSoldPicker.value = null;
                         currentPriceInput.value = 0;
                     }
+                } else {
+                    dateSoldPicker.min = minDate;
                 }
-
-                const today = new Date();
-                today.setHours(23, 59, 59, 999);
-                datePurchasedPicker.max = today;
-                dateSoldPicker.max = today;
+                
+                // Validate sale date against min date limit
+                if (dateSoldPicker.value && dateSoldPicker.value < minDate) {
+                    // Visual indication of invalid date
+                    dateSoldPicker.element.classList.add('is-invalid');
+                    const validationSpan = document.querySelector('span[data-valmsg-for="DateSold"]');
+                    if (validationSpan) {
+                        validationSpan.textContent = "Date must be within the last 5 years due to API limitations";
+                        validationSpan.style.display = "block";
+                    }
+                    saleDateValid = false;
+                } else {
+                    dateSoldPicker.element.classList.remove('is-invalid');
+                    const validationSpan = document.querySelector('span[data-valmsg-for="DateSold"]');
+                    if (validationSpan && validationSpan.textContent.includes("5 years")) {
+                        validationSpan.textContent = "";
+                        validationSpan.style.display = "none";
+                    }
+                }
+                
+                // Only validate price data if a stock is selected
+                const stockSelected = dropdownList.value && dropdownList.value.trim() !== "";
+                
+                // Check if price data exists for the purchase date
+                if (stockSelected && purchasePriceInput.value <= 0 && datePurchasedPicker.value) {
+                    datePurchasedPicker.element.classList.add('is-invalid');
+                    const validationSpan = document.querySelector('span[data-valmsg-for="DatePurchased"]');
+                    if (validationSpan) {
+                        validationSpan.textContent = "No data available. Select a trading date.";
+                        validationSpan.style.display = "block";
+                    }
+                    purchaseDateValid = false;
+                }
+                
+                // Check if price data exists for the sale date
+                if (stockSelected && currentPriceInput.value <= 0 && dateSoldPicker.value) {
+                    dateSoldPicker.element.classList.add('is-invalid');
+                    const validationSpan = document.querySelector('span[data-valmsg-for="DateSold"]');
+                    if (validationSpan) {
+                        validationSpan.textContent = "No data available. Select a trading date.";
+                        validationSpan.style.display = "block";
+                    }
+                    saleDateValid = false;
+                }
+                
+                // Disable submit button if dates are invalid
+                if (!purchaseDateValid || !saleDateValid) {
+                    submitButton.disabled = true;
+                }
             }
             
             // Track API requests to prevent premature form submission
@@ -397,9 +585,51 @@
                 }
             }
             
+            // Store first available trading date for the current stock
+            let stockFirstTradingDate = null;
+            
+            // Function to check the first available trading date for a stock
+            function checkFirstTradingDate(symbol) {
+                if (!symbol) return;
+                
+                // First try to get the earliest price in the 5-year range
+                const fiveYearsAgo = new Date();
+                fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+                const fiveYearsAgoStr = moment(fiveYearsAgo).format('YYYY-MM-DD');
+                
+                fetch(`/AppUserStocks/GetHistoricalPrice?stockSymbol=${encodeURIComponent(symbol)}&date=${fiveYearsAgoStr}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.price > 0) {
+                            // Data available at the 5-year mark
+                            stockFirstTradingDate = fiveYearsAgo;
+                            
+                            // Update the datepicker min dates
+                            datePurchasedPicker.min = fiveYearsAgo;
+                            dateSoldPicker.min = fiveYearsAgo;
+                            
+                            console.log(`${symbol} has data available for the full 5-year range`);
+                        } else {
+                            // Need to search for the first available date
+                            console.log(`${symbol} does not have data at the 5-year mark, searching for IPO date...`);
+                            // Search for first available trading date using a binary search approach
+                            // Note: This would typically call a backend API that returns the IPO date
+                            // For now, we'll keep using the 5-year limit but flag this as something to improve
+                            datePurchasedPicker.element.title = "This stock may have limited historical data. Select a date when the stock was actively trading.";
+                            dateSoldPicker.element.title = "This stock may have limited historical data. Select a date when the stock was actively trading.";
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking first trading date:', error);
+                    });
+            }
+            
             // Check if stock already exists for this user
             dropdownList.change = function (e) {
                 if (e.value) {
+                    // Reset stored first trading date
+                    stockFirstTradingDate = null;
+                    
                     // Check if stock exists
                     fetch(`/AppUserStocks/CheckStockExists?stockSymbol=${encodeURIComponent(e.value)}`)
                         .then(response => response.json())
@@ -410,6 +640,11 @@
                                     return;
                                 }
                             }
+                            
+                            // Check when this stock started trading (IPO date or first available data)
+                            checkFirstTradingDate(e.value);
+                            
+                            // Update prices based on current date selections
                             updatePrices();
                         })
                         .catch(error => {
@@ -421,8 +656,58 @@
                 }
             };
             
-            // Prevent form submission while API requests are in progress
+            // Prevent form submission while API requests are in progress or if dates are invalid
             document.querySelector('form').addEventListener('submit', function(e) {
+                // Calculate the 5-year limit for date validation
+                const today = new Date();
+                const fiveYearsAgo = new Date();
+                fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+                fiveYearsAgo.setHours(0, 0, 0, 0);
+                
+                // Validate purchase date is within 5-year range
+                if (datePurchasedPicker.value && datePurchasedPicker.value < fiveYearsAgo) {
+                    e.preventDefault();
+                    alert("Purchase date cannot be older than 5 years from today due to Polygon.io API limitations. Please select a more recent date.");
+                    datePurchasedPicker.element.classList.add('is-invalid');
+                    return false;
+                } else {
+                    datePurchasedPicker.element.classList.remove('is-invalid');
+                }
+                
+                // Validate sale date is within 5-year range (if provided)
+                if (dateSoldPicker.value && dateSoldPicker.value < fiveYearsAgo) {
+                    e.preventDefault();
+                    alert("Sale date cannot be older than 5 years from today due to Polygon.io API limitations. Please select a more recent date.");
+                    dateSoldPicker.element.classList.add('is-invalid');
+                    return false;
+                } else {
+                    dateSoldPicker.element.classList.remove('is-invalid');
+                }
+                
+                // Only validate prices if a stock is selected
+                if (dropdownList.value && dropdownList.value.trim() !== "") {
+                    // Validate that purchase price is available for the selected date
+                    if (purchasePriceInput.value <= 0) {
+                        e.preventDefault();
+                        alert("No data available for purchase date. Select a date when the stock was traded.");
+                        datePurchasedPicker.element.classList.add('is-invalid');
+                        return false;
+                    }
+                    
+                    // Validate that current/sale price is available for the selected date (if sale date is provided)
+                    if (dateSoldPicker.value && currentPriceInput.value <= 0) {
+                        e.preventDefault();
+                        alert("No data available for sale date. Select a date when the stock was traded.");
+                        dateSoldPicker.element.classList.add('is-invalid');
+                        return false;
+                    }
+                } else {
+                    // If no stock is selected, don't allow form submission
+                    e.preventDefault();
+                    alert("Please select a stock symbol before submitting.");
+                    return false;
+                }
+                
                 // First check if shares purchased equals shares sold
                 if (sharesSoldInput.value && sharesPurchasedInput.value && 
                     sharesSoldInput.value === sharesPurchasedInput.value) {
@@ -431,14 +716,123 @@
                     return false;
                 }
                 
+                // Store form data in local storage before submission for potential recovery
+                const formData = {
+                    stockSymbol: dropdownList.value,
+                    numberOfSharesPurchased: sharesPurchasedInput.value,
+                    numberOfSharesSold: sharesSoldInput.value,
+                    purchasePrice: purchasePriceInput.value,
+                    currentPrice: currentPriceInput.value,
+                    datePurchased: datePurchasedPicker.value ? datePurchasedPicker.value.toISOString() : null,
+                    dateSold: dateSoldPicker.value ? dateSoldPicker.value.toISOString() : null
+                };
+                
+                try {
+                    localStorage.setItem('fundWatchFormData', JSON.stringify(formData));
+                } catch (error) {
+                    console.warn('Could not save form data to localStorage:', error);
+                }
+                
                 if (pendingRequests > 0) {
                     e.preventDefault();
                     formSubmitted = true;
                     return false;
                 }
+                
                 return true;
             });
 
+            // Restore form data from localStorage if available (helps with mobile issues)
+            function tryRestoreFormData() {
+                try {
+                    const savedData = localStorage.getItem('fundWatchFormData');
+                    if (savedData && !dropdownList.value) {
+                        const formData = JSON.parse(savedData);
+                        
+                        // Only restore if we don't already have values
+                        if (formData.stockSymbol && !dropdownList.value) {
+                            dropdownList.value = formData.stockSymbol;
+                            // Try to find display text for the symbol
+                            fetch(`/AppUserStocks/SearchStocks?term=${encodeURIComponent(formData.stockSymbol)}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success && Array.isArray(data.stocks) && data.stocks.length > 0) {
+                                        const stock = data.stocks.find(s => s.symbol === formData.stockSymbol);
+                                        if (stock) {
+                                            let displayText = stock.symbol;
+                                            if (stock.name) {
+                                                displayText += " - " + stock.name;
+                                            }
+                                            dropdownList.text = displayText;
+                                        }
+                                    }
+                                });
+                        }
+                        
+                        if (formData.numberOfSharesPurchased) {
+                            sharesPurchasedInput.value = formData.numberOfSharesPurchased;
+                        }
+                        
+                        if (formData.numberOfSharesSold) {
+                            sharesSoldInput.value = formData.numberOfSharesSold;
+                        }
+                        
+                        if (formData.datePurchased) {
+                            datePurchasedPicker.value = new Date(formData.datePurchased);
+                        }
+                        
+                        if (formData.dateSold) {
+                            dateSoldPicker.value = new Date(formData.dateSold);
+                        }
+                        
+                        validateDates();
+                        updatePrices();
+                        
+                        console.log("Form data restored from local storage");
+                    }
+                } catch (error) {
+                    console.warn('Error restoring form data:', error);
+                }
+            }
+            
+            // Handle mobile-specific issues
+            let isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                // Use touch events for better mobile handling
+                const form = document.querySelector('form');
+                form.addEventListener('touchend', function(e) {
+                    // Prevent datepicker from triggering form reset on mobile
+                    if (e.target.closest('.e-datepicker, .e-calendar')) {
+                        e.stopPropagation();
+                    }
+                }, true);
+                
+                // Add additional mobile-specific datepicker configuration
+                datePurchasedPicker.showTodayButton = true;
+                dateSoldPicker.showTodayButton = true;
+                
+                // Ensure proper display of calendar on mobile
+                datePurchasedPicker.zIndex = 2000;
+                dateSoldPicker.zIndex = 2000;
+            }
+            
+            // Custom date navigation helpers for both pickers
+            function setupDatePickerNavigation(picker) {
+                picker.renderDayCell = function(args) {
+                    // Add visual indicator for dates within Polygon API range
+                    const fiveYearsAgo = new Date();
+                    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+                    
+                    if (args.date < fiveYearsAgo) {
+                        args.element.classList.add('e-disabled');
+                        args.element.title = 'Data not available (outside 5-year range)';
+                    }
+                };
+            }
+            
+            setupDatePickerNavigation(datePurchasedPicker);
+            setupDatePickerNavigation(dateSoldPicker);
+            
             // Initial validation and price update
             validateDates();
             
@@ -448,6 +842,7 @@
                     updatePrices();
                 } else {
                     submitButton.disabled = true;
+                    tryRestoreFormData();
                 }
             }, 100);
         });
