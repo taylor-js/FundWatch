@@ -124,7 +124,7 @@ void ConfigureApp(WebApplication app)
     // Route Configuration
     app.MapControllerRoute(
         name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}");
+        pattern: "{controller=AppUserStocks}/{action=Dashboard}/{id?}");
 
     app.MapControllerRoute(
         name: "AppUserStocks",
