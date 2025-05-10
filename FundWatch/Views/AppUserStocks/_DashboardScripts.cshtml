@@ -138,17 +138,77 @@
         });
     }
     
-    // Let Bootstrap handle tab switching
+    // Let Bootstrap handle tab switching and add swipe functionality
     document.addEventListener('DOMContentLoaded', function() {
         console.log("Dashboard tabs initialized");
-        
+
+        // Initialize swipeable tabs
+        const tabsContainer = document.querySelector('.swipeable-tabs');
+        if (tabsContainer) {
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+            let tabNavItems = Array.from(tabsContainer.querySelectorAll('.nav-item'));
+
+            // Touch start event
+            tabsContainer.addEventListener('touchstart', function(e) {
+                startX = e.touches[0].clientX;
+                isDragging = true;
+                tabsContainer.style.transition = 'none';
+            }, { passive: true });
+
+            // Touch move event
+            tabsContainer.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                currentX = e.touches[0].clientX;
+                const diffX = currentX - startX;
+
+                // Limit dragging to prevent overscroll
+                if (diffX > 0 && tabsContainer.scrollLeft === 0) {
+                    // At left edge, limit overscroll
+                    return;
+                } else if (diffX < 0 && (tabsContainer.scrollLeft + tabsContainer.clientWidth >= tabsContainer.scrollWidth - 5)) {
+                    // At right edge, limit overscroll
+                    return;
+                }
+
+                // Apply the scroll to follow the touch
+                tabsContainer.scrollLeft -= diffX;
+                startX = currentX;
+            }, { passive: true });
+
+            // Touch end event
+            tabsContainer.addEventListener('touchend', function() {
+                isDragging = false;
+                tabsContainer.style.transition = 'transform 0.3s ease';
+            }, { passive: true });
+
+            // Handle tab activation on touch
+            tabNavItems.forEach(item => {
+                const tabLink = item.querySelector('.nav-link');
+                tabLink.addEventListener('click', function() {
+                    // Ensure the selected tab is visible by scrolling to it
+                    const tabRect = item.getBoundingClientRect();
+                    const containerRect = tabsContainer.getBoundingClientRect();
+
+                    if (tabRect.left < containerRect.left) {
+                        // Tab is to the left of visible area
+                        tabsContainer.scrollLeft += (tabRect.left - containerRect.left) - 10;
+                    } else if (tabRect.right > containerRect.right) {
+                        // Tab is to the right of visible area
+                        tabsContainer.scrollLeft += (tabRect.right - containerRect.right) + 10;
+                    }
+                });
+            });
+        }
+
         // Prevent negative width/height on SVG elements
         // This fixes the "<svg> attribute width: A negative value is not valid" error
         const originalCreateSVG = ej.base.createSvg;
         if (originalCreateSVG) {
             ej.base.createSvg = function() {
                 const svg = originalCreateSVG.apply(this, arguments);
-                
+
                 // Override the setAttribute method to prevent negative dimensions
                 const originalSetAttribute = svg.setAttribute;
                 svg.setAttribute = function(name, value) {
@@ -158,7 +218,7 @@
                     }
                     return originalSetAttribute.call(this, name, value);
                 };
-                
+
                 return svg;
             };
         }
