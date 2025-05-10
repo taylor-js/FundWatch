@@ -1,7 +1,5 @@
 ﻿@model FundWatch.Models.ViewModels.StockDetailsViewModel
-@using Syncfusion.EJ2
-@using Syncfusion.EJ2.Charts
-@using Syncfusion.EJ2.Grids
+@using System.Text.Json
 @{
     ViewData["Title"] = "Stock Details";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -132,67 +130,17 @@
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">Price History</h5>
                 </div>
-                <div class="card-body" style="padding: 25px; display: flex; flex-direction: column; overflow: hidden; max-width: 100%;">
-                    @(Html.EJS().StockChart("priceHistoryChart")
-                        .Width("100%")
-                        .PrimaryXAxis(px => px
-                        .ValueType(Syncfusion.EJ2.Charts.ValueType.DateTime)
-                        .LabelFormat("MM/dd/yyyy")
-                        .EdgeLabelPlacement(EdgeLabelPlacement.Shift)
-                        .MajorGridLines(mg => mg.Width(0))
-                        .LineStyle(ls => ls.Width(0))
-                        )
-                        .PrimaryYAxis(py => py
-                        .LabelFormat("${value}")
-                        .RangePadding(ChartRangePadding.Auto)
-                        .LineStyle(ls => ls.Width(0))
-                        .MajorTickLines(mt => mt.Width(0))
-                        )
-                        .Series(sr =>
-                        {
-                            sr.Type(ChartSeriesType.Candle)
-                            .DataSource(Model.HistoricalData)
-                            .XName("Date")
-                            .High("High")
-                            .Low("Low")
-                            .Open("Open")
-                            .Close("Close")
-                            .Name(Model.Stock.StockSymbol)
-                            .Add();
-                        })
-                        .Tooltip(ts => ts
-                        .Enable(true)
-                        .Format("Date: ${point.x}<br>Open: ${point.open}<br>High: ${point.high}<br>Low: ${point.low}<br>Close: ${point.close}")
-                        )
-                        .Crosshair(ch => ch
-                        .Enable(true)
-                        .LineType(LineType.Vertical)
-                        )
-                        .EnablePeriodSelector(true)
-                        .EnableSelector(false)
-                        .Periods(p =>
-                        {
-                            p.Text("1M").Interval(1).IntervalType(RangeIntervalType.Months).Add();
-                            p.Text("3M").Interval(3).IntervalType(RangeIntervalType.Months).Add();
-                            p.Text("6M").Interval(6).IntervalType(RangeIntervalType.Months).Add();
-                            p.Text("1Y").Interval(1).IntervalType(RangeIntervalType.Years).Add();
-                            // Custom YTD calculation
-                            p.Text("YTD").Interval(1).IntervalType(RangeIntervalType.Years).Add(); // Will be handled in JS
-                            p.Text("5Y").Interval(5).IntervalType(RangeIntervalType.Years).Selected(true).Add();
-                            p.Text("ALL").Interval(20).IntervalType(RangeIntervalType.Years).Add();
-                        })
-                        .ZoomSettings(z => z
-                            .EnableSelectionZooming(true)
-                            .EnableScrollbar(true)
-                            .EnablePan(true)
-                            .Mode(ZoomMode.X)
-                        )
-                        .ChartArea(ca => ca.Border(b => b.Width(0)))
-                        .Margin(m => m.Bottom(30).Left(5).Right(5).Top(5))
-                        .Background("#333333") // Match card background color
-                        .Load("onDetailsChartLoad")
-                        .Render()
-                        )
+                <div class="card-body" style="padding: 25px; overflow: hidden; max-width: 100%;">
+                    <div class="btn-group period-selector mb-3" role="group" aria-label="Time period">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="1m">1M</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="3m">3M</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="6m">6M</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="1y">1Y</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="ytd">YTD</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary active" data-period="5y">5Y</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="all">ALL</button>
+                    </div>
+                    <div id="priceHistoryChart" style="height: 400px; width: 100%;"></div>
                 </div>
             </div>
         </div>
@@ -227,111 +175,267 @@
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
-        
-        // Global reference to chart
-        let detailsChart;
-        
-        // Store chart data and extremes
-        let candleData = [];
-        let allMinHigh = Number.MAX_VALUE;
-        let allMaxLow = Number.MIN_VALUE;
-        let allMinDate = null;
-        let allMaxDate = null;
-        
-        // Handle chart initialization
-        function onDetailsChartLoad(args) {
-            detailsChart = args.stockChart;
-            
-            // Get all candlestick data
-            if (detailsChart.series && detailsChart.series[0] && detailsChart.series[0].dataSource) {
-                candleData = detailsChart.series[0].dataSource;
-                
-                // Sort data by date to ensure proper limits
-                candleData.sort((a, b) => new Date(a.Date) - new Date(b.Date));
-                
-                // Find global min/max dates
-                if (candleData.length > 0) {
-                    allMinDate = new Date(candleData[0].Date);
-                    allMaxDate = new Date(candleData[candleData.length - 1].Date);
-                }
-                
-                // Find global min/max price values
-                candleData.forEach(point => {
-                    if (point.High !== undefined && point.Low !== undefined) {
-                        allMinHigh = Math.min(allMinHigh, point.Low);
-                        allMaxLow = Math.max(allMaxLow, point.High);
-                    }
-                });
+
+        // Debug and format historical data for Highcharts
+        function formatCandlestickData() {
+            let historicalData = @Json.Serialize(Model.HistoricalData);
+            console.log("Raw historical data sample:", historicalData ? historicalData.slice(0, 2) : 'none');
+
+            if (!historicalData || historicalData.length === 0) {
+                console.error("No historical data available");
+                return [];
             }
-            
-            // Handle YTD period specially
-            detailsChart.stockEvents.periodChanged = function(args) {
-                if (!args || !args.text) return;
-                
-                const now = new Date();
-                let minDate, maxDate;
-                
-                if (args.text === "1M") {
-                    minDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-                } else if (args.text === "3M") {
-                    minDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-                } else if (args.text === "6M") {
-                    minDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-                } else if (args.text === "1Y") {
-                    minDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-                } else if (args.text === "YTD") {
-                    minDate = new Date(now.getFullYear(), 0, 1); // January 1st of current year
-                } else if (args.text === "5Y") {
-                    minDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
-                } else if (args.text === "ALL") {
-                    minDate = allMinDate;
+
+            const formattedData = historicalData.map(function(point) {
+                // Skip invalid data points
+                if (!point) {
+                    console.warn("Skipping null point");
+                    return null;
                 }
-                
-                maxDate = now;
-                
-                // Apply the date range after Syncfusion's internal processing
-                setTimeout(() => {
-                    detailsChart.primaryXAxis.minimum = minDate;
-                    detailsChart.primaryXAxis.maximum = maxDate || now;
-                    
-                    // Calculate Y-axis range based on visible data
-                    updateYAxisRange(minDate, maxDate || now);
-                    
-                    detailsChart.refresh();
-                }, 100);
-            };
+
+                // The date can be in either Date property or date property (lowercase)
+                let dateStr = null;
+                if (typeof point.Date !== 'undefined') {
+                    dateStr = point.Date;
+                } else if (typeof point.date !== 'undefined') {
+                    dateStr = point.date;
+                }
+
+                if (!dateStr) {
+                    console.warn("Missing date in data point:", point);
+                    return null;
+                }
+
+                // Get OHLC values, handling both uppercase and lowercase property names
+                let open, high, low, close;
+
+                if (typeof point.Open !== 'undefined') {
+                    open = Number(point.Open);
+                    high = Number(point.High);
+                    low = Number(point.Low);
+                    close = Number(point.Close);
+                } else if (typeof point.open !== 'undefined') {
+                    open = Number(point.open);
+                    high = Number(point.high);
+                    low = Number(point.low);
+                    close = Number(point.close);
+                } else {
+                    console.warn("No OHLC data in point:", point);
+                    return null;
+                }
+
+                // Parse the date - handling various formats
+                let timestamp;
+                try {
+                    // Try to parse the date
+                    const date = new Date(dateStr);
+                    timestamp = date.getTime();
+
+                    // If the timestamp is invalid (NaN), try alternative parsing
+                    if (isNaN(timestamp)) {
+                        console.warn("Invalid date format, trying alternative parsing:", dateStr);
+
+                        // Try parsing assuming format like "/Date(1622764800000)/"
+                        const matches = /\/Date\((\d+)\)\//.exec(dateStr);
+                        if (matches && matches[1]) {
+                            timestamp = parseInt(matches[1]);
+                        } else {
+                            // For other formats, try extracting just the date part
+                            const parts = dateStr.split('T')[0].split('-');
+                            if (parts.length === 3) {
+                                const simpleDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                                timestamp = simpleDate.getTime();
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing date:", dateStr, e);
+                    return null;
+                }
+
+                // Skip if any of the values are NaN or invalid
+                if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close) || isNaN(timestamp)) {
+                    console.warn("Invalid numeric values in data point:", point);
+                    return null;
+                }
+
+                return [
+                    timestamp,  // x: time
+                    open,       // open
+                    high,       // high
+                    low,        // low
+                    close       // close
+                ];
+            })
+            .filter(point => point !== null)  // Remove any invalid points
+            .sort(function(a, b) { return a[0] - b[0]; }); // Sort by date
+
+            console.log("Formatted data count:", formattedData.length);
+            if (formattedData.length > 0) {
+                console.log("First data point:", formattedData[0]);
+                console.log("Last data point:", formattedData[formattedData.length - 1]);
+            }
+            return formattedData;
         }
-        
-        // Update Y-axis range based on visible data points
-        function updateYAxisRange(startDate, endDate) {
-            if (!detailsChart || !candleData.length) return;
-            
-            let minY = Number.MAX_VALUE;
-            let maxY = Number.MIN_VALUE;
-            
-            // Find min/max values in the visible range
-            const visibleData = candleData.filter(point => {
-                const date = new Date(point.Date);
-                return date >= startDate && date <= endDate;
+
+        // Chart configuration
+        const candleData = formatCandlestickData();
+        let stockChart;
+
+        // Initialize Highcharts candlestick chart
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create the chart only if we have data
+            if (!candleData || candleData.length === 0) {
+                console.error("No data available for chart");
+                document.getElementById('priceHistoryChart').innerHTML = '<div class="alert alert-warning">No historical price data available</div>';
+                return;
+            }
+
+            console.log("Creating chart with data:", candleData.slice(0, 3), "...", candleData.slice(-3));
+
+            stockChart = Highcharts.stockChart('priceHistoryChart', {
+                chart: {
+                    type: 'candlestick',
+                    backgroundColor: '#333333'
+                },
+                rangeSelector: {
+                    enabled: false
+                },
+                navigator: {
+                    enabled: true
+                },
+                scrollbar: {
+                    enabled: true
+                },
+                title: {
+                    text: null
+                },
+                xAxis: {
+                    type: 'datetime',
+                    labels: {
+                        format: '{value:%m/%d/%Y}'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Price'
+                    },
+                    labels: {
+                        formatter: function() {
+                            return '$' + this.value.toFixed(2);
+                        }
+                    }
+                },
+                tooltip: {
+                    formatter: function() {
+                        return '<span style="color:' + this.series.color + '">\u25CF</span> <b>' + this.series.name + '</b><br/>' +
+                        'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br/>' +
+                        'Open: $' + Highcharts.numberFormat(this.point.open, 2) + '<br/>' +
+                        'High: $' + Highcharts.numberFormat(this.point.high, 2) + '<br/>' +
+                        'Low: $' + Highcharts.numberFormat(this.point.low, 2) + '<br/>' +
+                        'Close: $' + Highcharts.numberFormat(this.point.close, 2);
+                    }
+                },
+                plotOptions: {
+                    candlestick: {
+                        color: '#f44336', // Red candles (bearish)
+                        upColor: '#4caf50', // Green candles (bullish)
+                        lineColor: '#f44336', // Bearish line color
+                        upLineColor: '#4caf50' // Bullish line color
+                    }
+                },
+                series: [{
+                    name: '@Model.Stock.StockSymbol',
+                    data: candleData,
+                    dataGrouping: {
+                        enabled: false
+                    }
+                }]
             });
-            
-            if (visibleData.length > 0) {
-                visibleData.forEach(point => {
-                    if (point.High !== undefined && point.Low !== undefined) {
-                        minY = Math.min(minY, point.Low);
-                        maxY = Math.max(maxY, point.High);
-                    }
-                });
-                
-                // Apply padding to y-axis range (10% padding)
-                if (minY !== Number.MAX_VALUE && maxY !== Number.MIN_VALUE) {
-                    const range = maxY - minY;
-                    const padding = range * 0.1;
-                    
-                    detailsChart.primaryYAxis.minimum = Math.max(0, minY - padding);
-                    detailsChart.primaryYAxis.maximum = maxY + padding;
-                }
+
+            // Check if we have data before setting the initial period
+            if (candleData && candleData.length > 0) {
+                // Set initial range to 5Y
+                setChartPeriod('5y');
+            } else {
+                console.error("No valid data to display in chart");
+            }
+        });
+
+        // Set time period for chart
+        function setChartPeriod(period) {
+            if (!stockChart || !candleData || candleData.length === 0) {
+                console.warn("Cannot set period - chart or data not available");
+                return;
+            }
+
+            const now = new Date();
+            let startDate;
+
+            // Get the actual data date range
+            const firstDate = new Date(candleData[0][0]);
+            const lastDate = new Date(candleData[candleData.length - 1][0]);
+
+            console.log("Data range:", firstDate, "to", lastDate);
+
+            switch (period) {
+                case '1m':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                    break;
+                case '3m':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+                    break;
+                case '6m':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+                    break;
+                case '1y':
+                    startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                    break;
+                case 'ytd':
+                    startDate = new Date(now.getFullYear(), 0, 1); // January 1st of current year
+                    break;
+                case '5y':
+                    startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+                    break;
+                case 'all':
+                    startDate = firstDate;
+                    break;
+                default:
+                    startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+            }
+
+            // Ensure endDate is not beyond our actual data
+            const endDate = now > lastDate ? lastDate : now;
+
+            // Ensure startDate is not before our actual data
+            if (startDate < firstDate) {
+                startDate = firstDate;
+            }
+
+            console.log("Setting time range:", startDate, "to", endDate);
+
+            try {
+                stockChart.xAxis[0].setExtremes(
+                    startDate.getTime(),
+                    endDate.getTime()
+                );
+            } catch (error) {
+                console.error("Error setting extremes:", error);
             }
         }
+
+        // Period selector buttons
+        document.querySelectorAll('.period-selector button').forEach(button => {
+            button.addEventListener('click', function() {
+                // Update active button
+                document.querySelectorAll('.period-selector button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+
+                // Set chart period
+                setChartPeriod(this.getAttribute('data-period'));
+            });
+        });
     </script>
 }
