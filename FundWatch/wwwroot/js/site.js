@@ -16,7 +16,7 @@ function configureHighcharts() {
     // Set up dark theme for all Highcharts
     Highcharts.setOptions({
         chart: {
-            backgroundColor: '#333333',
+            backgroundColor: '#212529',
             style: {
                 fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
             },
