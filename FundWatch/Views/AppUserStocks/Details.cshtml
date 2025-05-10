@@ -15,58 +15,72 @@
                     <h5 class="mb-0 text-wrap">@Model.Stock.StockSymbol Details</h5>
                     <span class="badge bg-light text-primary mt-2 mt-md-0 text-wrap">@Model.CompanyDetails.Industry</span>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="d-flex mb-3">
-                                <h6 class="text-muted me-3">Company Information</h6>
+                <div class="card-body p-0">
+                    <div class="d-flex flex-column h-100">
+                        <div class="row g-0 bg-dark">
+                            <div class="col-md-6 bg-dark border-end border-secondary">
+                                <div class="p-3">
+                                    <div class="fw-bold text-primary mb-2">Company Information</div>
+                                    <div class="row g-0">
+                                        <div class="col-6">
+                                            <div class="small mb-2">Name:</div>
+                                            <div class="small mb-2">Market Cap:</div>
+                                            <div class="small mb-2">Employees:</div>
+                                            <div class="small">Website:</div>
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <div class="small mb-2">@Model.CompanyDetails.Name</div>
+                                            <div class="small mb-2">@(Model.CompanyDetails.MarketCap > 0 ? Model.CompanyDetails.MarketCap.ToString("C0", culture) : "N/A")</div>
+                                            <div class="small mb-2">@(Model.CompanyDetails.Employees > 0 ? Model.CompanyDetails.Employees.ToString("N0", culture) : "N/A")</div>
+                                            <div class="small">
+                                                @if (!string.IsNullOrEmpty(Model.CompanyDetails.Website))
+                                                {
+                                                    <a href="@Model.CompanyDetails.Website" target="_blank" class="text-info">Visit Website</a>
+                                                }
+                                                else
+                                                {
+                                                    <span>N/A</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <dl class="row">
-                                <dt class="col-sm-5">Name</dt>
-                                <dd class="col-sm-7">@Model.CompanyDetails.Name</dd>
-                                <dt class="col-sm-5">Market Cap</dt>
-                                <dd class="col-sm-7">@(Model.CompanyDetails.MarketCap > 0 ? Model.CompanyDetails.MarketCap.ToString("C0", culture) : "N/A")</dd>
-                                <dt class="col-sm-5">Employees</dt>
-                                <dd class="col-sm-7">@(Model.CompanyDetails.Employees > 0 ? Model.CompanyDetails.Employees.ToString("N0", culture) : "N/A")</dd>
-                                <dt class="col-sm-5">Website</dt>
-                                <dd class="col-sm-7">
-                                    @if (!string.IsNullOrEmpty(Model.CompanyDetails.Website))
-                                    {
-                                        <a href="@Model.CompanyDetails.Website" target="_blank">Visit Website</a>
-                                    }
-                                    else
-                                    {
-                                        <span>N/A</span>
-                                    }
-                                </dd>
-                            </dl>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex mb-3">
-                                <h6 class="text-muted me-3">Investment Details</h6>
+                            <div class="col-md-6 bg-dark">
+                                <div class="p-3">
+                                    <div class="fw-bold text-primary mb-2">Investment Details</div>
+                                    <div class="row g-0">
+                                        <div class="col-6">
+                                            <div class="small mb-2">Purchase Date:</div>
+                                            <div class="small mb-2">Purchase Price:</div>
+                                            <div class="small mb-2">Shares Owned:</div>
+                                            <div class="small">Total Investment:</div>
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <div class="small mb-2">@Model.Stock.DatePurchased.ToString("MMM dd, yyyy")</div>
+                                            <div class="small mb-2">@Model.Stock.PurchasePrice.ToString("C2", culture)</div>
+                                            <div class="small mb-2">@(Model.Stock.NumberOfSharesPurchased - (Model.Stock.NumberOfSharesSold ?? 0))</div>
+                                            <div class="small">@((Model.Stock.PurchasePrice * Model.Stock.NumberOfSharesPurchased).ToString("C2", culture))</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <dl class="row">
-                                <dt class="col-sm-4">Purchase Date</dt>
-                                <dd class="col-sm-8">@Model.Stock.DatePurchased.ToString("MMM dd, yyyy")</dd>
-                                <dt class="col-sm-4">Purchase Price</dt>
-                                <dd class="col-sm-8">@Model.Stock.PurchasePrice.ToString("C2", culture)</dd>
-                                <dt class="col-sm-4">Shares Owned</dt>
-                                <dd class="col-sm-8">@(Model.Stock.NumberOfSharesPurchased - (Model.Stock.NumberOfSharesSold ?? 0))</dd>
-                                <dt class="col-sm-4">Total Investment</dt>
-                                <dd class="col-sm-8">@((Model.Stock.PurchasePrice * Model.Stock.NumberOfSharesPurchased).ToString("C2", culture))</dd>
-                            </dl>
                         </div>
-                    </div>
 
-                    @if (!string.IsNullOrEmpty(Model.CompanyDetails.Description))
-                    {
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <h6 class="text-muted">Company Description</h6>
-                                <p class="text-justify">@Model.CompanyDetails.Description</p>
+                        @if (!string.IsNullOrEmpty(Model.CompanyDetails.Description))
+                        {
+                            <div class="bg-dark border-top border-secondary flex-grow-1">
+                                <div class="p-3 h-100">
+                                    <div class="fw-bold text-primary mb-2">Company Description</div>
+                                    <p class="small text-light mb-0">@Model.CompanyDetails.Description</p>
+                                </div>
                             </div>
-                        </div>
-                    }
+                        }
+                        else
+                        {
+                            <div class="bg-dark flex-grow-1"></div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -77,47 +91,106 @@
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">Performance Metrics</h5>
                 </div>
-                <div class="card-body p-3 d-flex flex-column justify-content-between" style="min-height: 270px">
-                    <div class="metric-item mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="text-muted small">Current Price</div>
-                                <div class="price-value">@Model.Stock.CurrentPrice.ToString("C2", culture)</div>
+                <div class="card-body p-0 bg-dark">
+                    <div class="d-flex flex-column h-100">
+                        <div class="p-3 border-bottom border-secondary">
+                            <div class="fw-bold text-info mb-0">Current Price</div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fs-5">@Model.Stock.CurrentPrice.ToString("C2", culture)</span>
+                                <span class="@(Model.Stock.ValueChange >= 0 ? "text-success" : "text-danger")">
+                                    @(Model.Stock.ValueChange >= 0 ? "+" : "")@Model.Stock.ValueChange.ToString("C2", culture)
+                                </span>
                             </div>
-                            <span class="@(Model.Stock.ValueChange >= 0 ? "text-success" : "text-danger") price-change">
-                                @(Model.Stock.ValueChange >= 0 ? "+" : "")@Model.Stock.ValueChange.ToString("C2", culture)
-                            </span>
                         </div>
-                    </div>
 
-                    <div class="metric-item mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="text-muted small">Total Value</div>
-                                <div class="price-value">@Model.Stock.TotalValue.ToString("C2", culture)</div>
+                        <div class="p-3 border-bottom border-secondary">
+                            <div class="fw-bold text-info mb-0">Total Value</div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fs-5">@Model.Stock.TotalValue.ToString("C2", culture)</span>
+                                <span class="@(Model.Stock.PerformancePercentage >= 0 ? "text-success" : "text-danger")">
+                                    @(Model.Stock.PerformancePercentage >= 0 ? "+" : "")@Model.Stock.PerformancePercentage.ToString("N2")%
+                                </span>
                             </div>
-                            <span class="@(Model.Stock.PerformancePercentage >= 0 ? "text-success" : "text-danger") price-change">
-                                @(Model.Stock.PerformancePercentage >= 0 ? "+" : "")@Model.Stock.PerformancePercentage.ToString("N2")%
-                            </span>
                         </div>
-                    </div>
 
-                    @if (Model.Stock.DateSold.HasValue)
-                    {
-                        <div class="metric-item">
-                            <div class="text-muted small mb-2">Sale Information</div>
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <div class="small fw-bold">Date Sold:</div>
-                                    <div class="small fw-bold">Shares Sold:</div>
+                        <div class="p-3 border-bottom border-secondary">
+                            <div class="fw-bold text-info mb-0">Investment Summary</div>
+                            <div class="row g-0">
+                                <div class="col-6">
+                                    <div class="small">Cost Basis:</div>
+                                    <div class="small">Total Gain/Loss:</div>
                                 </div>
-                                <div class="text-end">
-                                    <div class="small">@Model.Stock.DateSold?.ToString("MMM dd, yyyy")</div>
-                                    <div class="small">@Model.Stock.NumberOfSharesSold</div>
+                                <div class="col-6 text-end">
+                                    <div class="small">@((Model.Stock.PurchasePrice * Model.Stock.NumberOfSharesPurchased).ToString("C2", culture))</div>
+                                    <div class="small @(Model.Stock.ValueChange >= 0 ? "text-success" : "text-danger")">
+                                        @(Model.Stock.ValueChange >= 0 ? "+" : "")@Model.Stock.ValueChange.ToString("C2", culture)
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    }
+
+                        <div class="p-3 border-bottom border-secondary">
+                            <div class="fw-bold text-info mb-0">Price Metrics</div>
+                            <div class="row g-0">
+                                <div class="col-6">
+                                    <div class="small">52W High:</div>
+                                    <div class="small">52W Low:</div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    @{
+                                        decimal? high52W = null;
+                                        decimal? low52W = null;
+
+                                        // Calculate 52 week high/low if we have enough historical data
+                                        if (Model.HistoricalData != null && Model.HistoricalData.Count > 0)
+                                        {
+                                            var oneYearAgo = DateTime.Now.AddYears(-1);
+                                            var yearData = Model.HistoricalData.Where(d => d.Date >= oneYearAgo).ToList();
+
+                                            if (yearData.Any())
+                                            {
+                                                high52W = yearData.Max(d => d.High);
+                                                low52W = yearData.Min(d => d.Low);
+                                            }
+                                        }
+                                    }
+                                    <div class="small">@(high52W.HasValue ? high52W.Value.ToString("C2", culture) : "N/A")</div>
+                                    <div class="small">@(low52W.HasValue ? low52W.Value.ToString("C2", culture) : "N/A")</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 border-bottom border-secondary">
+                            <div class="fw-bold text-info mb-0">Position Details</div>
+                            <div class="row g-0">
+                                <div class="col-6">
+                                    <div class="small">Shares Owned:</div>
+                                    <div class="small">Avg. Cost/Share:</div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <div class="small">@(Model.Stock.NumberOfSharesPurchased - (Model.Stock.NumberOfSharesSold ?? 0))</div>
+                                    <div class="small">@Model.Stock.PurchasePrice.ToString("C2", culture)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Model.Stock.DateSold.HasValue)
+                        {
+                            <div class="p-3">
+                                <div class="fw-bold text-info mb-0">Sale Information</div>
+                                <div class="row g-0">
+                                    <div class="col-6">
+                                        <div class="small">Date Sold:</div>
+                                        <div class="small">Shares Sold:</div>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <div class="small">@Model.Stock.DateSold?.ToString("MMM dd, yyyy")</div>
+                                        <div class="small">@Model.Stock.NumberOfSharesSold</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
