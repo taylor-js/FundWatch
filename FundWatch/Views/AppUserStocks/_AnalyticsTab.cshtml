@@ -34,7 +34,7 @@
                 <h5 class="card-title mb-0">Portfolio Risk/Return Analysis (Drawdown)</h5>
             </div>
             <div class="card-body">
-                <div id="drawdownChart" style="height: 450px;"></div>
+                <div id="drawdownChart" style="width: 100%; height: 500px; max-height: 500px; overflow: hidden;"></div>
             </div>
         </div>
     </div>
@@ -69,14 +69,20 @@
             { name: "Others", y: 4800 }
         ];
 
-        // Drawdown test data
+        // Drawdown test data for 5 years
         var dates = [];
         var today = new Date();
-        for (var i = 365; i >= 0; i--) {
+        // Generate test data for exactly 5 years (1825 days) instead of just 1 year
+        for (var i = 1825; i >= 0; i--) {
             var date = new Date();
             date.setDate(today.getDate() - i);
             dates.push(date);
         }
+
+        console.log("Generated drawdown test data spanning 5 years:");
+        console.log("- First date:", dates[0].toISOString());
+        console.log("- Last date:", dates[dates.length-1].toISOString());
+        console.log("- Total data points:", dates.length);
 
         window.drawdownData = dates.map(function(date, index) {
             var portfolioDrawdown = (Math.sin(index/40) - 1) * 8 * Math.random();
@@ -255,73 +261,205 @@
 
     function renderDrawdownChart() {
         try {
-            console.log("Rendering Drawdown chart");
+            console.log("Rendering Drawdown chart with stockChart");
 
             // Prepare series data
             var portfolioSeries = [];
             var benchmarkSeries = [];
 
             window.drawdownData.forEach(function(item) {
-                var timestamp = item.date.getTime();
-                portfolioSeries.push([timestamp, item.portfolioDrawdown]);
-                benchmarkSeries.push([timestamp, item.benchmarkDrawdown]);
+                var timestamp;
+                if (item.date instanceof Date) {
+                    timestamp = item.date.getTime();
+                } else if (typeof item.date === 'string') {
+                    timestamp = new Date(item.date).getTime();
+                } else {
+                    timestamp = new Date(item.date).getTime();
+                }
+
+                if (!isNaN(timestamp)) {
+                    portfolioSeries.push([timestamp, item.portfolioDrawdown]);
+                    benchmarkSeries.push([timestamp, item.benchmarkDrawdown]);
+                }
             });
 
             // Sort by timestamp
             portfolioSeries.sort(function(a, b) { return a[0] - b[0]; });
             benchmarkSeries.sort(function(a, b) { return a[0] - b[0]; });
 
-            // Create a line chart for drawdown analysis
-            Highcharts.chart('drawdownChart', {
+            // Calculate min/max dates for consistent display
+            let minDate = new Date();
+            minDate.setFullYear(minDate.getFullYear() - 5); // Go back 5 years
+            let maxDate = new Date(); // Current date
+
+            // Create a stockChart for drawdown analysis
+            Highcharts.stockChart('drawdownChart', {
                 chart: {
                     type: 'area',
-                    backgroundColor: '#212529'
+                    zoomType: 'x',
+                    backgroundColor: '#212529',
+                    style: {
+                        fontFamily: 'Inter, sans-serif'
+                    },
+                    height: 500 // Set explicit height to match Stock Performance chart
                 },
                 title: {
-                    text: null
+                    text: 'Drawdown Analysis',
+                    style: {
+                        color: '#CCCCCC',
+                        fontSize: '14px'
+                    }
+                },
+                subtitle: {
+                    text: 'Shows percentage decline from previous peak',
+                    style: {
+                        color: '#AAAAAA',
+                        fontSize: '12px'
+                    }
+                },
+                // Add range selector buttons
+                rangeSelector: {
+                    selected: 5, // Default to 5Y view
+                    buttons: [
+                        { type: 'month', count: 1, text: '1M' },
+                        { type: 'month', count: 3, text: '3M' },
+                        { type: 'month', count: 6, text: '6M' },
+                        { type: 'ytd', text: 'YTD' },
+                        { type: 'year', count: 1, text: '1Y' },
+                        { type: 'year', count: 5, text: '5Y' },
+                        { type: 'all', text: 'ALL' }
+                    ],
+                    buttonTheme: {
+                        fill: 'none',
+                        stroke: 'none',
+                        'stroke-width': 0,
+                        r: 8,
+                        style: {
+                            color: '#CCCCCC',
+                            fontWeight: 'normal'
+                        },
+                        states: {
+                            hover: {
+                                fill: '#4361EE',
+                                style: { color: 'white' }
+                            },
+                            select: {
+                                fill: '#4361EE',
+                                style: { color: 'white' }
+                            }
+                        }
+                    },
+                    inputEnabled: false
+                },
+                navigator: {
+                    enabled: true,
+                    outlineColor: '#444',
+                    outlineWidth: 1,
+                    handles: {
+                        backgroundColor: '#666',
+                        borderColor: '#AAA'
+                    },
+                    series: {
+                        color: '#F72585',
+                        fillOpacity: 0.05
+                    }
+                },
+                scrollbar: {
+                    enabled: true,
+                    barBackgroundColor: '#555',
+                    barBorderColor: '#999',
+                    barBorderWidth: 1,
+                    buttonBackgroundColor: '#555',
+                    buttonBorderColor: '#999',
+                    buttonBorderWidth: 1,
+                    trackBackgroundColor: '#212529',
+                    trackBorderColor: '#444',
+                    trackBorderWidth: 1
                 },
                 xAxis: {
                     type: 'datetime',
-                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                    min: minDate.getTime(), // Ensure we show 5 years
+                    max: maxDate.getTime(), // Up to today
+                    dateTimeLabelFormats: {
+                        millisecond: '%H:%M:%S.%L',
+                        second: '%H:%M:%S',
+                        minute: '%H:%M',
+                        hour: '%H:%M',
+                        day: '%e. %b',
+                        week: '%e. %b',
+                        month: '%b %Y',
+                        year: '%Y'
+                    },
+                    labels: {
+                        style: { color: '#CCCCCC' }
+                    },
+                    ordinal: false, // This ensures equal spacing between data points
+                    tickInterval: 365 * 24 * 3600 * 1000 // One year intervals for cleaner display
                 },
                 yAxis: {
                     title: {
-                        text: 'Drawdown (%)'
+                        text: 'Drawdown (%)',
+                        style: { color: '#CCCCCC' }
+                    },
+                    min: -30, // Set a reasonable min for drawdown visualization
+                    labels: {
+                        format: '{value}%',
+                        style: { color: '#CCCCCC' }
                     },
                     gridLineColor: 'rgba(255, 255, 255, 0.1)'
                 },
                 tooltip: {
+                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y:.2f}%</b><br/>',
+                    valueDecimals: 2,
                     shared: true,
-                    formatter: function() {
-                        return Highcharts.dateFormat('%b %e, %Y', this.x) + '<br>' +
-                            this.points.map(function(point) {
-                                return '<span style="color:' + point.series.color + '">\u25CF</span> ' +
-                                    point.series.name + ': <b>' + point.y.toFixed(2) + '%</b>';
-                            }).join('<br>');
-                    }
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    style: { color: '#FFFFFF' }
                 },
                 plotOptions: {
+                    series: {
+                        marker: {
+                            enabled: false,
+                            states: {
+                                hover: {
+                                    enabled: true,
+                                    radius: 3
+                                }
+                            }
+                        }
+                    },
                     area: {
                         fillOpacity: 0.3,
                         lineWidth: 2,
-                        marker: {
-                            enabled: false
-                        }
+                        threshold: null
                     }
                 },
                 series: [{
                     name: 'Portfolio Drawdown',
                     data: portfolioSeries,
-                    color: '#F72585'
+                    color: '#F72585',
+                    fillColor: {
+                        linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                        stops: [
+                            [0, 'rgba(247, 37, 133, 0.5)'],
+                            [1, 'rgba(247, 37, 133, 0.05)']
+                        ]
+                    }
                 }, {
                     name: 'Benchmark Drawdown',
                     data: benchmarkSeries,
-                    color: '#4CC9F0'
+                    color: '#4CC9F0',
+                    fillColor: {
+                        linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                        stops: [
+                            [0, 'rgba(76, 201, 240, 0.5)'],
+                            [1, 'rgba(76, 201, 240, 0.05)']
+                        ]
+                    }
                 }],
                 credits: { enabled: false }
             });
 
-            console.log("Drawdown chart rendered successfully");
+            console.log("Drawdown chart rendered successfully with stockChart");
         } catch (err) {
             console.error("Error rendering Drawdown chart:", err);
         }
