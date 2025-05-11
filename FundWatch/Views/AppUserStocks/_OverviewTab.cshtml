@@ -437,29 +437,76 @@
     }
 
     function renderTopPerformersChart() {
-        // Get top and bottom 5 performers
+        // Get all stock data including value for more context
         let stockPerformance = @Html.Raw(Json.Serialize(Model.UserStocks.Select(s => new {
             name = s.StockSymbol,
-            performance = s.PerformancePercentage * 100
-        }).OrderByDescending(s => s.performance).ToList()));
+            performance = s.PerformancePercentage * 100,
+            totalValue = s.TotalValue
+        }).ToList()));
 
-        let topPerformers = stockPerformance.slice(0, 5);
-        let bottomPerformers = stockPerformance.slice(-5).reverse();
+        // If no data, show message
+        if (!stockPerformance || stockPerformance.length === 0) {
+            document.getElementById('topPerformersChart').innerHTML =
+                '<div class="alert alert-info text-center p-5">No stock performance data available yet.</div>';
+            return;
+        }
 
+        // Sort stocks by performance (best to worst)
+        stockPerformance.sort((a, b) => b.performance - a.performance);
+
+        // Get best and worst performers
+        let bestPerformers = stockPerformance.slice(0, Math.min(5, stockPerformance.length));
+        let worstPerformers = [];
+
+        // Only include worst performers if we have enough distinct stocks
+        if (stockPerformance.length > 5) {
+            worstPerformers = stockPerformance.slice(-Math.min(5, stockPerformance.length));
+        }
+
+        // Create two separate series for clear presentation
         Highcharts.chart('topPerformersChart', {
             chart: {
                 type: 'bar',
                 backgroundColor: '#212529'
             },
             title: {
-                text: null
-            },
-            xAxis: {
-                categories: [...topPerformers.map(s => s.name), ...bottomPerformers.map(s => s.name)],
-                labels: {
-                    style: { color: '#CCCCCC' }
+                text: 'Portfolio Performance',
+                style: {
+                    color: '#CCCCCC',
+                    fontSize: '14px'
                 }
             },
+            subtitle: {
+                text: 'Best and worst performers',
+                style: {
+                    color: '#AAAAAA',
+                    fontSize: '12px'
+                }
+            },
+            xAxis: [{
+                categories: bestPerformers.map(item => item.name),
+                title: {
+                    text: 'Best Performers',
+                    style: { color: '#5C5' }
+                },
+                labels: {
+                    style: { color: '#CCCCCC' }
+                },
+                lineColor: '#444'
+            }, {
+                // Only create second axis if we have worst performers
+                categories: worstPerformers.map(item => item.name),
+                title: {
+                    text: worstPerformers.length > 0 ? 'Worst Performers' : '',
+                    style: { color: '#D33' }
+                },
+                labels: {
+                    style: { color: '#CCCCCC' }
+                },
+                opposite: true,
+                linkedTo: 0,
+                lineColor: '#444'
+            }],
             yAxis: {
                 title: {
                     text: 'Performance (%)',
@@ -477,49 +524,57 @@
                 backgroundColor: 'rgba(0, 0, 0, 0.8)',
                 style: { color: '#FFFFFF' },
                 formatter: function() {
-                    return '<b>' + this.x + '</b><br>' +
-                           'Performance: ' + Highcharts.numberFormat(this.y, 2) + '%';
+                    return '<b>' + this.point.category + '</b><br>' +
+                           'Performance: ' + (this.point.y > 0 ? '+' : '') +
+                           Highcharts.numberFormat(this.point.y, 2) + '%<br>' +
+                           'Value: $' + Highcharts.numberFormat(this.point.custom?.value || 0, 2);
                 }
             },
             plotOptions: {
-                bar: {
+                series: {
                     dataLabels: {
                         enabled: true,
                         formatter: function() {
-                            return Highcharts.numberFormat(this.y, 1) + '%';
+                            return (this.y > 0 ? '+' : '') + Highcharts.numberFormat(this.y, 1) + '%';
                         },
                         style: {
-                            color: '#FFFFFF'
+                            color: '#FFFFFF',
+                            textOutline: 'none',
+                            fontSize: '11px'
                         }
                     },
-                    grouping: false,
-                    colors: function(point) {
-                        return point.y < 0 ? '#D33' : '#5C5';
-                    }
+                    pointPadding: 0.2,
+                    groupPadding: 0.1
                 }
             },
             legend: {
-                enabled: false
+                enabled: true,
+                itemStyle: { color: '#CCCCCC' },
+                verticalAlign: 'top'
             },
             series: [{
-                name: 'Top Performers',
-                data: topPerformers.map(s => {
-                    return {
-                        y: s.performance,
-                        color: s.performance >= 0 ? '#5C5' : '#D33'
-                    };
-                }),
+                name: 'Best Performers',
+                data: bestPerformers.map(s => ({
+                    y: s.performance,
+                    custom: {
+                        value: s.totalValue
+                    },
+                    color: '#5C5'
+                })),
                 color: '#5C5'
-            }, {
-                name: 'Bottom Performers',
-                data: [null, null, null, null, null, ...bottomPerformers.map(s => {
-                    return {
-                        y: s.performance,
-                        color: s.performance >= 0 ? '#5C5' : '#D33'
-                    };
-                })],
-                color: '#D33'
-            }],
+            },
+            ...(worstPerformers.length > 0 ? [{
+                name: 'Worst Performers',
+                data: worstPerformers.map(s => ({
+                    y: s.performance,
+                    custom: {
+                        value: s.totalValue
+                    },
+                    color: '#D33'
+                })),
+                color: '#D33',
+                xAxis: 1
+            }] : [])],
             credits: { enabled: false }
         });
     }
