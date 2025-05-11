@@ -334,13 +334,20 @@
         // Check URL for tab parameter
         const urlParams = new URLSearchParams(window.location.search);
         const tabParam = urlParams.get('tab');
-        
-        if (tabParam) {
-            // Find and click the correct tab
+
+        if (tabParam && tabParam !== 'overview') {
+            // Find and click the correct tab, but only if it's not 'overview'
+            // This way, overview remains the default unless explicitly changed
             const tabId = `${tabParam}-tab`;
             const tabLink = document.getElementById(tabId);
             if (tabLink) {
                 tabLink.click();
+            }
+        } else {
+            // Ensure Overview tab is active by default
+            const overviewTab = document.getElementById('overview-tab');
+            if (overviewTab && !overviewTab.classList.contains('active')) {
+                overviewTab.click();
             }
         }
         

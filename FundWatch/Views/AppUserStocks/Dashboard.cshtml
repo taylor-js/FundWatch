@@ -58,35 +58,56 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard view loaded - main script');
             
-            // Force a tab view on dashboard load to ensure charts render
+            // Only ensure the Overview tab is shown, no automatic tab sliding
             setTimeout(function() {
-                // Get the active tab or default to overview
-                let activeTab = document.querySelector('.nav-link.active[data-bs-toggle="tab"]');
-                if (!activeTab) {
-                    activeTab = document.querySelector('#overview-tab');
+                // Always default to the overview tab
+                const overviewTab = document.querySelector('#overview-tab');
+
+                // Only trigger the overview tab click if it's not already active
+                if (overviewTab && !overviewTab.classList.contains('active')) {
+                    overviewTab.click();
+                    console.log('Set Overview tab as default');
                 }
-                
-                // Simulate click to trigger the tab's shown event
-                if (activeTab) {
-                    activeTab.click();
-                    console.log('Triggered active tab:', activeTab.id);
-                }
-                
-                // Force performance tab charts to render by showing that tab and switching back
-                const performanceTab = document.querySelector('#performance-tab');
-                if (performanceTab) {
-                    setTimeout(() => {
-                        performanceTab.click();
-                        console.log('Forcing performance tab render');
-                        
-                        // Switch back to previous tab after a delay
-                        setTimeout(() => {
-                            activeTab.click();
-                            console.log('Switching back to original tab');
-                        }, 1000);
-                    }, 1500);
-                }
+
+                // Initialize charts in hidden tabs without switching to them
+                // This helps ensure charts are properly initialized without tab sliding
+                initializeHiddenCharts();
             }, 500);
+
+            // Function to initialize charts in hidden tabs without switching tabs
+            function initializeHiddenCharts() {
+                console.log('Initializing charts in hidden tabs without switching tabs');
+
+                // Force redraw of any Highcharts in performance tab
+                const performanceTabContent = document.querySelector('#performanceTab');
+                if (performanceTabContent) {
+                    if (Highcharts.charts) {
+                        Highcharts.charts.forEach(chart => {
+                            if (chart && chart.renderTo && performanceTabContent.contains(chart.renderTo)) {
+                                setTimeout(() => {
+                                    chart.reflow();
+                                    console.log('Initialized chart in Performance tab:', chart.renderTo.id);
+                                }, 100);
+                            }
+                        });
+                    }
+                }
+
+                // Force redraw of any Highcharts in analytics tab
+                const analyticsTabContent = document.querySelector('#analyticsTab');
+                if (analyticsTabContent) {
+                    if (Highcharts.charts) {
+                        Highcharts.charts.forEach(chart => {
+                            if (chart && chart.renderTo && analyticsTabContent.contains(chart.renderTo)) {
+                                setTimeout(() => {
+                                    chart.reflow();
+                                    console.log('Initialized chart in Analytics tab:', chart.renderTo.id);
+                                }, 100);
+                            }
+                        });
+                    }
+                }
+            }
         });
     </script>
 }
