@@ -18,7 +18,7 @@
                 <div class="card-body p-0">
                     <div class="d-flex flex-column h-100">
                         <div class="row g-0 bg-dark">
-                            <div class="col-lg-6 bg-dark">
+                            <div class="col-lg-7 bg-dark">
                                 <div class="p-3">
                                     <div class="fw-bold text-primary mb-2">Company Information</div>
                                     <div class="row g-0">
@@ -46,17 +46,17 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-lg-6 bg-dark">
+                            <div class="col-lg-5 bg-dark">
                                 <div class="p-3">
                                     <div class="fw-bold text-primary mb-2">Investment Details</div>
                                     <div class="row g-0">
-                                        <div class="col-4">
+                                        <div class="col-5">
                                             <div class="small mb-2">Purchase Date:</div>
                                             <div class="small mb-2">Purchase Price:</div>
                                             <div class="small mb-2">Shares Owned:</div>
                                             <div class="small">Total Investment:</div>
                                         </div>
-                                        <div class="col-8 text-end">
+                                        <div class="col-7 text-end">
                                             <div class="small mb-2">@Model.Stock.DatePurchased.ToString("MMM dd, yyyy")</div>
                                             <div class="small mb-2">@Model.Stock.PurchasePrice.ToString("C2", culture)</div>
                                             <div class="small mb-2">@(Model.Stock.NumberOfSharesPurchased - (Model.Stock.NumberOfSharesSold ?? 0))</div>
