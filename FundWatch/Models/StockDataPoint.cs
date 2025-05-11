@@ -27,5 +27,23 @@ namespace FundWatch.Models
         public decimal MarketCap { get; set; }
         public string Website { get; set; }
         public int Employees { get; set; }
+        public ExtendedCompanyDetails Extended { get; set; } = new ExtendedCompanyDetails();
+    }
+
+    public class ExtendedCompanyDetails
+    {
+        public string StockType { get; set; } = string.Empty;
+        public string Exchange { get; set; } = string.Empty;
+        public string Currency { get; set; } = string.Empty;
+        public string Sector { get; set; } = string.Empty;
+        public string IndustryGroup { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+        public List<CompanyNewsItem> RecentNews { get; set; } = new List<CompanyNewsItem>();
+    }
+
+    public class CompanyNewsItem
+    {
+        public DateTime Date { get; set; }
+        public string Title { get; set; } = string.Empty;
     }
 }

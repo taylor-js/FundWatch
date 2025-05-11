@@ -509,8 +509,21 @@ namespace FundWatch.Services
                             Industry = SafeGetString(result, "sic_description"),
                             MarketCap = SafeGetDecimal(result, "market_cap"),
                             Website = SafeGetString(result, "homepage_url"),
-                            Employees = SafeGetInt(result, "total_employees")
+                            Employees = SafeGetInt(result, "total_employees"),
+                            Extended = new ExtendedCompanyDetails
+                            {
+                                // Using the correct field names as per Polygon.io API docs
+                                StockType = SafeGetString(result, "type"),
+                                Exchange = SafeGetString(result, "primary_exchange"),
+                                Currency = SafeGetString(result, "currency_name"),
+                                Sector = SafeGetString(result, "sector"),
+                                IndustryGroup = SafeGetString(result, "industry"),
+                                Country = SafeGetString(result, "locale")
+                            }
                         };
+
+                        // Try to fetch recent news for this company
+                        _ = FetchCompanyNewsAsync(symbol, companyDetails);
 
                         _logger.LogInformation("Fetched company details for {Symbol}: {@CompanyDetails}",
                             symbol, new
@@ -680,6 +693,81 @@ namespace FundWatch.Services
                 }
             }
             return stocks;
+        }
+
+        private async Task FetchCompanyNewsAsync(string symbol, CompanyDetails companyDetails)
+        {
+            try
+            {
+                var cacheKey = $"CompanyNews_{symbol}";
+
+                // Check cache first
+                if (_cache.TryGetValue(cacheKey, out List<CompanyNewsItem>? cachedNews) && cachedNews != null && cachedNews.Count > 0)
+                {
+                    companyDetails.Extended.RecentNews = cachedNews;
+                    return;
+                }
+
+                // Calculate a range of the past 30 days for news
+                var endDate = DateTime.Now;
+                var startDate = endDate.AddDays(-30);
+
+                var queryParams = new Dictionary<string, string>
+                {
+                    ["limit"] = "10",
+                    ["order"] = "desc",
+                    ["sort"] = "published_utc"
+                };
+
+                // Use the correct news API endpoint
+                var url = $"/v2/reference/news";
+                queryParams["ticker"] = symbol;
+                await _rateLimiter.WaitForAvailableSlotAsync();
+                var response = await SendApiRequestAsync(url, queryParams);
+
+                if (response == null || response["results"] == null)
+                {
+                    _logger.LogWarning("No news data returned for {Symbol}", symbol);
+                    return;
+                }
+
+                var newsItems = new List<CompanyNewsItem>();
+                var results = response["results"] as JArray;
+
+                if (results != null && results.Count > 0)
+                {
+                    foreach (var item in results.Take(3)) // Limit to 3 news items
+                    {
+                        var publishedUtc = SafeGetString(item, "published_utc");
+                        if (DateTime.TryParse(publishedUtc, out var publishDate))
+                        {
+                            var title = SafeGetString(item, "title");
+                            var description = SafeGetString(item, "description");
+
+                            // Use the description if available, otherwise use the title
+                            var newsContent = !string.IsNullOrEmpty(description) ? description : title;
+
+                            newsItems.Add(new CompanyNewsItem
+                            {
+                                Date = publishDate,
+                                Title = newsContent
+                            });
+                        }
+                    }
+
+                    // Cache the news for 12 hours
+                    _cache.Set(cacheKey, newsItems, TimeSpan.FromHours(12));
+
+                    // Update the company details object
+                    companyDetails.Extended.RecentNews = newsItems;
+
+                    _logger.LogInformation("Fetched {Count} news items for {Symbol}", newsItems.Count, symbol);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching company news for {Symbol}", symbol);
+            }
         }
     }
 }

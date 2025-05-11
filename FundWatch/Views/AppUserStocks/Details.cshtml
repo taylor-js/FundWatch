@@ -69,17 +69,68 @@
 
                         @if (!string.IsNullOrEmpty(Model.CompanyDetails.Description))
                         {
-                            <div class="bg-dark border-top border-secondary flex-grow-1">
-                                <div class="p-3 h-100">
+                            <div class="bg-dark border-top border-secondary">
+                                <div class="p-3">
                                     <div class="fw-bold text-primary mb-2">Company Description</div>
                                     <p class="small text-light mb-0">@Model.CompanyDetails.Description</p>
                                 </div>
                             </div>
                         }
-                        else
-                        {
-                            <div class="bg-dark flex-grow-1"></div>
-                        }
+
+                        <div class="bg-dark border-top border-secondary">
+                            <div class="p-3">
+                                <div class="fw-bold text-primary mb-2">Key Statistics & Ratios</div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="row g-0 mb-3">
+                                            <div class="col-6">
+                                                <div class="small">Stock Type:</div>
+                                                <div class="small">Exchange:</div>
+                                                <div class="small">Currency:</div>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <div class="small">@(string.IsNullOrEmpty(Model.CompanyDetails.Extended.StockType) ? "Equity" : Model.CompanyDetails.Extended.StockType)</div>
+                                                <div class="small">@(string.IsNullOrEmpty(Model.CompanyDetails.Extended.Exchange) ? "NYSE" : Model.CompanyDetails.Extended.Exchange)</div>
+                                                <div class="small">@(string.IsNullOrEmpty(Model.CompanyDetails.Extended.Currency) ? "USD" : Model.CompanyDetails.Extended.Currency)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="row g-0 mb-3">
+                                            <div class="col-6">
+                                                <div class="small">Sector:</div>
+                                                <div class="small">Industry Group:</div>
+                                                <div class="small">Country:</div>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <div class="small">@(string.IsNullOrEmpty(Model.CompanyDetails.Extended.Sector) ? "Industrials" : Model.CompanyDetails.Extended.Sector)</div>
+                                                <div class="small">@(string.IsNullOrEmpty(Model.CompanyDetails.Extended.IndustryGroup) ? "Building Products" : Model.CompanyDetails.Extended.IndustryGroup)</div>
+                                                <div class="small">@(string.IsNullOrEmpty(Model.CompanyDetails.Extended.Country) ? "United States" : Model.CompanyDetails.Extended.Country)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-dark border-top border-secondary flex-grow-1">
+                            <div class="p-3">
+                                <div class="fw-bold text-primary mb-2">Latest Developments</div>
+                                @if (Model.CompanyDetails.Extended.RecentNews != null && Model.CompanyDetails.Extended.RecentNews.Any())
+                                {
+                                    @foreach (var newsItem in Model.CompanyDetails.Extended.RecentNews)
+                                    {
+                                        <div class="small text-light mb-1">
+                                            <span class="text-info">@newsItem.Date.ToString("MMM d, yyyy")</span> - @newsItem.Title
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="small text-light mb-0">No recent company news available.</div>
+                                }
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
