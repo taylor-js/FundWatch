@@ -285,71 +285,226 @@ const ChartManager = {
         }
 
         console.log("Rendering Portfolio Growth chart with data:", chartData.length);
-        
+
+        // Ensure dates are properly parsed
         const dates = chartData.map(item => {
-            const date = new Date(item.date);
+            let date;
+            if (typeof item.date === 'string') {
+                date = new Date(item.date);
+            } else if (item.date instanceof Date) {
+                date = item.date;
+            } else {
+                // Fallback
+                date = new Date(item.date);
+            }
             return date.getTime();
         });
-        
+
         const portfolioData = chartData.map((item, index) => [dates[index], item.portfolioValue]);
         const benchmarkData = chartData.map((item, index) => [dates[index], item.benchmarkValue]);
 
-        Highcharts.chart('portfolioGrowthChart', {
+        // Calculate min/max dates to ensure we display 5 years
+        let minDate = new Date();
+        minDate.setFullYear(minDate.getFullYear() - 5); // Go back 5 years
+
+        // Create percentage change column for relative comparison
+        const startPortfolioValue = portfolioData[0]?.[1] || 100;
+        const startBenchmarkValue = benchmarkData[0]?.[1] || 100;
+
+        const portfolioPercentData = portfolioData.map(point =>
+            [point[0], ((point[1] / startPortfolioValue) - 1) * 100]
+        );
+
+        const benchmarkPercentData = benchmarkData.map(point =>
+            [point[0], ((point[1] / startBenchmarkValue) - 1) * 100]
+        );
+
+        Highcharts.stockChart('portfolioGrowthChart', {
             chart: {
-                type: 'line',
-                zoomType: 'x'
+                type: 'area',
+                zoomType: 'x',
+                backgroundColor: '#212529',
+                style: {
+                    fontFamily: 'Inter, sans-serif'
+                },
+                height: 500 // Set explicit height to match Stock Performance chart
             },
             title: {
-                text: null
+                text: 'Portfolio Growth',
+                style: {
+                    color: '#CCCCCC',
+                    fontSize: '14px'
+                }
+            },
+            subtitle: {
+                text: 'Data shows absolute performance starting at base 100',
+                style: {
+                    color: '#AAAAAA',
+                    fontSize: '12px'
+                }
+            },
+            // Add range selector buttons
+            rangeSelector: {
+                selected: 5, // Default to 5Y view
+                buttons: [
+                    { type: 'month', count: 1, text: '1M' },
+                    { type: 'month', count: 3, text: '3M' },
+                    { type: 'month', count: 6, text: '6M' },
+                    { type: 'ytd', text: 'YTD' },
+                    { type: 'year', count: 1, text: '1Y' },
+                    { type: 'year', count: 5, text: '5Y' },
+                    { type: 'all', text: 'ALL' }
+                ],
+                buttonTheme: {
+                    fill: 'none',
+                    stroke: 'none',
+                    'stroke-width': 0,
+                    r: 8,
+                    style: {
+                        color: '#CCCCCC',
+                        fontWeight: 'normal'
+                    },
+                    states: {
+                        hover: {
+                            fill: '#4361EE',
+                            style: { color: 'white' }
+                        },
+                        select: {
+                            fill: '#4361EE',
+                            style: { color: 'white' }
+                        }
+                    }
+                },
+                inputEnabled: false
+            },
+            navigator: {
+                enabled: true,
+                outlineColor: '#444',
+                outlineWidth: 1,
+                handles: {
+                    backgroundColor: '#666',
+                    borderColor: '#AAA'
+                },
+                series: {
+                    color: '#2b908f',
+                    fillOpacity: 0.05
+                }
+            },
+            scrollbar: {
+                enabled: true,
+                barBackgroundColor: '#555',
+                barBorderColor: '#999',
+                barBorderWidth: 1,
+                buttonBackgroundColor: '#555',
+                buttonBorderColor: '#999',
+                buttonBorderWidth: 1,
+                trackBackgroundColor: '#212529',
+                trackBorderColor: '#444',
+                trackBorderWidth: 1
             },
             xAxis: {
                 type: 'datetime',
                 dateTimeLabelFormats: {
+                    millisecond: '%H:%M:%S.%L',
+                    second: '%H:%M:%S',
+                    minute: '%H:%M',
+                    hour: '%H:%M',
+                    day: '%e. %b',
+                    week: '%e. %b',
                     month: '%b %Y',
                     year: '%Y'
                 },
                 title: {
-                    text: 'Date'
-                }
+                    text: 'Date',
+                    style: { color: '#CCCCCC' }
+                },
+                labels: {
+                    style: { color: '#CCCCCC' }
+                },
+                ordinal: false, // This ensures equal spacing between data points
+                lineColor: '#444',
+                tickColor: '#444',
+                tickWidth: 1,
             },
             yAxis: {
                 title: {
-                    text: 'Growth (Base 100)'
+                    text: 'Growth (Base 100)',
+                    style: { color: '#CCCCCC' }
                 },
-                min: 80,
+                opposite: false,
+                min: 80, // Allow some downside
+                startOnTick: false,
+                endOnTick: false,
                 labels: {
-                    format: '{value}'
-                }
+                    format: '{value}',
+                    style: { color: '#CCCCCC' }
+                },
+                gridLineColor: 'rgba(255, 255, 255, 0.1)'
             },
             tooltip: {
-                headerFormat: '<span style="font-size:10px">{point.x:%B %e, %Y}</span><table>',
-                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-                    '<td style="padding:0"><b>{point.y:.2f}</b></td></tr>',
-                footerFormat: '</table>',
+                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y:.2f}</b><br/>',
+                valueDecimals: 2,
                 shared: true,
-                useHTML: true
+                split: false,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                style: { color: '#FFFFFF' }
             },
             plotOptions: {
                 series: {
                     marker: {
-                        enabled: false
+                        enabled: false,
+                        symbol: 'circle',
+                        radius: 2,
+                        states: {
+                            hover: {
+                                enabled: true,
+                                radiusPlus: 1
+                            }
+                        }
                     },
-                    lineWidth: 2
+                    lineWidth: 2,
+                    states: {
+                        hover: {
+                            lineWidthPlus: 1
+                        }
+                    }
                 },
                 area: {
-                    fillOpacity: 0.1
+                    fillOpacity: 0.2,
+                    trackByArea: false,
+                    threshold: null
                 }
+            },
+            legend: {
+                enabled: true,
+                itemStyle: { color: '#CCCCCC' },
+                itemHoverStyle: { color: '#FFFFFF' }
             },
             series: [{
                 name: 'Portfolio',
                 type: 'area',
                 color: '#2b908f',
-                data: portfolioData
+                data: portfolioData,
+                fillColor: {
+                    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                    stops: [
+                        [0, 'rgba(43, 144, 143, 0.5)'],
+                        [1, 'rgba(43, 144, 143, 0.05)']
+                    ]
+                }
             }, {
                 name: 'S&P 500',
                 color: '#7798BF',
-                data: benchmarkData
-            }]
+                data: benchmarkData,
+                fillColor: {
+                    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                    stops: [
+                        [0, 'rgba(119, 152, 191, 0.5)'],
+                        [1, 'rgba(119, 152, 191, 0.05)']
+                    ]
+                }
+            }],
+            credits: { enabled: false }
         });
     },
 

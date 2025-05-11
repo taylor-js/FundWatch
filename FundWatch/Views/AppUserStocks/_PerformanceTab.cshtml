@@ -34,7 +34,7 @@
                 <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
             </div>
             <div class="card-body">
-                <div id="portfolioGrowthChart" style="height: 450px;"></div>
+                <div id="portfolioGrowthChart" style="width: 100%; height: 500px; max-height: 500px; overflow: hidden;"></div>
             </div>
         </div>
     </div>
@@ -75,18 +75,40 @@
         }
         
         if (!window.portfolioGrowthData || !window.portfolioGrowthData.length) {
-            console.log("Adding test data for Portfolio Growth Chart");
+            console.log("Adding test data for Portfolio Growth Chart (5 years)");
             var dates = [];
             var today = new Date();
-            for (var i = 180; i >= 0; i--) {
+
+            // Generate data points for the last 5 years (60 months, ~1825 days)
+            // Using monthly data points for better performance (60 points)
+            for (var i = 60; i >= 0; i--) {
                 var date = new Date();
-                date.setDate(today.getDate() - i);
+                date.setMonth(today.getMonth() - i); // Go back by months
                 dates.push(date);
             }
-            
+
+            // Create realistic growth pattern over 5 years
+            // Starting at 100 (baseline) with some volatility and general upward trend
             window.portfolioGrowthData = dates.map(function(date, index) {
-                var portfolioValue = 100 + (Math.sin(index/20) * 15) + (index / 10);
-                var benchmarkValue = 100 + (Math.sin(index/25) * 10) + (index / 15);
+                // More pronounced growth and volatility for portfolio
+                var portfolioValue = 100 + (Math.sin(index/3) * 10) + (index / 2);
+
+                // Slightly less growth and volatility for benchmark
+                var benchmarkValue = 100 + (Math.sin(index/4) * 7) + (index / 3);
+
+                // Add a couple of market corrections for realism
+                if (index > 20 && index < 25) {
+                    // First market correction around 2 years ago
+                    portfolioValue = portfolioValue * 0.85;
+                    benchmarkValue = benchmarkValue * 0.9;
+                }
+
+                if (index > 45 && index < 50) {
+                    // Second market correction around 4 years ago
+                    portfolioValue = portfolioValue * 0.8;
+                    benchmarkValue = benchmarkValue * 0.85;
+                }
+
                 return {
                     date: date,
                     portfolioValue: portfolioValue,
