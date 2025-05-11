@@ -131,8 +131,8 @@
                 @if (Model.PerformanceData != null && Model.PerformanceData.Any())
                 {
                     <div id="stockChart" style="width: 100%; height: 500px; max-height: 500px; overflow: hidden;"></div>
-                    
-                    
+
+
                     <script type="text/javascript">
                         document.addEventListener('DOMContentLoaded', function() {
                             // Load series data from server-side JSON
@@ -315,3 +315,212 @@
         </div>
     </div>
 </div>
+
+<!-- Portfolio Insights Section with 2-column grid -->
+<div class="row g-3 mb-4">
+    <!-- Portfolio Heatmap -->
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Portfolio Heatmap</h5>
+            </div>
+            <div class="card-body">
+                <div id="portfolioHeatmapChart" style="width: 100%; height: 450px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performers -->
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">Top Performers</h5>
+            </div>
+            <div class="card-body">
+                <div id="topPerformersChart" style="width: 100%; height: 450px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Initializing Overview tab additional charts');
+
+        // Generate heatmap data from portfolio stocks
+        let heatmapData = [];
+        let topPerformersData = [];
+
+        // Always generate charts, don't depend on seriesData
+        // Generate portfolio heatmap data
+        renderPortfolioHeatmap();
+
+        // Generate top performers chart
+        renderTopPerformersChart();
+    });
+
+    function renderPortfolioHeatmap() {
+        // First, collect all stock data
+        let stockPerformance = @Html.Raw(Json.Serialize(Model.UserStocks.Select(s => new {
+            name = s.StockSymbol,
+            value = s.PerformancePercentage * 100,
+            totalValue = s.TotalValue
+        }).ToList()));
+
+        // Format data for heatmap - normalized by market value
+        let heatmapData = stockPerformance.map(function(stock) {
+            return {
+                name: stock.name,
+                value: stock.value,
+                valueText: (stock.value > 0 ? '+' : '') + stock.value.toFixed(2) + '%',
+                colorValue: stock.value,  // For coloring
+                z: stock.totalValue       // For block size
+            };
+        });
+
+        // Sort by performance
+        heatmapData.sort(function(a, b) {
+            return b.value - a.value;
+        });
+
+        // Create the heatmap
+        Highcharts.chart('portfolioHeatmapChart', {
+            chart: {
+                type: 'treemap',
+                backgroundColor: '#212529'
+            },
+            title: {
+                text: null
+            },
+            subtitle: {
+                text: 'Size corresponds to position value, color to performance',
+                style: { color: '#CCCCCC' }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                style: { color: '#FFFFFF' },
+                formatter: function() {
+                    return '<b>' + this.point.name + '</b><br>' +
+                           'Performance: ' + this.point.valueText + '<br>' +
+                           'Value: $' + Highcharts.numberFormat(this.point.z, 2);
+                }
+            },
+            colorAxis: {
+                minColor: '#D33',
+                maxColor: '#5C5',
+                stops: [
+                    [0, '#D33'],     // Red for negative
+                    [0.5, '#ddd'],   // Gray for neutral
+                    [1, '#5C5']      // Green for positive
+                ]
+            },
+            series: [{
+                type: 'treemap',
+                layoutAlgorithm: 'squarified',
+                data: heatmapData,
+                borderWidth: 2,
+                borderColor: '#212529',
+                dataLabels: {
+                    enabled: true,
+                    style: {
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        textOutline: 'none'
+                    },
+                    formatter: function() {
+                        return this.point.name + '<br>' + this.point.valueText;
+                    }
+                }
+            }],
+            credits: { enabled: false }
+        });
+    }
+
+    function renderTopPerformersChart() {
+        // Get top and bottom 5 performers
+        let stockPerformance = @Html.Raw(Json.Serialize(Model.UserStocks.Select(s => new {
+            name = s.StockSymbol,
+            performance = s.PerformancePercentage * 100
+        }).OrderByDescending(s => s.performance).ToList()));
+
+        let topPerformers = stockPerformance.slice(0, 5);
+        let bottomPerformers = stockPerformance.slice(-5).reverse();
+
+        Highcharts.chart('topPerformersChart', {
+            chart: {
+                type: 'bar',
+                backgroundColor: '#212529'
+            },
+            title: {
+                text: null
+            },
+            xAxis: {
+                categories: [...topPerformers.map(s => s.name), ...bottomPerformers.map(s => s.name)],
+                labels: {
+                    style: { color: '#CCCCCC' }
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Performance (%)',
+                    style: { color: '#CCCCCC' }
+                },
+                labels: {
+                    formatter: function() {
+                        return this.value + '%';
+                    },
+                    style: { color: '#CCCCCC' }
+                },
+                gridLineColor: 'rgba(255, 255, 255, 0.1)'
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                style: { color: '#FFFFFF' },
+                formatter: function() {
+                    return '<b>' + this.x + '</b><br>' +
+                           'Performance: ' + Highcharts.numberFormat(this.y, 2) + '%';
+                }
+            },
+            plotOptions: {
+                bar: {
+                    dataLabels: {
+                        enabled: true,
+                        formatter: function() {
+                            return Highcharts.numberFormat(this.y, 1) + '%';
+                        },
+                        style: {
+                            color: '#FFFFFF'
+                        }
+                    },
+                    grouping: false,
+                    colors: function(point) {
+                        return point.y < 0 ? '#D33' : '#5C5';
+                    }
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            series: [{
+                name: 'Top Performers',
+                data: topPerformers.map(s => {
+                    return {
+                        y: s.performance,
+                        color: s.performance >= 0 ? '#5C5' : '#D33'
+                    };
+                }),
+                color: '#5C5'
+            }, {
+                name: 'Bottom Performers',
+                data: [null, null, null, null, null, ...bottomPerformers.map(s => {
+                    return {
+                        y: s.performance,
+                        color: s.performance >= 0 ? '#5C5' : '#D33'
+                    };
+                })],
+                color: '#D33'
+            }],
+            credits: { enabled: false }
+        });
+    }
+</script>

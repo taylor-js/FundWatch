@@ -71,5 +71,12 @@ namespace FundWatch.Models
                 return costBasis != 0 ? ((totalValue - costBasis) / costBasis) : 0;
             }
         }
+
+        // Additional properties for charting and analytics
+        [NotMapped]
+        public string Sector { get; set; }
+
+        [NotMapped]
+        public string Industry { get; set; }
     }
 }

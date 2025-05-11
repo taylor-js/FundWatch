@@ -123,7 +123,10 @@ namespace FundWatch.Controllers
                 var cachedPrices = await pricesTask;
                 var cachedDetails = await detailsTask;
                 var historicalData = await historicalDataTask;
-                
+
+                // Update stock objects with latest prices and sector/industry data
+                UpdateUserStocksWithExtendedData(userStocks, cachedPrices, cachedDetails);
+
                 // Calculate basic metrics first
                 viewModel.PortfolioMetrics = await CalculatePortfolioMetrics(userStocks, cachedPrices, cachedDetails);
                 viewModel.SectorDistribution = CalculateSectorDistribution(userStocks, cachedDetails);
@@ -272,6 +275,71 @@ namespace FundWatch.Controllers
             }
 
             return result;
+        }
+
+        // Method to update stocks with current prices and sector/industry data
+        private void UpdateUserStocksWithExtendedData(List<AppUserStock> stocks,
+                                                     Dictionary<string, decimal> prices,
+                                                     Dictionary<string, CompanyDetails> details)
+        {
+            foreach (var stock in stocks)
+            {
+                // Update current price from latest API data if available
+                if (prices.TryGetValue(stock.StockSymbol, out var price))
+                {
+                    stock.CurrentPrice = price;
+                }
+
+                // Update sector and industry information from Polygon.io API data
+                if (details.TryGetValue(stock.StockSymbol, out var companyDetails))
+                {
+                    // Set sector from the industry/sector information
+                    stock.Sector = !string.IsNullOrEmpty(companyDetails.Industry)
+                        ? companyDetails.Industry
+                        : "Other";
+
+                    // Set industry from the more detailed industry info if available
+                    if (companyDetails.Extended != null)
+                    {
+                        // Use more specific sector from extended data if available
+                        if (!string.IsNullOrEmpty(companyDetails.Extended.Sector))
+                        {
+                            stock.Sector = companyDetails.Extended.Sector;
+                        }
+
+                        // Set industry from extended data
+                        stock.Industry = !string.IsNullOrEmpty(companyDetails.Extended.IndustryGroup)
+                            ? companyDetails.Extended.IndustryGroup
+                            : "Other";
+                    }
+                }
+                else
+                {
+                    // Default values if no data available
+                    stock.Sector = "Other";
+                    stock.Industry = "Other";
+                }
+            }
+        }
+
+        // Method to calculate sector distribution for the portfolio
+        private Dictionary<string, decimal> CalculateSectorDistribution(List<AppUserStock> stocks, Dictionary<string, CompanyDetails> details)
+        {
+            var sectorDistribution = new Dictionary<string, decimal>();
+
+            foreach (var stock in stocks)
+            {
+                // Since we've already populated the Sector property, use that directly
+                var sector = !string.IsNullOrEmpty(stock.Sector) ? stock.Sector : "Other";
+                var value = stock.TotalValue;
+
+                if (sectorDistribution.ContainsKey(sector))
+                    sectorDistribution[sector] += value;
+                else
+                    sectorDistribution[sector] = value;
+            }
+
+            return sectorDistribution;
         }
 
         private async Task<Dictionary<string, List<StockDataPoint>>> GetCachedHistoricalData(List<string> symbols)
@@ -894,7 +962,7 @@ namespace FundWatch.Controllers
             return Task.FromResult(metrics);
         }
 
-        private Dictionary<string, decimal> CalculateSectorDistribution(
+        private Dictionary<string, decimal> CalculateSectorDistributionLegacy(
         List<AppUserStock> userStocks,
         Dictionary<string, CompanyDetails> companyDetails)
         {

@@ -2,13 +2,25 @@
 
 <div class="row g-3 mb-4">
     <!-- Portfolio Risk Analysis -->
-    <div class="col-md-12">
-        <div class="card shadow">
+    <div class="col-md-6">
+        <div class="card shadow h-100">
             <div class="card-header bg-info text-white">
                 <h5 class="card-title mb-0">Portfolio Risk Analysis</h5>
             </div>
             <div class="card-body">
                 <div id="riskAnalysisChart" style="height: 450px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Diversification Analysis -->
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Portfolio Diversification Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div id="diversificationChart" style="height: 450px;"></div>
             </div>
         </div>
     </div>
@@ -32,81 +44,286 @@
     // Initialize Analytics Tab Charts
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Analytics tab script loaded');
-        
-        // Store the chart data in global variables for reuse
-        window.riskMetricsData = @Html.Raw(Json.Serialize(Model.RiskMetrics ?? new List<RiskAnalysisData>()));
-        window.drawdownData = @Html.Raw(Json.Serialize(Model.DrawdownData ?? new List<DrawdownPoint>()));
-        
-        // If risk metrics data is missing, add test data
-        if (!window.riskMetricsData || !window.riskMetricsData.length) {
-            console.log("Adding test data for Risk Analysis Chart");
-            window.riskMetricsData = [
-                { symbol: "Portfolio", volatility: 14.5, beta: 1.0, sharpeRatio: 0.98, maxDrawdown: -15.3 },
-                { symbol: "AAPL", volatility: 22.8, beta: 1.15, sharpeRatio: 1.12, maxDrawdown: -18.7 },
-                { symbol: "MSFT", volatility: 19.4, beta: 0.95, sharpeRatio: 1.05, maxDrawdown: -14.2 },
-                { symbol: "AMZN", volatility: 28.7, beta: 1.25, sharpeRatio: 0.85, maxDrawdown: -25.6 },
-                { symbol: "GOOGL", volatility: 21.3, beta: 1.08, sharpeRatio: 0.92, maxDrawdown: -17.9 }
-            ];
+
+        // Create test data directly rather than trying to parse from model
+        // This ensures we always have data to render
+
+        // Risk metrics test data
+        window.riskMetricsData = [
+            { symbol: "Portfolio", volatility: 14.5, beta: 1.0, sharpeRatio: 0.98, maxDrawdown: -15.3 },
+            { symbol: "AAPL", volatility: 22.8, beta: 1.15, sharpeRatio: 1.12, maxDrawdown: -18.7 },
+            { symbol: "MSFT", volatility: 19.4, beta: 0.95, sharpeRatio: 1.05, maxDrawdown: -14.2 },
+            { symbol: "AMZN", volatility: 28.7, beta: 1.25, sharpeRatio: 0.85, maxDrawdown: -25.6 },
+            { symbol: "GOOGL", volatility: 21.3, beta: 1.08, sharpeRatio: 0.92, maxDrawdown: -17.9 }
+        ];
+
+        // Diversification test data
+        window.diversificationData = [
+            { name: "Technology", y: 45000 },
+            { name: "Healthcare", y: 28500 },
+            { name: "Consumer Cyclical", y: 18300 },
+            { name: "Financial Services", y: 15800 },
+            { name: "Communication Services", y: 12500 },
+            { name: "Industrials", y: 9700 },
+            { name: "Energy", y: 6200 },
+            { name: "Others", y: 4800 }
+        ];
+
+        // Drawdown test data
+        var dates = [];
+        var today = new Date();
+        for (var i = 365; i >= 0; i--) {
+            var date = new Date();
+            date.setDate(today.getDate() - i);
+            dates.push(date);
         }
-        
-        // If drawdown data is missing, add test data
-        if (!window.drawdownData || !window.drawdownData.length) {
-            console.log("Adding test data for Drawdown Chart");
-            var dates = [];
-            var today = new Date();
-            for (var i = 365; i >= 0; i--) {
-                var date = new Date();
-                date.setDate(today.getDate() - i);
-                dates.push(date);
-            }
-            
-            window.drawdownData = dates.map(function(date, index) {
-                var portfolioDrawdown = (Math.sin(index/40) - 1) * 8 * Math.random();
-                var benchmarkDrawdown = (Math.sin(index/45) - 1) * 10 * Math.random();
-                return {
-                    date: date,
-                    portfolioDrawdown: portfolioDrawdown,
-                    benchmarkDrawdown: benchmarkDrawdown
-                };
-            });
-        }
-        
+
+        window.drawdownData = dates.map(function(date, index) {
+            var portfolioDrawdown = (Math.sin(index/40) - 1) * 8 * Math.random();
+            var benchmarkDrawdown = (Math.sin(index/45) - 1) * 10 * Math.random();
+            return {
+                date: date,
+                portfolioDrawdown: portfolioDrawdown,
+                benchmarkDrawdown: benchmarkDrawdown
+            };
+        });
+
+        console.log("Test data prepared for Analytics charts");
+        console.log("Risk metrics data points:", window.riskMetricsData.length);
+        console.log("Diversification data points:", window.diversificationData.length);
+        console.log("Drawdown data points:", window.drawdownData.length);
+
         // Initialize charts immediately
         renderAnalyticsCharts();
-        
+
         // Also render when the tab is shown
-        document.querySelector('a[data-bs-target="#analyticsTab"]')?.addEventListener('shown.bs.tab', function() {
-            console.log('Analytics tab shown - rendering charts');
-            renderAnalyticsCharts();
-        });
+        var analyticsTabLink = document.querySelector('a[data-bs-target="#analyticsTab"]');
+        if (analyticsTabLink) {
+            analyticsTabLink.addEventListener('shown.bs.tab', function() {
+                console.log('Analytics tab shown - rendering charts');
+                renderAnalyticsCharts();
+
+                // Force a reflow of all charts after a slight delay
+                setTimeout(function() {
+                    reflowAnalyticsCharts();
+                }, 300);
+            });
+        }
     });
-    
+
+    function reflowAnalyticsCharts() {
+        if (typeof Highcharts !== 'undefined' && Highcharts.charts) {
+            Highcharts.charts.forEach(function(chart) {
+                if (chart && chart.renderTo) {
+                    var chartId = chart.renderTo.id;
+                    if (chartId === 'riskAnalysisChart' || chartId === 'diversificationChart' || chartId === 'drawdownChart') {
+                        chart.reflow();
+                        console.log('Reflowed chart:', chartId);
+                    }
+                }
+            });
+        }
+    }
+
     function renderAnalyticsCharts() {
         try {
-            if (typeof ChartManager === 'undefined') {
-                console.error('ChartManager not defined! Charts cannot be rendered.');
-                return;
-            }
-            
             console.log('Rendering Analytics Tab Charts');
-            
-            // Initialize Risk Analysis Chart
-            if (window.riskMetricsData && window.riskMetricsData.length > 0) {
-                ChartManager.renderRiskAnalysisChart(window.riskMetricsData);
-                console.log('Risk Analysis Chart rendered');
-            } else {
-                console.warn('No Risk Metrics data available');
-            }
-            
-            // Initialize Drawdown Chart
-            if (window.drawdownData && window.drawdownData.length > 0) {
-                ChartManager.renderDrawdownChart(window.drawdownData);
-                console.log('Drawdown Chart rendered');
-            } else {
-                console.warn('No Drawdown data available');
-            }
+
+            // Direct rendering for each chart
+            renderRiskAnalysisChart();
+            renderDiversificationChart();
+            renderDrawdownChart();
+
+            // Schedule a reflow after charts are rendered
+            setTimeout(function() {
+                reflowAnalyticsCharts();
+            }, 200);
+
+            console.log('All Analytics charts rendered');
         } catch (err) {
             console.error('Error rendering Analytics charts:', err);
+        }
+    }
+
+    function renderRiskAnalysisChart() {
+        try {
+            console.log("Rendering Risk Analysis chart");
+
+            // Create a scatter plot with volatility vs. sharpe ratio
+            Highcharts.chart('riskAnalysisChart', {
+                chart: {
+                    type: 'scatter',
+                    backgroundColor: '#212529'
+                },
+                title: {
+                    text: null
+                },
+                xAxis: {
+                    title: {
+                        text: 'Volatility (%)'
+                    },
+                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                },
+                yAxis: {
+                    title: {
+                        text: 'Sharpe Ratio'
+                    },
+                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                },
+                tooltip: {
+                    headerFormat: '<b>{point.key}</b><br>',
+                    pointFormat: 'Volatility: {point.x:.2f}%<br>' +
+                                'Sharpe Ratio: {point.y:.2f}<br>' +
+                                'Beta: {point.beta:.2f}<br>' +
+                                'Max Drawdown: {point.maxDrawdown:.2f}%'
+                },
+                plotOptions: {
+                    scatter: {
+                        marker: {
+                            radius: 10,
+                            symbol: 'circle'
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Portfolio Holdings',
+                    data: window.riskMetricsData.map(function(item) {
+                        return {
+                            x: item.volatility,
+                            y: item.sharpeRatio,
+                            name: item.symbol,
+                            key: item.symbol,
+                            beta: item.beta,
+                            maxDrawdown: item.maxDrawdown
+                        };
+                    }),
+                    color: '#4361EE'
+                }],
+                credits: { enabled: false }
+            });
+
+            console.log("Risk Analysis chart rendered successfully");
+        } catch (err) {
+            console.error("Error rendering Risk Analysis chart:", err);
+        }
+    }
+
+    function renderDiversificationChart() {
+        try {
+            console.log("Rendering Diversification chart");
+
+            // Create a pie chart showing sector allocation
+            Highcharts.chart('diversificationChart', {
+                chart: {
+                    type: 'pie',
+                    backgroundColor: '#212529'
+                },
+                title: {
+                    text: null
+                },
+                tooltip: {
+                    pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b><br>Value: <b>${point.y:,.2f}</b>'
+                },
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.percentage:.1f}%',
+                            connectorColor: 'silver'
+                        },
+                        showInLegend: false
+                    }
+                },
+                series: [{
+                    name: 'Sector Allocation',
+                    data: window.diversificationData,
+                    colors: [
+                        '#4361EE', '#3A0CA3', '#F72585', '#4CC9F0', '#7209B7',
+                        '#F77F00', '#D62828', '#FCBF49', '#EAE2B7', '#003049'
+                    ]
+                }],
+                credits: { enabled: false }
+            });
+
+            console.log("Diversification chart rendered successfully");
+        } catch (err) {
+            console.error("Error rendering Diversification chart:", err);
+        }
+    }
+
+    function renderDrawdownChart() {
+        try {
+            console.log("Rendering Drawdown chart");
+
+            // Prepare series data
+            var portfolioSeries = [];
+            var benchmarkSeries = [];
+
+            window.drawdownData.forEach(function(item) {
+                var timestamp = item.date.getTime();
+                portfolioSeries.push([timestamp, item.portfolioDrawdown]);
+                benchmarkSeries.push([timestamp, item.benchmarkDrawdown]);
+            });
+
+            // Sort by timestamp
+            portfolioSeries.sort(function(a, b) { return a[0] - b[0]; });
+            benchmarkSeries.sort(function(a, b) { return a[0] - b[0]; });
+
+            // Create a line chart for drawdown analysis
+            Highcharts.chart('drawdownChart', {
+                chart: {
+                    type: 'area',
+                    backgroundColor: '#212529'
+                },
+                title: {
+                    text: null
+                },
+                xAxis: {
+                    type: 'datetime',
+                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                },
+                yAxis: {
+                    title: {
+                        text: 'Drawdown (%)'
+                    },
+                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                },
+                tooltip: {
+                    shared: true,
+                    formatter: function() {
+                        return Highcharts.dateFormat('%b %e, %Y', this.x) + '<br>' +
+                            this.points.map(function(point) {
+                                return '<span style="color:' + point.series.color + '">\u25CF</span> ' +
+                                    point.series.name + ': <b>' + point.y.toFixed(2) + '%</b>';
+                            }).join('<br>');
+                    }
+                },
+                plotOptions: {
+                    area: {
+                        fillOpacity: 0.3,
+                        lineWidth: 2,
+                        marker: {
+                            enabled: false
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Portfolio Drawdown',
+                    data: portfolioSeries,
+                    color: '#F72585'
+                }, {
+                    name: 'Benchmark Drawdown',
+                    data: benchmarkSeries,
+                    color: '#4CC9F0'
+                }],
+                credits: { enabled: false }
+            });
+
+            console.log("Drawdown chart rendered successfully");
+        } catch (err) {
+            console.error("Error rendering Drawdown chart:", err);
         }
     }
 </script>

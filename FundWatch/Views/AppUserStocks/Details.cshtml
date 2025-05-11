@@ -302,7 +302,7 @@
 
         // Debug and format historical data for Highcharts
         function formatCandlestickData() {
-            let historicalData = @Json.Serialize(Model.HistoricalData);
+            let historicalData = @Html.Raw(Json.Serialize(Model.HistoricalData));
             console.log("Raw historical data sample:", historicalData ? historicalData.slice(0, 2) : 'none');
 
             if (!historicalData || historicalData.length === 0) {
