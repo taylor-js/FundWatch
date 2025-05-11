@@ -166,6 +166,7 @@ namespace FundWatch.Controllers
                 viewModel.RiskMetrics = await riskMetricsTask;
                 viewModel.DrawdownData = await drawdownDataTask;
                 
+                // Log all chart data metrics with extra detail for drawdown data
                 _logger.LogInformation(
                     "Chart data metrics - Monthly: {MonthlyCount}, Rolling: {RollingCount}, Growth: {GrowthCount}, Risk: {RiskCount}, Drawdown: {DrawdownCount}",
                     viewModel.MonthlyPerformanceData?.Count ?? 0,
@@ -173,6 +174,30 @@ namespace FundWatch.Controllers
                     viewModel.PortfolioGrowthData?.Count ?? 0,
                     viewModel.RiskMetrics?.Count ?? 0,
                     viewModel.DrawdownData?.Count ?? 0);
+
+                // Special logging for drawdown data to check date range
+                if (viewModel.DrawdownData != null && viewModel.DrawdownData.Any())
+                {
+                    var firstDate = viewModel.DrawdownData.OrderBy(d => d.Date).First().Date;
+                    var lastDate = viewModel.DrawdownData.OrderBy(d => d.Date).Last().Date;
+                    var dateSpan = (lastDate - firstDate).TotalDays;
+
+                    _logger.LogInformation(
+                        "Drawdown data date range: {FirstDate} to {LastDate} ({Days} days, {Years:F1} years)",
+                        firstDate.ToString("yyyy-MM-dd"),
+                        lastDate.ToString("yyyy-MM-dd"),
+                        dateSpan,
+                        dateSpan / 365.25);
+
+                    // Check for max drawdown values too
+                    var maxPortfolioDrawdown = viewModel.DrawdownData.Min(d => d.PortfolioDrawdown);
+                    var maxBenchmarkDrawdown = viewModel.DrawdownData.Min(d => d.BenchmarkDrawdown);
+
+                    _logger.LogInformation(
+                        "Drawdown extremes: Portfolio {PortfolioMax:F2}%, Benchmark {BenchmarkMax:F2}%",
+                        maxPortfolioDrawdown,
+                        maxBenchmarkDrawdown);
+                }
                 
                 // Cache the performance data separately with longer duration
                 var performanceDataCacheKey = $"PerformanceData_{userId}";

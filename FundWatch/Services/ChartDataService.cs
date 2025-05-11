@@ -525,7 +525,7 @@ namespace FundWatch.Services
         }
         
         /// <summary>
-        /// Calculate drawdown data points for portfolio and benchmark
+        /// Calculate drawdown data points for portfolio and benchmark (5 years of data)
         /// </summary>
         public async Task<List<DrawdownPoint>> CalculateDrawdownSeriesAsync(List<AppUserStock> userStocks)
         {
@@ -536,13 +536,13 @@ namespace FundWatch.Services
                 {
                     return cachedData;
                 }
-                
-                // Get 1 year of data
+
+                // Get 5 years of data (1825 days) instead of just 1 year
                 var symbols = userStocks.Select(s => s.StockSymbol).ToList();
                 symbols.Add("SPY"); // Benchmark
-                
-                var historicalDataConcurrent = await _stockService.GetRealTimeDataAsync(symbols, 365);
-                
+
+                var historicalDataConcurrent = await _stockService.GetRealTimeDataAsync(symbols, 1825);
+
                 // Convert to Dictionary for backward compatibility with our helper methods
                 var historicalData = new Dictionary<string, List<StockDataPoint>>();
                 foreach (var pair in historicalDataConcurrent)
