@@ -130,9 +130,20 @@
             if (grid) {
                 grid.refreshHeader();
                 grid.refresh();
-                
-                // Force pager visibility
+
+                // Add border to bottom of last row
                 setTimeout(function() {
+                    const rows = document.querySelectorAll('.e-row');
+                    if (rows.length > 0) {
+                        const lastRow = rows[rows.length - 1];
+                        if (lastRow) {
+                            // Add bottom border matching the grid lines
+                            lastRow.style.borderBottom = '1px solid #dee2e6';
+                            console.log('Added border to bottom of last row');
+                        }
+                    }
+
+                    // Force pager visibility
                     const pagerElement = document.querySelector('.e-gridpager');
                     if (pagerElement) {
                         pagerElement.style.display = 'flex';

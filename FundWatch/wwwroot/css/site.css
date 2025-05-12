@@ -863,6 +863,11 @@ button[type="submit"] {
     border-left: 3px solid #ffc107;
 }
 
+/* Add bottom border to last grid row */
+#holdingsGrid .e-content .e-row:last-child {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
 #performanceTab #rollingReturnsChart,
 #performanceTab #topHoldingsChart,
 #performanceTab #growthAnalysisChart,
