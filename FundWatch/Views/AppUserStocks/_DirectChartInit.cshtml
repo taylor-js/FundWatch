@@ -64,19 +64,26 @@
         function initializeAllCharts() {
             // Check if Highcharts is loaded
             if (typeof Highcharts === 'undefined') {
-                console.error('Highcharts not loaded yet, will retry in 500ms');
-                setTimeout(initializeAllCharts, 500);
+                console.error('Highcharts not loaded yet, will retry in 1000ms');
+                setTimeout(initializeAllCharts, 1000);
                 return;
             }
-            
+
             // Check if ChartManager is defined
             if (typeof ChartManager === 'undefined') {
-                console.error('ChartManager not defined yet, will retry in 500ms');
-                setTimeout(initializeAllCharts, 500);
+                console.error('ChartManager not defined yet, will retry in 1000ms');
+                setTimeout(initializeAllCharts, 1000);
                 return;
             }
-            
-            console.log('Dependencies loaded, rendering all charts');
+
+            // Check if the dashboard container exists
+            if (!document.getElementById('dashboard-container')) {
+                console.error('Dashboard container not found, will retry in 1000ms');
+                setTimeout(initializeAllCharts, 1000);
+                return;
+            }
+
+            console.log('Dependencies loaded and containers ready, rendering all charts');
             
             // PERFORMANCE TAB CHARTS
             
@@ -87,13 +94,20 @@
                 setTimeout(function() {
                     console.log('Initializing Monthly Performance Chart with @Model.MonthlyPerformanceData.Count data points');
                     try {
+                        // Check if the chart container exists
+                        var container = document.getElementById('monthlyPerformanceChart');
+                        if (!container) {
+                            console.warn('Monthly Performance Chart container not found');
+                            return;
+                        }
+
                         var monthlyData = @Html.Raw(Json.Serialize(Model.MonthlyPerformanceData));
                         ChartManager.renderMonthlyPerformanceChart(monthlyData);
                         console.log('Monthly Performance Chart initialized');
                     } catch (err) {
                         console.error('Error initializing Monthly Performance Chart:', err);
                     }
-                }, 100);
+                }, 300);
                 </text>
             }
             else
@@ -108,13 +122,20 @@
                 setTimeout(function() {
                     console.log('Initializing Rolling Returns Chart with @Model.RollingReturnsData.Count data points');
                     try {
+                        // Check if the chart container exists
+                        var container = document.getElementById('rollingReturnsChart');
+                        if (!container) {
+                            console.warn('Rolling Returns Chart container not found');
+                            return;
+                        }
+
                         var rollingData = @Html.Raw(Json.Serialize(Model.RollingReturnsData));
                         ChartManager.renderRollingReturnsChart(rollingData);
                         console.log('Rolling Returns Chart initialized');
                     } catch (err) {
                         console.error('Error initializing Rolling Returns Chart:', err);
                     }
-                }, 200);
+                }, 400);
                 </text>
             }
             else
@@ -129,13 +150,20 @@
                 setTimeout(function() {
                     console.log('Initializing Portfolio Growth Chart with @Model.PortfolioGrowthData.Count data points');
                     try {
+                        // Check if the chart container exists
+                        var container = document.getElementById('portfolioGrowthChart');
+                        if (!container) {
+                            console.warn('Portfolio Growth Chart container not found');
+                            return;
+                        }
+
                         var growthData = @Html.Raw(Json.Serialize(Model.PortfolioGrowthData));
                         ChartManager.renderPortfolioGrowthChart(growthData);
                         console.log('Portfolio Growth Chart initialized');
                     } catch (err) {
                         console.error('Error initializing Portfolio Growth Chart:', err);
                     }
-                }, 300);
+                }, 500);
                 </text>
             }
             else
@@ -152,13 +180,20 @@
                 setTimeout(function() {
                     console.log('Initializing Risk Analysis Chart with @Model.RiskMetrics.Count data points');
                     try {
+                        // Check if the chart container exists
+                        var container = document.getElementById('riskAnalysisChart');
+                        if (!container) {
+                            console.warn('Risk Analysis Chart container not found');
+                            return;
+                        }
+
                         var riskData = @Html.Raw(Json.Serialize(Model.RiskMetrics));
                         ChartManager.renderRiskAnalysisChart(riskData);
                         console.log('Risk Analysis Chart initialized');
                     } catch (err) {
                         console.error('Error initializing Risk Analysis Chart:', err);
                     }
-                }, 400);
+                }, 600);
                 </text>
             }
             else
@@ -173,13 +208,20 @@
                 setTimeout(function() {
                     console.log('Initializing Drawdown Chart with @Model.DrawdownData.Count data points');
                     try {
+                        // Check if the chart container exists
+                        var container = document.getElementById('drawdownChart');
+                        if (!container) {
+                            console.warn('Drawdown Chart container not found');
+                            return;
+                        }
+
                         var drawdownData = @Html.Raw(Json.Serialize(Model.DrawdownData));
                         ChartManager.renderDrawdownChart(drawdownData);
                         console.log('Drawdown Chart initialized');
                     } catch (err) {
                         console.error('Error initializing Drawdown Chart:', err);
                     }
-                }, 500);
+                }, 700);
                 </text>
             }
             else
@@ -187,19 +229,23 @@
                 <text>console.warn('No Drawdown data available for chart');</text>
             }
             
-            // Force reflow all charts after a delay
+            // Force reflow all charts after a delay, with safety checks
             setTimeout(function() {
-                if (Highcharts.charts) {
+                if (Highcharts && Highcharts.charts) {
                     Highcharts.charts.forEach(function(chart) {
-                        if (chart) {
-                            chart.reflow();
-                            if (chart.renderTo && chart.renderTo.id) {
-                                console.log('Reflowed chart:', chart.renderTo.id);
+                        if (chart && chart.renderTo && chart.renderTo.parentNode) {
+                            try {
+                                chart.reflow();
+                                if (chart.renderTo.id) {
+                                    console.log('Reflowed chart:', chart.renderTo.id);
+                                }
+                            } catch (err) {
+                                console.error('Error reflowing chart:', err);
                             }
                         }
                     });
                 }
-            }, 1000);
+            }, 1500);
         }
         
         // Start the initialization process
@@ -221,9 +267,13 @@
                             const chartContainers = targetTab.querySelectorAll('[id$="Chart"]');
                             chartContainers.forEach(container => {
                                 const chartObj = Highcharts.charts.find(c => c && c.renderTo && c.renderTo.id === container.id);
-                                if (chartObj) {
-                                    chartObj.reflow();
-                                    console.log('Reflowed chart on tab show:', container.id);
+                                if (chartObj && chartObj.renderTo && chartObj.renderTo.parentNode) {
+                                    try {
+                                        chartObj.reflow();
+                                        console.log('Reflowed chart on tab show:', container.id);
+                                    } catch (err) {
+                                        console.error('Error reflowing chart on tab show:', container.id, err);
+                                    }
                                 } else if (container.id === 'monthlyPerformanceChart' && typeof ChartManager !== 'undefined') {
                                     console.log('Re-rendering Monthly Performance Chart');
                                     @if (Model.MonthlyPerformanceData?.Count > 0)

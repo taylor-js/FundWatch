@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using Syncfusion.Blazor;
 using System.IO;
 using System.Net.Http.Headers;
@@ -31,8 +32,37 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     {
         throw new InvalidOperationException("Database connection string is not configured.");
     }
-    services.AddDbContext<AuthDbContext>(options => options.UseSqlServer(connectionString));
-    services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+
+    // Log database configuration (sanitized)
+    Console.WriteLine($"Connecting to database: {MaskConnectionString(connectionString)}");
+
+    services.AddDbContext<AuthDbContext>(options => {
+        options.UseSqlServer(connectionString);
+        options.EnableSensitiveDataLogging(false);
+        options.EnableDetailedErrors(true);
+    });
+    services.AddDbContext<ApplicationDbContext>(options => {
+        options.UseSqlServer(connectionString);
+        options.EnableSensitiveDataLogging(false);
+        options.EnableDetailedErrors(true);
+    });
+
+    // Helper function to mask password in connection string for logging
+    string MaskConnectionString(string cs)
+    {
+        if (string.IsNullOrEmpty(cs)) return "[null]";
+
+        try {
+            var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(cs);
+            if (!string.IsNullOrEmpty(builder.Password))
+                builder.Password = "********";
+            return builder.ConnectionString;
+        }
+        catch {
+            // If we can't parse it, return a generic message instead
+            return "Connection string exists but couldn't be parsed safely";
+        }
+    }
 
     // Identity Configuration
     services.AddDefaultIdentity<IdentityUser>(options =>
