@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using FundWatch.Models;
 
 namespace FundWatch.Areas.Identity.Pages.Account
 {
@@ -21,11 +23,16 @@ namespace FundWatch.Areas.Identity.Pages.Account
     {
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly ApplicationDbContext _context;
+        private readonly FundWatch.Services.StockService _stockService;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger,
+            ApplicationDbContext context, FundWatch.Services.StockService stockService)
         {
             _signInManager = signInManager;
             _logger = logger;
+            _context = context;
+            _stockService = stockService;
         }
 
         /// <summary>
@@ -115,6 +122,35 @@ namespace FundWatch.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
+                    
+                    // Preload user's stock data in the background
+                    var user = await _signInManager.UserManager.FindByEmailAsync(Input.Email);
+                    if (user != null)
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                // Get user's stock symbols
+                                var symbols = await _context.UserStocks
+                                    .Where(s => s.UserId == user.Id && 
+                                               s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0) > 0)
+                                    .Select(s => s.StockSymbol)
+                                    .Distinct()
+                                    .ToListAsync();
+                                    
+                                if (symbols.Any())
+                                {
+                                    await _stockService.PreloadUserDataAsync(user.Id, symbols);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error preloading user data for {UserId}", user.Id);
+                            }
+                        });
+                    }
+                    
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)

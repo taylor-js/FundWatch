@@ -489,6 +489,24 @@ namespace FundWatch.Services
             return prices;
         }
 
+        // Method to preload data for a specific user
+        public async Task PreloadUserDataAsync(string userId, List<string> symbols)
+        {
+            if (string.IsNullOrEmpty(userId) || symbols == null || !symbols.Any())
+                return;
+
+            _logger.LogInformation("Preloading stock data for user {UserId} with {SymbolCount} symbols", userId, symbols.Count);
+
+            // Load prices and historical data in parallel
+            var pricesTask = GetRealTimePricesAsync(symbols);
+            var historicalTask = GetRealTimeDataAsync(symbols, 365); // 1 year of data for quick load
+            var detailsTask = GetCompanyDetailsAsync(symbols);
+
+            await Task.WhenAll(pricesTask, historicalTask, detailsTask);
+
+            _logger.LogInformation("Completed preloading data for user {UserId}", userId);
+        }
+
         private DateTime GetNextTradingDay()
         {
             var tomorrow = DateTime.UtcNow.AddDays(1).Date;

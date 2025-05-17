@@ -71,6 +71,14 @@ namespace FundWatch.Controllers
             // Start with a stopwatch to track performance
             var sw = System.Diagnostics.Stopwatch.StartNew();
             
+            // Check cache first for user-specific dashboard data
+            var cacheKey = $"Dashboard_{userId}";
+            if (_cache.TryGetValue(cacheKey, out PortfolioDashboardViewModel? cachedViewModel) && cachedViewModel != null)
+            {
+                _logger.LogInformation("Returning cached dashboard for user {UserId}", userId);
+                return cachedViewModel;
+            }
+            
             // Get user stocks data first
             var userStocks = await _context.UserStocks
                 .Where(u => u.UserId == userId &&
@@ -85,15 +93,7 @@ namespace FundWatch.Controllers
                 .Distinct()
                 .ToList();
             
-            // Create a test request to check API status 
-            var testSymbol = symbols.First();
-            var testPrice = await _stockService.GetRealTimePricesAsync(new List<string> { testSymbol });
-            
-            if (testPrice == null || !testPrice.Any())
-            {
-                _logger.LogError("API connectivity test failed for symbol {Symbol}. API key may be invalid.", testSymbol);
-                TempData["ApiError"] = "Unable to connect to stock data API. Please check your API key configuration.";
-            }
+            // Skip API connectivity test - rely on cached data instead
                 
             _logger.LogInformation("Preparing dashboard for user {UserId} with {SymbolCount} symbols", userId, symbols.Count);
 
@@ -203,6 +203,9 @@ namespace FundWatch.Controllers
                 // Cache the performance data separately with longer duration
                 var performanceDataCacheKey = $"PerformanceData_{userId}";
                 _cache.Set(performanceDataCacheKey, performanceData, TimeSpan.FromHours(1));
+                
+                // Cache the entire dashboard view model for fast subsequent loads
+                _cache.Set(cacheKey, viewModel, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
             }
             catch (Exception ex)
             {

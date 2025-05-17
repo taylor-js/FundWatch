@@ -39,4 +39,12 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Prevent multiple form submissions
+        document.getElementById('account').addEventListener('submit', function() {
+            var submitButton = document.getElementById('login-submit');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+        });
+    </script>
 }

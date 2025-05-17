@@ -53,7 +53,8 @@ namespace FundWatch.Services
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var stockService = scope.ServiceProvider.GetRequiredService<StockService>();
 
-            // Get all unique stock symbols from active positions with a single query
+            // Get unique stock symbols from active positions only (not all users)
+            // This reduces API calls by only loading data for stocks that are currently held
             var symbols = await context.UserStocks
                 .Where(s => s.NumberOfSharesPurchased - (s.NumberOfSharesSold ?? 0) > 0)
                 .Select(s => s.StockSymbol)
