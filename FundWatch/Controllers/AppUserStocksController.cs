@@ -863,6 +863,11 @@ namespace FundWatch.Controllers
                         await transaction.RollbackAsync();
                         throw;
                     }
+                    
+                    // Clear cached dashboard data for this user
+                    var dashboardCacheKey = $"Dashboard_{userId}";
+                    _cache.Remove(dashboardCacheKey);
+                    _logger.LogInformation("Cleared dashboard cache for user {UserId}", userId);
 
                     return RedirectToAction(nameof(Dashboard));
                 }
@@ -959,6 +964,11 @@ namespace FundWatch.Controllers
                         await transaction.RollbackAsync();
                         throw;
                     }
+                    
+                    // Clear cached dashboard data for this user
+                    var dashboardCacheKey = $"Dashboard_{userId}";
+                    _cache.Remove(dashboardCacheKey);
+                    _logger.LogInformation("Cleared dashboard cache for user {UserId}", userId);
 
                     return RedirectToAction(nameof(Dashboard));
                 }
