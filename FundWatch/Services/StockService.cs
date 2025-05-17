@@ -59,6 +59,44 @@ namespace FundWatch.Services
                 return 0;
             }
         }
+        
+        // Method to get the earliest available date with valid price for a stock
+        public async Task<(DateTime date, decimal price)?> GetEarliestAvailableDateAsync(string symbol)
+        {
+            try
+            {
+                var data = await GetRealTimeDataAsync(new List<string> { symbol }, 1825);
+                
+                if (data.TryGetValue(symbol, out var dataPoints) && dataPoints != null && dataPoints.Any())
+                {
+                    // Find the earliest date with a valid price
+                    var earliestPoint = dataPoints
+                        .Where(dp => dp.Close > 0)
+                        .OrderBy(dp => dp.Date)
+                        .FirstOrDefault();
+                    
+                    if (earliestPoint != null)
+                    {
+                        return (earliestPoint.Date, earliestPoint.Close);
+                    }
+                }
+                
+                // If no historical data, try to get current price
+                var prices = await GetRealTimePricesAsync(new List<string> { symbol });
+                if (prices.TryGetValue(symbol, out decimal price) && price > 0)
+                {
+                    // Return today with current price as fallback
+                    return (DateTime.UtcNow.Date, price);
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting earliest available date for symbol: {Symbol}", symbol);
+                return null;
+            }
+        }
         private readonly HttpClient _httpClient;
         private readonly ILogger<StockService> _logger;
         private readonly IMemoryCache _cache;

@@ -53,8 +53,10 @@
                         })
                         .DataSource(ViewBag.InitialStock ?? new List<object>())
                         .Value(Model.StockSymbol)
+                        .IgnoreAccent(true)
                         .Render())
                     <span asp-validation-for="StockSymbol" class="text-danger"></span>
+                    <input type="hidden" id="hiddenStockSymbol" name="hiddenStockSymbol" value="@Model.StockSymbol" />
                 </div>
 
                 <div class="row">
@@ -66,7 +68,11 @@
                             .Start(CalendarView.Month)
                             .Depth(CalendarView.Month)
                             .CssClass("form-control")
-                            .Placeholder("Select purchase date...")
+                            .Placeholder("YYYY-MM-DD")
+                            .StrictMode(true)
+                            .AllowEdit(false)
+                            .Max(DateTime.Today)
+                            .Min(DateTime.Today.AddYears(-5))
                             .Render())
                         <span asp-validation-for="DatePurchased" class="text-danger"></span>
                     </div>
@@ -97,7 +103,11 @@
                             .Start(CalendarView.Month)
                             .Depth(CalendarView.Month)
                             .CssClass("form-control")
-                            .Placeholder("Select sale date...")
+                            .Placeholder("YYYY-MM-DD")
+                            .StrictMode(true)
+                            .AllowEdit(false)
+                            .Max(DateTime.Today)
+                            .Min(DateTime.Today.AddYears(-5))
                             .Render())
                         <span asp-validation-for="DateSold" class="text-danger"></span>
                     </div>
@@ -174,7 +184,9 @@
             
             // Get form elements with error handling
             var stockSymbolElement = document.getElementById("StockSymbol");
+            var hiddenStockSymbol = document.getElementById("hiddenStockSymbol");
             var stockSymbolDropdown = null;
+            var lastValidSymbol = hiddenStockSymbol ? hiddenStockSymbol.value : "";
 
             // Debug output for Syncfusion initialization
             console.log("StockSymbol element:", stockSymbolElement);
@@ -189,6 +201,7 @@
                     if (stockSymbolDropdown) {
                         console.log("Dropdown type:", typeof stockSymbolDropdown);
                         console.log("Dropdown initial value:", stockSymbolDropdown.value);
+                        lastValidSymbol = stockSymbolDropdown.value || lastValidSymbol;
                     }
                 } else {
                     console.error("Syncfusion dropdown failed to initialize - ej2_instances not found");
@@ -257,6 +270,36 @@
                 submitButton.disabled = false;
             }
 
+            // Function to get earliest available date for a stock
+            function getEarliestAvailableDate(symbol, callback) {
+                const url = `/AppUserStocks/GetEarliestAvailableDate?stockSymbol=${encodeURIComponent(symbol)}&_=${Date.now()}`;
+                
+                var request = new XMLHttpRequest();
+                request.open('GET', url, true);
+                request.onreadystatechange = function() {
+                    if (this.readyState === 4) {
+                        if (this.status === 200) {
+                            try {
+                                var data = JSON.parse(this.responseText);
+                                if (data.success) {
+                                    callback(data.date, data.price);
+                                } else {
+                                    console.warn("Failed to get earliest date:", data.message);
+                                    callback(null, null);
+                                }
+                            } catch (e) {
+                                console.error("Error parsing earliest date response:", e);
+                                callback(null, null);
+                            }
+                        } else {
+                            console.error("Earliest date request failed with status:", this.status);
+                            callback(null, null);
+                        }
+                    }
+                };
+                request.send();
+            }
+
             // Function to update prices based on dates and symbol
             function updatePrices() {
                 console.log("⚠️ updatePrices() called");
@@ -267,11 +310,14 @@
                     symbolValue = stockSymbolDropdown.value;
                     console.log("Got symbol from dropdown:", symbolValue);
                 } else {
-                    // Try to get value directly from the input field
+                    // Try to get value directly from the input field or hidden field
                     var inputField = document.getElementById("StockSymbol");
-                    if (inputField) {
+                    if (inputField && inputField.value) {
                         symbolValue = inputField.value;
                         console.log("Got symbol from input field:", symbolValue);
+                    } else if (hiddenStockSymbol && hiddenStockSymbol.value) {
+                        symbolValue = hiddenStockSymbol.value;
+                        console.log("Got symbol from hidden field:", symbolValue);
                     }
                 }
 
@@ -300,29 +346,17 @@
 
                 console.log("Purchase date:", purchaseDate, "Sale date:", saleDate);
 
-                // Set fallback prices if needed for Syncfusion controls
-                if (purchasePriceNumeric && (!purchasePriceNumeric.value || parseFloat(purchasePriceNumeric.value) <= 0)) {
-                    purchasePriceNumeric.value = 1.00;
-                    console.log("Setting fallback purchase price to 1.00");
-                }
-
-                if (currentPriceNumeric && (!currentPriceNumeric.value || parseFloat(currentPriceNumeric.value) <= 0)) {
-                    currentPriceNumeric.value = 1.00;
-                    console.log("Setting fallback current price to 1.00");
-                }
-
                 // Don't proceed if we don't have purchase date or symbol
                 if (!purchaseDate || !symbol) {
                     console.warn("Missing required data (purchaseDate or symbol) for price fetch");
                     return;
                 }
 
-                // Fetch purchase price (with cache busting query param)
+                // Fetch purchase price
                 console.log(`⚠️ Fetching price for ${symbol} on ${purchaseDate}`);
                 const purchaseUrl = `/AppUserStocks/GetHistoricalPrice?stockSymbol=${encodeURIComponent(symbol)}&date=${purchaseDate}&_=${Date.now()}`;
                 console.log("Purchase API URL:", purchaseUrl);
 
-                // Use plain XMLHttpRequest to avoid any fetch() compatibility issues
                 var purchasePriceRequest = new XMLHttpRequest();
                 purchasePriceRequest.open('GET', purchaseUrl, true);
                 purchasePriceRequest.onreadystatechange = function() {
@@ -337,28 +371,78 @@
                                 if (data.success && purchasePriceNumeric) {
                                     if (data.price > 0) {
                                         purchasePriceNumeric.value = data.price;
+                                        purchasePriceNumeric.readonly = true;
                                         console.log(`⚠️ Purchase price set to: ${data.price}`);
                                     } else {
-                                        console.warn("API returned zero or negative price, using fallback");
-                                        purchasePriceNumeric.value = 1.00;
+                                        console.warn("API returned zero or negative price");
+                                        handleNoDataForDate();
                                     }
                                 } else {
                                     console.error("Failed to get purchase price:", data);
-                                    purchasePriceNumeric.value = 1.00;
+                                    handleNoDataForDate();
+                                }
+                                
+                                function handleNoDataForDate() {
+                                    // Market might be closed on this date, find the next available trading day
+                                    console.log("No data available for selected date, finding next trading day...");
+                                    
+                                    // Try the next business day
+                                    var attemptDate = new Date(purchaseDate);
+                                    var maxAttempts = 7; // Check up to a week ahead
+                                    var attempts = 0;
+                                    
+                                    function tryNextDate() {
+                                        if (attempts >= maxAttempts) {
+                                            // Fallback to getting earliest available date
+                                            getEarliestAvailableDate(symbol, function(date, price) {
+                                                if (date && price) {
+                                                    datePurchasedPicker.value = new Date(date);
+                                                    purchasePriceNumeric.value = price;
+                                                    console.log(`Auto-adjusted to earliest available date: ${date} with price: ${price}`);
+                                                }
+                                            });
+                                            return;
+                                        }
+                                        
+                                        attemptDate.setDate(attemptDate.getDate() + 1);
+                                        var nextDateStr = moment(attemptDate).format('YYYY-MM-DD');
+                                        
+                                        var nextDateRequest = new XMLHttpRequest();
+                                        nextDateRequest.open('GET', `/AppUserStocks/GetHistoricalPrice?stockSymbol=${encodeURIComponent(symbol)}&date=${nextDateStr}&_=${Date.now()}`, true);
+                                        nextDateRequest.onreadystatechange = function() {
+                                            if (this.readyState === 4 && this.status === 200) {
+                                                try {
+                                                    var nextData = JSON.parse(this.responseText);
+                                                    if (nextData.success && nextData.price > 0) {
+                                                        datePurchasedPicker.value = attemptDate;
+                                                        purchasePriceNumeric.value = nextData.price;
+                                                        console.log(`Found next trading day: ${nextDateStr} with price: ${nextData.price}`);
+                                                    } else {
+                                                        attempts++;
+                                                        tryNextDate();
+                                                    }
+                                                } catch (e) {
+                                                    attempts++;
+                                                    tryNextDate();
+                                                }
+                                            }
+                                        };
+                                        nextDateRequest.send();
+                                    }
+                                    
+                                    tryNextDate();
                                 }
                             } catch (e) {
                                 console.error("Error parsing purchase price response:", e);
-                                purchasePriceNumeric.value = 1.00;
                             }
                         } else {
                             console.error("Purchase price request failed with status:", this.status);
-                            purchasePriceNumeric.value = 1.00;
                         }
                     }
                 };
                 purchasePriceRequest.send();
 
-                // Similarly for current price
+                // Similarly for current/sale price
                 console.log(`⚠️ Fetching current price for ${symbol} on ${saleDate}`);
                 const currentUrl = `/AppUserStocks/GetHistoricalPrice?stockSymbol=${encodeURIComponent(symbol)}&date=${saleDate}&_=${Date.now()}`;
                 console.log("Current API URL:", currentUrl);
@@ -377,9 +461,11 @@
                                 if (data.success && currentPriceNumeric) {
                                     if (data.price > 0) {
                                         currentPriceNumeric.value = data.price;
+                                        currentPriceNumeric.readonly = true;
                                         console.log(`⚠️ Current price set to: ${data.price}`);
                                     } else {
-                                        console.warn("API returned zero or negative current price, using fallback");
+                                        console.warn("API returned zero or negative current price");
+                                        // Default to today's price
                                         currentPriceNumeric.value = 1.00;
                                     }
                                 } else {
@@ -405,11 +491,40 @@
                 console.log("Setting up manual handlers for stock symbol field");
                 stockSymbolField.addEventListener('change', function() {
                     console.log("Stock symbol field changed to:", this.value);
-                    setTimeout(updatePrices, 100); // Delay slightly to ensure value is set
+                    lastValidSymbol = this.value;
+                    if (hiddenStockSymbol) {
+                        hiddenStockSymbol.value = this.value;
+                    }
+                    
+                    // Get earliest available date for new symbol
+                    if (this.value) {
+                        getEarliestAvailableDate(this.value, function(date, price) {
+                            if (date && price && datePurchasedPicker && purchasePriceNumeric) {
+                                datePurchasedPicker.value = new Date(date);
+                                purchasePriceNumeric.value = price;
+                                
+                                // Update the minimum date for sale date picker
+                                if (dateSoldPicker) {
+                                    var minSaleDate = new Date(date);
+                                    minSaleDate.setDate(minSaleDate.getDate() + 1);
+                                    dateSoldPicker.min = minSaleDate;
+                                }
+                                
+                                setTimeout(updatePrices, 100);
+                            } else {
+                                setTimeout(updatePrices, 100);
+                            }
+                        });
+                    } else {
+                        setTimeout(updatePrices, 100);
+                    }
                 });
                 stockSymbolField.addEventListener('blur', function() {
                     console.log("Stock symbol field blur event with value:", this.value);
-                    setTimeout(updatePrices, 100);
+                    lastValidSymbol = this.value;
+                    if (hiddenStockSymbol) {
+                        hiddenStockSymbol.value = this.value;
+                    }
                 });
             }
 
@@ -454,6 +569,11 @@
                 // Handle stock selection change
                 stockSymbolDropdown.change = function() {
                     var value = this.value;
+                    lastValidSymbol = value;
+                    if (hiddenStockSymbol) {
+                        hiddenStockSymbol.value = value;
+                    }
+                    
                     if (value) {
                         // Check if stock exists
                         fetch('/AppUserStocks/CheckStockExists?stockSymbol=' + encodeURIComponent(value))
@@ -468,12 +588,38 @@
                                     }
                                 }
 
-                                // Update prices
-                                updatePrices();
+                                // Always get earliest available date and corresponding price for stock
+                                getEarliestAvailableDate(value, function(date, price) {
+                                    if (date && price && datePurchasedPicker && purchasePriceNumeric) {
+                                        console.log("Setting earliest available date:", date, "with price:", price);
+                                        datePurchasedPicker.value = new Date(date);
+                                        purchasePriceNumeric.value = price;
+                                        
+                                        // Update the minimum date for sale date picker
+                                        if (dateSoldPicker) {
+                                            var minSaleDate = new Date(date);
+                                            minSaleDate.setDate(minSaleDate.getDate() + 1);
+                                            dateSoldPicker.min = minSaleDate;
+                                        }
+                                        
+                                        // Then update prices for any other dates
+                                        updatePrices();
+                                    } else {
+                                        // Fallback to regular price update
+                                        updatePrices();
+                                    }
+                                });
                             })
                             .catch(function(error) {
                                 console.error('Error checking stock existence:', error);
-                                updatePrices();
+                                // Try to get earliest date anyway
+                                getEarliestAvailableDate(value, function(date, price) {
+                                    if (date && price && datePurchasedPicker && purchasePriceNumeric) {
+                                        datePurchasedPicker.value = new Date(date);
+                                        purchasePriceNumeric.value = price;
+                                    }
+                                    updatePrices();
+                                });
                             });
                     }
                 };
@@ -482,24 +628,142 @@
             // Add event listeners for date picker controls
             if (datePurchasedPicker) {
                 console.log("Setting up purchase date change handler for Syncfusion control");
+                
+                // Set strict format for the date picker
+                datePurchasedPicker.format = "yyyy-MM-dd";
+                datePurchasedPicker.strictMode = true;
+                
+                // Set date limits (5 years back from today)
+                var today = new Date();
+                var fiveYearsAgo = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate());
+                datePurchasedPicker.max = today;
+                datePurchasedPicker.min = fiveYearsAgo;
+                
                 datePurchasedPicker.change = function(args) {
                     console.log("Purchase date changed to:", args.value);
+                    
+                    // Preserve the stock symbol value
+                    if (stockSymbolDropdown && lastValidSymbol) {
+                        stockSymbolDropdown.value = lastValidSymbol;
+                        if (hiddenStockSymbol) {
+                            hiddenStockSymbol.value = lastValidSymbol;
+                        }
+                    }
+                    
+                    // Ensure date is in correct format
+                    if (args.value) {
+                        var formattedDate = moment(args.value).format('YYYY-MM-DD');
+                        console.log("Formatted purchase date:", formattedDate);
+                        
+                        // Update the minimum date for sale date picker (must be at least 1 day after purchase)
+                        if (dateSoldPicker) {
+                            var minSaleDate = new Date(args.value);
+                            minSaleDate.setDate(minSaleDate.getDate() + 1);
+                            dateSoldPicker.min = minSaleDate;
+                            
+                            // If current sale date is less than or equal to purchase date, clear it
+                            if (dateSoldPicker.value && dateSoldPicker.value <= args.value) {
+                                dateSoldPicker.value = null;
+                                console.log("Cleared sale date as it was less than or equal to purchase date");
+                            }
+                        }
+                    }
+                    
                     updatePrices();
+                };
+                
+                // Add blur event to preserve symbol value
+                datePurchasedPicker.blur = function(args) {
+                    if (stockSymbolDropdown && lastValidSymbol) {
+                        stockSymbolDropdown.value = lastValidSymbol;
+                        if (hiddenStockSymbol) {
+                            hiddenStockSymbol.value = lastValidSymbol;
+                        }
+                    }
+                };
+                
+                // Add focus event to ensure proper format
+                datePurchasedPicker.focus = function(args) {
+                    this.format = "yyyy-MM-dd";
                 };
             }
 
             if (dateSoldPicker) {
                 console.log("Setting up sale date change handler for Syncfusion control");
+                
+                // Set strict format for the date picker
+                dateSoldPicker.format = "yyyy-MM-dd";
+                dateSoldPicker.strictMode = true;
+                
+                // Set date limits (5 years back from today)
+                var today = new Date();
+                var fiveYearsAgo = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate());
+                dateSoldPicker.max = today;
+                dateSoldPicker.min = fiveYearsAgo;
+                
+                // If purchase date is already set, update minimum sale date
+                if (datePurchasedPicker && datePurchasedPicker.value) {
+                    var minSaleDate = new Date(datePurchasedPicker.value);
+                    minSaleDate.setDate(minSaleDate.getDate() + 1);
+                    dateSoldPicker.min = minSaleDate;
+                    console.log("Set initial minimum sale date to:", minSaleDate);
+                }
+                
                 dateSoldPicker.change = function(args) {
                     console.log("Sale date changed to:", args.value);
+                    
+                    // Preserve the stock symbol value
+                    if (stockSymbolDropdown && lastValidSymbol) {
+                        stockSymbolDropdown.value = lastValidSymbol;
+                        if (hiddenStockSymbol) {
+                            hiddenStockSymbol.value = lastValidSymbol;
+                        }
+                    }
+                    
+                    // Ensure date is in correct format
+                    if (args.value) {
+                        var formattedDate = moment(args.value).format('YYYY-MM-DD');
+                        console.log("Formatted sale date:", formattedDate);
+                    }
+                    
                     updatePrices();
+                };
+                
+                // Add blur event to preserve symbol value
+                dateSoldPicker.blur = function(args) {
+                    if (stockSymbolDropdown && lastValidSymbol) {
+                        stockSymbolDropdown.value = lastValidSymbol;
+                        if (hiddenStockSymbol) {
+                            hiddenStockSymbol.value = lastValidSymbol;
+                        }
+                    }
+                };
+                
+                // Add focus event to ensure proper format
+                dateSoldPicker.focus = function(args) {
+                    this.format = "yyyy-MM-dd";
                 };
             }
 
             // Force an initial prices fetch if we have initial data
             if (stockSymbolField && stockSymbolField.value && datePurchasedPicker) {
                 console.log("Initial data detected, triggering price fetch");
-                setTimeout(updatePrices, 500); // Delay to ensure everything is initialized
+                
+                // For new entries, get the earliest available date
+                if (@(Model.Id) == 0) {
+                    getEarliestAvailableDate(stockSymbolField.value, function(date, price) {
+                        if (date && price && datePurchasedPicker && purchasePriceNumeric) {
+                            console.log("Setting initial earliest available date:", date, "with price:", price);
+                            datePurchasedPicker.value = new Date(date);
+                            purchasePriceNumeric.value = price;
+                            setTimeout(updatePrices, 500);
+                        } else {
+                            setTimeout(updatePrices, 500);
+                        }
+                    });
+                } else {
+                    setTimeout(updatePrices, 500); // For existing entries, just update prices
+                }
             }
             
             // Form validation
@@ -514,11 +778,15 @@
 
                     // Get the direct stock symbol value
                     var symbolValue = "";
-                    var stockSymbolField = document.getElementById("StockSymbol");
-                    if (stockSymbolField) {
-                        symbolValue = stockSymbolField.value;
-                    } else if (stockSymbolDropdown && stockSymbolDropdown.value) {
+                    if (stockSymbolDropdown && stockSymbolDropdown.value) {
                         symbolValue = stockSymbolDropdown.value;
+                    } else if (hiddenStockSymbol && hiddenStockSymbol.value) {
+                        symbolValue = hiddenStockSymbol.value;
+                    } else {
+                        var stockSymbolField = document.getElementById("StockSymbol");
+                        if (stockSymbolField) {
+                            symbolValue = stockSymbolField.value;
+                        }
                     }
 
                     // Log form field values
@@ -544,6 +812,19 @@
                         console.error("Purchase date validation failed");
                         alert("Please select a purchase date");
                         return false;
+                    }
+                    
+                    // Validate sale date is after purchase date
+                    if (dateSoldPicker && dateSoldPicker.value && datePurchasedPicker && datePurchasedPicker.value) {
+                        var purchaseDate = new Date(datePurchasedPicker.value);
+                        var saleDate = new Date(dateSoldPicker.value);
+                        
+                        if (saleDate <= purchaseDate) {
+                            e.preventDefault();
+                            console.error("Sale date validation failed - must be after purchase date");
+                            alert("Sale date must be at least one day after the purchase date");
+                            return false;
+                        }
                     }
 
                     // Add hidden fields for dates if using Syncfusion datepickers

@@ -1367,11 +1367,27 @@ namespace FundWatch.Controllers
 
                     if (data.TryGetValue(stockSymbol, out var dataPoints) && dataPoints.Any())
                     {
+                        // First try exact date match
                         price = dataPoints.FirstOrDefault(dp => dp.Date.Date == date.Date)?.Close ?? 0;
                         if (price > 0)
                         {
                             _cache.Set(cacheKey, price, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
                             return Json(new { success = true, price });
+                        }
+                        
+                        // If no exact match, try to find the closest preceding date
+                        var closestPoint = dataPoints
+                            .Where(dp => dp.Date.Date <= date.Date && dp.Close > 0)
+                            .OrderByDescending(dp => dp.Date)
+                            .FirstOrDefault();
+                            
+                        if (closestPoint != null)
+                        {
+                            price = closestPoint.Close;
+                            _cache.Set(cacheKey, price, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                            _logger.LogInformation("No data for exact date, using closest preceding date {ClosestDate} with price {Price}", 
+                                closestPoint.Date.ToString("yyyy-MM-dd"), price);
+                            return Json(new { success = true, price, date = closestPoint.Date.ToString("yyyy-MM-dd") });
                         }
 
                         _logger.LogWarning("No matching data found for symbol {Symbol} on date {Date}.", stockSymbol, date);
@@ -1390,6 +1406,36 @@ namespace FundWatch.Controllers
             {
                 _logger.LogError(ex, "Error fetching historical price for {Symbol} on {Date}", stockSymbol, date);
                 return Json(new { success = false, message = "An error occurred while fetching price." });
+            }
+        }
+        
+        [HttpGet]
+        public async Task<IActionResult> GetEarliestAvailableDate(string stockSymbol)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(stockSymbol))
+                {
+                    return Json(new { success = false, message = "Invalid stock symbol" });
+                }
+
+                var result = await _stockService.GetEarliestAvailableDateAsync(stockSymbol);
+                
+                if (result.HasValue)
+                {
+                    return Json(new { 
+                        success = true, 
+                        date = result.Value.date.ToString("yyyy-MM-dd"),
+                        price = result.Value.price
+                    });
+                }
+                
+                return Json(new { success = false, message = "No data available for the stock" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching earliest available date for {Symbol}", stockSymbol);
+                return Json(new { success = false, message = "An error occurred while fetching data" });
             }
         }
         
