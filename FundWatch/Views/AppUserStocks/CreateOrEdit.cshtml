@@ -155,7 +155,12 @@
 
                 <div class="d-flex justify-content-between mt-3">
                     <a asp-action="Dashboard" class="btn btn-secondary">Back to Dashboard</a>
-                    <button type="submit" id="submitButton" class="btn btn-success">@(Model.Id == 0 ? "Create" : "Save")</button>
+                    <button type="submit" id="submitButton" class="btn btn-success position-relative">
+                        <span id="submitButtonText">@(Model.Id == 0 ? "Create" : "Save")</span>
+                        <span id="submitButtonLoader" class="spinner-border spinner-border-sm position-absolute top-50 start-50 translate-middle d-none" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -184,6 +189,43 @@
 
             // Debug output for Syncfusion initialization
             console.log("StockSymbol element:", stockSymbolElement);
+
+            // AJAX loading state management
+            var loadingState = {
+                purchasePrice: false,
+                currentPrice: false,
+                earliestDate: false,
+                stockCheck: false,
+                currentSymbol: null // Track the current symbol being processed
+            };
+
+            function updateLoadingState(requestType, isLoading) {
+                loadingState[requestType] = isLoading;
+                
+                // Check if any requests are still loading
+                var anyLoading = Object.keys(loadingState).some(function(key) {
+                    return key !== 'currentSymbol' && loadingState[key] === true;
+                });
+                
+                // Disable submit button while loading
+                if (submitButton) {
+                    submitButton.disabled = anyLoading;
+                    var submitButtonText = document.getElementById('submitButtonText');
+                    var submitButtonLoader = document.getElementById('submitButtonLoader');
+                    
+                    if (anyLoading) {
+                        if (submitButtonText) submitButtonText.classList.add('opacity-0');
+                        if (submitButtonLoader) submitButtonLoader.classList.remove('d-none');
+                        submitButton.classList.add('disabled');
+                    } else {
+                        if (submitButtonText) submitButtonText.classList.remove('opacity-0');
+                        if (submitButtonLoader) submitButtonLoader.classList.add('d-none');
+                        submitButton.classList.remove('disabled');
+                    }
+                }
+                
+                console.log("Loading state updated:", requestType, isLoading, "Any loading:", anyLoading);
+            }
 
             try {
                 // Attempt to access Syncfusion dropdown instance
@@ -268,10 +310,14 @@
             function getEarliestAvailableDate(symbol, callback) {
                 const url = `/AppUserStocks/GetEarliestAvailableDate?stockSymbol=${encodeURIComponent(symbol)}&_=${Date.now()}`;
                 
+                updateLoadingState('earliestDate', true);
+                
                 var request = new XMLHttpRequest();
                 request.open('GET', url, true);
                 request.onreadystatechange = function() {
                     if (this.readyState === 4) {
+                        updateLoadingState('earliestDate', false);
+                        
                         if (this.status === 200) {
                             try {
                                 var data = JSON.parse(this.responseText);
@@ -324,6 +370,20 @@
                 const symbol = symbolValue;
                 console.log("⚠️ Updating prices for symbol:", symbol);
 
+                // Check if symbol has changed - clear prices if it has
+                if (loadingState.currentSymbol && loadingState.currentSymbol !== symbol) {
+                    console.log("Symbol changed from", loadingState.currentSymbol, "to", symbol, "- clearing prices");
+                    if (purchasePriceNumeric) {
+                        purchasePriceNumeric.value = null;
+                    }
+                    if (currentPriceNumeric) {
+                        currentPriceNumeric.value = null;
+                    }
+                }
+                
+                // Update current symbol
+                loadingState.currentSymbol = symbol;
+
                 // Get dates from Syncfusion datepickers
                 var purchaseDate = "";
                 var saleDate = moment().format('YYYY-MM-DD');
@@ -351,11 +411,20 @@
                 const purchaseUrl = `/AppUserStocks/GetHistoricalPrice?stockSymbol=${encodeURIComponent(symbol)}&date=${purchaseDate}&_=${Date.now()}`;
                 console.log("Purchase API URL:", purchaseUrl);
 
+                updateLoadingState('purchasePrice', true);
+
                 var purchasePriceRequest = new XMLHttpRequest();
                 purchasePriceRequest.open('GET', purchaseUrl, true);
                 purchasePriceRequest.onreadystatechange = function() {
                     if (this.readyState === 4) {
                         console.log("Purchase price API response status:", this.status);
+
+                        // Only process if this is still the current symbol
+                        if (loadingState.currentSymbol !== symbol) {
+                            console.log("Symbol changed during request, ignoring response");
+                            updateLoadingState('purchasePrice', false);
+                            return;
+                        }
 
                         if (this.status === 200) {
                             try {
@@ -429,8 +498,10 @@
                             } catch (e) {
                                 console.error("Error parsing purchase price response:", e);
                             }
+                            updateLoadingState('purchasePrice', false);
                         } else {
                             console.error("Purchase price request failed with status:", this.status);
+                            updateLoadingState('purchasePrice', false);
                         }
                     }
                 };
@@ -441,11 +512,20 @@
                 const currentUrl = `/AppUserStocks/GetHistoricalPrice?stockSymbol=${encodeURIComponent(symbol)}&date=${saleDate}&_=${Date.now()}`;
                 console.log("Current API URL:", currentUrl);
 
+                updateLoadingState('currentPrice', true);
+
                 var currentPriceRequest = new XMLHttpRequest();
                 currentPriceRequest.open('GET', currentUrl, true);
                 currentPriceRequest.onreadystatechange = function() {
                     if (this.readyState === 4) {
                         console.log("Current price API response status:", this.status);
+
+                        // Only process if this is still the current symbol
+                        if (loadingState.currentSymbol !== symbol) {
+                            console.log("Symbol changed during current price request, ignoring response");
+                            updateLoadingState('currentPrice', false);
+                            return;
+                        }
 
                         if (this.status === 200) {
                             try {
@@ -470,9 +550,11 @@
                                 console.error("Error parsing current price response:", e);
                                 currentPriceNumeric.value = 1.00;
                             }
+                            updateLoadingState('currentPrice', false);
                         } else {
                             console.error("Current price request failed with status:", this.status);
                             currentPriceNumeric.value = 1.00;
+                            updateLoadingState('currentPrice', false);
                         }
                     }
                 };
@@ -569,12 +651,17 @@
                     }
                     
                     if (value) {
+                        // Mark as loading for stock check
+                        updateLoadingState('stockCheck', true);
+                        
                         // Check if stock exists
                         fetch('/AppUserStocks/CheckStockExists?stockSymbol=' + encodeURIComponent(value))
                             .then(function(response) {
                                 return response.json();
                             })
                             .then(function(data) {
+                                updateLoadingState('stockCheck', false);
+                                
                                 if (data.exists && @(Model.Id) == 0) {
                                     if (confirm('You already have a position for ' + value + '. Would you like to view and edit that position instead?')) {
                                         window.location.href = '/AppUserStocks/Details/' + data.stockId;
@@ -606,6 +693,8 @@
                             })
                             .catch(function(error) {
                                 console.error('Error checking stock existence:', error);
+                                updateLoadingState('stockCheck', false);
+                                
                                 // Try to get earliest date anyway
                                 getEarliestAvailableDate(value, function(date, price) {
                                     if (date && price && datePurchasedPicker && purchasePriceNumeric) {
@@ -615,6 +704,14 @@
                                     updatePrices();
                                 });
                             });
+                    } else {
+                        // Clear prices if no symbol selected
+                        if (purchasePriceNumeric) {
+                            purchasePriceNumeric.value = null;
+                        }
+                        if (currentPriceNumeric) {
+                            currentPriceNumeric.value = null;
+                        }
                     }
                 };
             }
@@ -770,6 +867,18 @@
                     // Add debugging to track form submission
                     console.log("⚠️ FORM SUBMISSION STARTED");
 
+                    // Check if any requests are still loading
+                    var anyLoading = Object.keys(loadingState).some(function(key) {
+                        return key !== 'currentSymbol' && loadingState[key] === true;
+                    });
+                    
+                    if (anyLoading) {
+                        e.preventDefault();
+                        console.error("Form submission blocked - prices still loading");
+                        alert("Please wait for all prices to load before submitting");
+                        return false;
+                    }
+
                     // Get the direct stock symbol value
                     var symbolValue = "";
                     if (stockSymbolDropdown && stockSymbolDropdown.value) {
@@ -847,15 +956,19 @@
                     this.appendChild(hiddenSymbolInput); // Using this instead of formElement
                     console.log("Added hidden stock symbol field:", hiddenSymbolInput.value);
 
-                    // Set fallback prices if needed to ensure form validation passes
+                    // Validate that prices are properly loaded
                     if (purchasePriceNumeric && (!purchasePriceNumeric.value || parseFloat(purchasePriceNumeric.value) <= 0)) {
-                        console.warn("Setting fallback purchase price before submission");
-                        purchasePriceNumeric.value = 1.00;
+                        e.preventDefault();
+                        console.error("Purchase price validation failed - no valid price");
+                        alert("Please wait for purchase price to load or enter a valid price");
+                        return false;
                     }
 
                     if (currentPriceNumeric && (!currentPriceNumeric.value || parseFloat(currentPriceNumeric.value) <= 0)) {
-                        console.warn("Setting fallback current price before submission");
-                        currentPriceNumeric.value = 1.00;
+                        e.preventDefault();
+                        console.error("Current/sale price validation failed - no valid price");
+                        alert("Please wait for sale price to load or enter a valid price");
+                        return false;
                     }
 
                     // Check shares purchased
