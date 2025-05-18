@@ -274,7 +274,7 @@ namespace FundWatch.Services
         /// <summary>
         /// Calculate portfolio growth data over time compared to benchmark
         /// </summary>
-        public async Task<List<PortfolioGrowthPoint>> CalculatePortfolioGrowthAsync(List<AppUserStock> userStocks, int days = 180)
+        public async Task<List<PortfolioGrowthPoint>> CalculatePortfolioGrowthAsync(List<AppUserStock> userStocks, int days = 1825)
         {
             try
             {
@@ -288,13 +288,27 @@ namespace FundWatch.Services
                 var startDate = endDate.AddDays(-days);
 
                 // Create a list of all trading days in the period
+                // For 5 years of data, use monthly intervals to reduce data points
                 var allDates = new List<DateTime>();
-                for (var date = startDate; date <= endDate; date = date.AddDays(1))
+                
+                if (days > 365) 
                 {
-                    // Skip weekends
-                    if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+                    // For multi-year views, use monthly intervals
+                    for (var date = startDate; date <= endDate; date = date.AddMonths(1))
                     {
                         allDates.Add(date);
+                    }
+                }
+                else 
+                {
+                    // For less than a year, use daily intervals
+                    for (var date = startDate; date <= endDate; date = date.AddDays(1))
+                    {
+                        // Skip weekends
+                        if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+                        {
+                            allDates.Add(date);
+                        }
                     }
                 }
 
@@ -524,6 +538,73 @@ namespace FundWatch.Services
             }
         }
         
+
+        /// Calculate diversification data for portfolio  
+        /// </summary>  
+        public async Task<List<DiversificationData>> CalculateDiversificationAsync(List<AppUserStock> userStocks)
+        {
+            try
+            {
+                var cacheKey = $"Diversification_{string.Join("_", userStocks.Select(s => s.StockSymbol))}";
+                if (_cache.TryGetValue(cacheKey, out List<DiversificationData>? cachedData) && cachedData != null)
+                {
+                    return cachedData;
+                }
+
+                // Get company details for each stock to determine industries (fixing the Sector issue)  
+                var symbols = userStocks.Select(s => s.StockSymbol).Distinct().ToList();
+                var companyDetailsTask = _stockService.GetCompanyDetailsAsync(symbols);
+                var pricesTask = _stockService.GetRealTimePricesAsync(symbols);
+
+                await Task.WhenAll(companyDetailsTask, pricesTask);
+
+                var companyDetails = await companyDetailsTask;
+                var prices = await pricesTask;
+
+                // Group by industry and calculate total value  
+                var industryGroups = userStocks
+                    .Where(stock =>
+                    {
+                        var sharesOwned = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                        return sharesOwned > 0 && companyDetails.ContainsKey(stock.StockSymbol);
+                    })
+                    .GroupBy(stock =>
+                    {
+                        var detail = companyDetails[stock.StockSymbol];
+                        return !string.IsNullOrWhiteSpace(detail.Industry) ? detail.Industry : "Unknown";
+                    })
+                    .Select(group =>
+                    {
+                        decimal totalValue = group.Sum(stock =>
+                        {
+                            var sharesOwned = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                            var currentPrice = prices.ContainsKey(stock.StockSymbol)
+                                ? prices[stock.StockSymbol]
+                                : stock.CurrentPrice;
+                            return sharesOwned * currentPrice;
+                        });
+
+                        return new DiversificationData
+                        {
+                            Name = group.Key,
+                            Y = Math.Round(totalValue, 2)
+                        };
+                    })
+                    .OrderByDescending(x => x.Y)
+                    .ToList();
+
+                // Cache the data  
+                _cache.Set(cacheKey, industryGroups, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+
+                return industryGroups;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating diversification data");
+                return new List<DiversificationData>();
+            }
+        }
+
         /// <summary>
         /// Calculate drawdown data points for portfolio and benchmark (5 years of data)
         /// </summary>
@@ -612,6 +693,12 @@ namespace FundWatch.Services
                             BenchmarkDrawdown = Math.Round(benchmarkDrawdown * 100, 2)  // Convert to percentage
                         });
                     }
+                }
+                
+                // If we don't have sufficient data, log an error and return empty dataset
+                if (drawdownSeries.Count == 0)
+                {
+                    _logger.LogWarning("No drawdown data could be calculated for user portfolio");
                 }
                 
                 // Cache the data

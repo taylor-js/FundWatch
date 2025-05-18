@@ -41,81 +41,19 @@
 </div>
 
 <script>
-    // Initialize Performance Tab Charts - simplified implementation matching the working Analytics tab
+    // Initialize Performance Tab Charts
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Performance tab script loaded');
         
-        // Store the chart data
+        // Store the chart data from the model
         window.monthlyPerfData = @Html.Raw(Json.Serialize(Model.MonthlyPerformanceData ?? new List<MonthlyPerformanceData>()));
         window.rollingReturnsData = @Html.Raw(Json.Serialize(Model.RollingReturnsData ?? new List<RollingReturnsData>()));
         window.portfolioGrowthData = @Html.Raw(Json.Serialize(Model.PortfolioGrowthData ?? new List<PortfolioGrowthPoint>()));
         
-        // If data is missing, add test data
-        if (!window.monthlyPerfData || !window.monthlyPerfData.length) {
-            console.log("Adding test data for Monthly Performance Chart");
-            window.monthlyPerfData = [
-                { month: "Jan", portfolioPerformance: 3.5, benchmarkPerformance: 2.1 },
-                { month: "Feb", portfolioPerformance: -1.2, benchmarkPerformance: -0.8 },
-                { month: "Mar", portfolioPerformance: 2.7, benchmarkPerformance: 1.5 },
-                { month: "Apr", portfolioPerformance: 1.3, benchmarkPerformance: 0.9 },
-                { month: "May", portfolioPerformance: -0.5, benchmarkPerformance: -0.3 },
-                { month: "Jun", portfolioPerformance: 4.1, benchmarkPerformance: 3.2 }
-            ];
-        }
-        
-        if (!window.rollingReturnsData || !window.rollingReturnsData.length) {
-            console.log("Adding test data for Rolling Returns Chart");
-            window.rollingReturnsData = [
-                { timePeriod: "1M", portfolioReturn: 2.4, benchmarkReturn: 1.8 },
-                { timePeriod: "3M", portfolioReturn: 5.7, benchmarkReturn: 4.2 },
-                { timePeriod: "6M", portfolioReturn: 8.3, benchmarkReturn: 7.1 },
-                { timePeriod: "1Y", portfolioReturn: 12.5, benchmarkReturn: 10.9 },
-                { timePeriod: "3Y", portfolioReturn: 32.8, benchmarkReturn: 29.3 }
-            ];
-        }
-        
-        if (!window.portfolioGrowthData || !window.portfolioGrowthData.length) {
-            console.log("Adding test data for Portfolio Growth Chart (5 years)");
-            var dates = [];
-            var today = new Date();
-
-            // Generate data points for the last 5 years (60 months, ~1825 days)
-            // Using monthly data points for better performance (60 points)
-            for (var i = 60; i >= 0; i--) {
-                var date = new Date();
-                date.setMonth(today.getMonth() - i); // Go back by months
-                dates.push(date);
-            }
-
-            // Create realistic growth pattern over 5 years
-            // Starting at 100 (baseline) with some volatility and general upward trend
-            window.portfolioGrowthData = dates.map(function(date, index) {
-                // More pronounced growth and volatility for portfolio
-                var portfolioValue = 100 + (Math.sin(index/3) * 10) + (index / 2);
-
-                // Slightly less growth and volatility for benchmark
-                var benchmarkValue = 100 + (Math.sin(index/4) * 7) + (index / 3);
-
-                // Add a couple of market corrections for realism
-                if (index > 20 && index < 25) {
-                    // First market correction around 2 years ago
-                    portfolioValue = portfolioValue * 0.85;
-                    benchmarkValue = benchmarkValue * 0.9;
-                }
-
-                if (index > 45 && index < 50) {
-                    // Second market correction around 4 years ago
-                    portfolioValue = portfolioValue * 0.8;
-                    benchmarkValue = benchmarkValue * 0.85;
-                }
-
-                return {
-                    date: date,
-                    portfolioValue: portfolioValue,
-                    benchmarkValue: benchmarkValue
-                };
-            });
-        }
+        // Log data availability
+        console.log("Monthly Performance data points:", window.monthlyPerfData.length);
+        console.log("Rolling Returns data points:", window.rollingReturnsData.length);
+        console.log("Portfolio Growth data points:", window.portfolioGrowthData.length);
         
         // Initialize charts immediately
         renderPerformanceCharts();

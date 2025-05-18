@@ -110,15 +110,16 @@ namespace FundWatch.Controllers
                 // Fetch real chart data in parallel
                 var monthlyPerformanceTask = _chartDataService.CalculateMonthlyPerformanceAsync(userStocks);
                 var rollingReturnsTask = _chartDataService.CalculateRollingReturnsAsync(userStocks);
-                var portfolioGrowthTask = _chartDataService.CalculatePortfolioGrowthAsync(userStocks);
+                var portfolioGrowthTask = _chartDataService.CalculatePortfolioGrowthAsync(userStocks, 1825); // 5 years
                 var riskMetricsTask = _chartDataService.CalculateRiskMetricsAsync(userStocks);
                 var drawdownDataTask = _chartDataService.CalculateDrawdownSeriesAsync(userStocks);
+                var diversificationDataTask = _chartDataService.CalculateDiversificationAsync(userStocks);
 
                 // Wait for all data to be fetched
                 await Task.WhenAll(
                     pricesTask, detailsTask, historicalDataTask,
                     monthlyPerformanceTask, rollingReturnsTask, portfolioGrowthTask, 
-                    riskMetricsTask, drawdownDataTask
+                    riskMetricsTask, drawdownDataTask, diversificationDataTask
                 );
 
                 var cachedPrices = await pricesTask;
@@ -166,15 +167,17 @@ namespace FundWatch.Controllers
                 viewModel.PortfolioGrowthData = await portfolioGrowthTask;
                 viewModel.RiskMetrics = await riskMetricsTask;
                 viewModel.DrawdownData = await drawdownDataTask;
+                viewModel.DiversificationData = await diversificationDataTask;
                 
                 // Log all chart data metrics with extra detail for drawdown data
                 _logger.LogInformation(
-                    "Chart data metrics - Monthly: {MonthlyCount}, Rolling: {RollingCount}, Growth: {GrowthCount}, Risk: {RiskCount}, Drawdown: {DrawdownCount}",
+                    "Chart data metrics - Monthly: {MonthlyCount}, Rolling: {RollingCount}, Growth: {GrowthCount}, Risk: {RiskCount}, Drawdown: {DrawdownCount}, Diversification: {DiversificationCount}",
                     viewModel.MonthlyPerformanceData?.Count ?? 0,
                     viewModel.RollingReturnsData?.Count ?? 0,
                     viewModel.PortfolioGrowthData?.Count ?? 0,
                     viewModel.RiskMetrics?.Count ?? 0,
-                    viewModel.DrawdownData?.Count ?? 0);
+                    viewModel.DrawdownData?.Count ?? 0,
+                    viewModel.DiversificationData?.Count ?? 0);
 
                 // Special logging for drawdown data to check date range
                 if (viewModel.DrawdownData != null && viewModel.DrawdownData.Any())

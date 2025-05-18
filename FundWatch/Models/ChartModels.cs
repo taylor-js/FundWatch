@@ -63,4 +63,11 @@ namespace FundWatch.Models
         public int NumberOfHoldings { get; set; }
         public decimal SectorPerformance { get; set; }
     }
+    
+    // Model for Diversification Chart data (Pie chart)
+    public class DiversificationData
+    {
+        public string Name { get; set; } = string.Empty;
+        public decimal Y { get; set; } // Using Y property for Highcharts compatibility
+    }
 }

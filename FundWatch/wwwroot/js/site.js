@@ -152,6 +152,7 @@ const ChartManager = {
     renderMonthlyPerformanceChart: function(chartData) {
         if (!chartData || chartData.length === 0) {
             console.warn('No data available for Monthly Performance Chart');
+            document.getElementById('monthlyPerformanceChart').innerHTML = '<div class="text-center text-muted p-5">No monthly performance data available</div>';
             return;
         }
 
@@ -223,6 +224,7 @@ const ChartManager = {
     renderRollingReturnsChart: function(chartData) {
         if (!chartData || chartData.length === 0) {
             console.warn('No data available for Rolling Returns Chart');
+            document.getElementById('rollingReturnsChart').innerHTML = '<div class="text-center text-muted p-5">No rolling returns data available</div>';
             return;
         }
 
@@ -281,6 +283,7 @@ const ChartManager = {
     renderPortfolioGrowthChart: function(chartData) {
         if (!chartData || chartData.length === 0) {
             console.warn('No data available for Portfolio Growth Chart');
+            document.getElementById('portfolioGrowthChart').innerHTML = '<div class="text-center text-muted p-5">No portfolio growth data available</div>';
             return;
         }
 

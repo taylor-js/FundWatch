@@ -19,6 +19,7 @@ namespace FundWatch.Models.ViewModels
             PortfolioGrowthData = new List<PortfolioGrowthPoint>();
             RiskMetrics = new List<RiskAnalysisData>();
             DrawdownData = new List<DrawdownPoint>();
+            DiversificationData = new List<DiversificationData>();
         }
 
         public List<AppUserStock> UserStocks { get; set; }
@@ -34,5 +35,6 @@ namespace FundWatch.Models.ViewModels
         public List<PortfolioGrowthPoint> PortfolioGrowthData { get; set; }
         public List<RiskAnalysisData> RiskMetrics { get; set; }
         public List<DrawdownPoint> DrawdownData { get; set; }
+        public List<DiversificationData> DiversificationData { get; set; }
     }
 }
