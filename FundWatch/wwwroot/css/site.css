@@ -1273,8 +1273,8 @@ button[type="submit"] {
 
 #performanceTab .card {
     height: auto !important;
-    min-height: auto !important;
-    margin-bottom: 30px !important;
+    min-height: 550px !important;
+    margin-bottom: 0px !important;
 }
 
 #performanceTab .chart-description {
