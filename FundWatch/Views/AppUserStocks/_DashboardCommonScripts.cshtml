@@ -24,6 +24,42 @@
         if (dashboardTabs.length > 0) {
             console.log('Dashboard tabs found:', dashboardTabs.length);
             
+            // Restore the active tab from localStorage
+            const savedTab = localStorage.getItem('activeTab');
+            console.log('Saved tab from localStorage:', savedTab);
+            
+            if (savedTab) {
+                const tabToRestore = document.querySelector(`[data-bs-target="${savedTab}"]`);
+                const contentToRestore = document.querySelector(savedTab);
+                
+                if (tabToRestore && contentToRestore) {
+                    // Remove active states from all tabs and content
+                    dashboardTabs.forEach(t => {
+                        t.classList.remove('active');
+                        t.setAttribute('aria-selected', 'false');
+                    });
+                    document.querySelectorAll('.tab-pane').forEach(pane => {
+                        pane.classList.remove('show', 'active');
+                    });
+                    
+                    // Activate the saved tab
+                    tabToRestore.classList.add('active');
+                    tabToRestore.setAttribute('aria-selected', 'true');
+                    contentToRestore.classList.add('show', 'active');
+                    
+                    console.log('Restored tab:', savedTab);
+                }
+            } else {
+                // If no saved tab, ensure overview is active
+                const overviewTab = document.querySelector('[data-bs-target="#overviewTab"]');
+                const overviewContent = document.querySelector('#overviewTab');
+                if (overviewTab && overviewContent) {
+                    overviewTab.classList.add('active');
+                    overviewTab.setAttribute('aria-selected', 'true');
+                    overviewContent.classList.add('show', 'active');
+                }
+            }
+            
             // When a tab is shown, trigger chart redraw to fix hidden charts
             dashboardTabs.forEach(tab => {
                 tab.addEventListener('shown.bs.tab', function(event) {
@@ -31,6 +67,9 @@
                     const targetTab = document.querySelector(targetId);
                     
                     console.log('Tab shown:', targetId);
+                    
+                    // Save the active tab to localStorage
+                    localStorage.setItem('activeTab', targetId);
                     
                     // For Performance and Analytics tabs, ensure all charts are redrawn
                     if (targetId === '#performanceTab' || targetId === '#analyticsTab') {

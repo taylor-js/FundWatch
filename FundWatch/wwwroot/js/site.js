@@ -825,21 +825,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle dashboard tab switching
     const dashboardTabs = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
     if (dashboardTabs.length > 0) {
+        // Restore the active tab on page load BEFORE adding event listeners
+        const activeTab = localStorage.getItem('activeTab');
+        let hasRestoredTab = false;
+        
+        if (activeTab) {
+            const tabToActivate = document.querySelector(`[data-bs-target="${activeTab}"]`);
+            const tabContent = document.querySelector(activeTab);
+            
+            if (tabToActivate && tabContent) {
+                // Remove all active states first
+                dashboardTabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                
+                // Activate the stored tab
+                tabToActivate.classList.add('active');
+                tabToActivate.setAttribute('aria-selected', 'true');
+                tabContent.classList.add('show', 'active');
+                hasRestoredTab = true;
+                
+                console.log('Restored tab:', activeTab);
+            }
+        }
+        
+        // If no tab was restored, default to overview
+        if (!hasRestoredTab) {
+            const overviewTab = document.querySelector('[data-bs-target="#overviewTab"]');
+            const overviewContent = document.querySelector('#overviewTab');
+            if (overviewTab && overviewContent) {
+                overviewTab.classList.add('active');
+                overviewTab.setAttribute('aria-selected', 'true');
+                overviewContent.classList.add('show', 'active');
+            }
+        }
+        
+        // Add event listeners for tab switching
         dashboardTabs.forEach(tab => {
             tab.addEventListener('shown.bs.tab', function(event) {
                 const targetId = event.target.getAttribute('data-bs-target');
                 const targetTab = document.querySelector(targetId);
                 
-                // Remove the active class from all tab content containers
-                document.querySelectorAll('.tab-pane').forEach(pane => {
-                    pane.classList.remove('show', 'active');
-                });
+                // Store the active tab in localStorage for persistence
+                localStorage.setItem('activeTab', targetId);
                 
-                // Add active class to the selected tab content
+                // Force redraw charts in the active tab
                 if (targetTab) {
-                    targetTab.classList.add('show', 'active');
-                    
-                    // Force redraw charts in the active tab
                     setTimeout(() => {
                         if (Highcharts && Highcharts.charts) {
                             Highcharts.charts.forEach(chart => {
@@ -853,25 +888,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log(`Refreshed charts in ${targetId}`);
                     }, 200);
                 }
-
-                // Store the active tab in localStorage for persistence
-                localStorage.setItem('activeTab', targetId);
                 
                 // Update body class for tab-specific styling
                 document.body.className = document.body.className.replace(/tab-active-\w+/g, '');
                 document.body.classList.add(`tab-active-${targetId.replace('#', '').replace('Tab', '')}`);
             });
         });
-        
-        // Restore the active tab on page load
-        const activeTab = localStorage.getItem('activeTab');
-        if (activeTab) {
-            const tabToActivate = document.querySelector(`[data-bs-target="${activeTab}"]`);
-            if (tabToActivate) {
-                const bsTab = new bootstrap.Tab(tabToActivate);
-                bsTab.show();
-            }
-        }
     }
 
     // Navbar active state
