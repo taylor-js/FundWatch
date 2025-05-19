@@ -141,7 +141,7 @@
                             Track the performance of your investments over time. Use the period selectors to view different time ranges.
                         </p>
                     </div>
-
+                    <div id="stockChart" style="width: 100%; height: 500px; max-height: 500px; overflow: hidden;"></div>
 
                     <script type="text/javascript">
                         document.addEventListener('DOMContentLoaded', function() {
@@ -154,15 +154,21 @@
                             console.log("stockChart function available:", typeof Highcharts?.stockChart === 'function');
                             console.log("StockChart function available:", typeof Highcharts?.StockChart === 'function');
                             
+                            // Check if chart element exists
+                            var chartElement = document.getElementById('stockChart');
+                            if (!chartElement) {
+                                console.error('Chart element not found');
+                                return;
+                            }
+                            
                             // Check if we have valid data
                             if (!seriesData || seriesData.length === 0) {
-                                // Display an error message with instructions
-                                document.getElementById('stockChart').innerHTML = `
-                                    <div class="alert alert-warning text-center p-5" style="margin-top: 50px;">
-                                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Performance Data Not Available</h5>
+                                // Display a user-friendly message
+                                chartElement.innerHTML = `
+                                    <div class="alert alert-info text-center p-5" style="margin-top: 50px;">
+                                        <h5>No performance data available</h5>
                                         <p class="mb-0">
-                                            We're unable to fetch stock performance data. This is likely due to API key issues.
-                                            <br><strong>Solution:</strong> Please verify your Polygon.io API key in your application settings.
+                                            Add some stocks to see their performance over time.
                                         </p>
                                     </div>`;
                                 return;
@@ -171,6 +177,17 @@
                             // Debug chart libraries
                             console.log("Highcharts version:", Highcharts?.version);
                             console.log("stockChart function available:", typeof Highcharts?.stockChart === 'function');
+                            
+                            // Check if Highcharts is available
+                            if (typeof Highcharts === 'undefined' || typeof Highcharts.stockChart !== 'function') {
+                                console.error('Highcharts or stockChart function not available');
+                                chartElement.innerHTML = `
+                                    <div class="alert alert-warning text-center p-5" style="margin-top: 50px;">
+                                        <h5>Chart library not loaded</h5>
+                                        <p class="mb-0">Please refresh the page.</p>
+                                    </div>`;
+                                return;
+                            }
                             
                             // Create the Highcharts stock chart
                             Highcharts.stockChart('stockChart', {
@@ -356,6 +373,12 @@
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Initializing Overview tab additional charts');
+
+        // Check if Highcharts is loaded
+        if (typeof Highcharts === 'undefined') {
+            console.error('Highcharts not loaded - skipping charts initialization');
+            return;
+        }
 
         // Generate heatmap data from portfolio stocks
         let heatmapData = [];
