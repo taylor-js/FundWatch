@@ -45,12 +45,18 @@ namespace FundWatch.Controllers
 
         // GET: AppUserStocks/Dashboard
         [HttpGet]
-        public async Task<IActionResult> Dashboard()
+        public async Task<IActionResult> Dashboard(string? tab = null)
         {
             var userId = _userManager.GetUserId(User);
             if (string.IsNullOrEmpty(userId))
             {
                 return RedirectToAction("Login", "Account", new { returnUrl = Request.Path });
+            }
+
+            // Pass the tab to the view if specified
+            if (!string.IsNullOrEmpty(tab))
+            {
+                ViewData["ActiveTab"] = tab;
             }
 
             try
@@ -872,7 +878,7 @@ namespace FundWatch.Controllers
                     _cache.Remove(dashboardCacheKey);
                     _logger.LogInformation("Cleared dashboard cache for user {UserId}", userId);
 
-                    return RedirectToAction(nameof(Dashboard));
+                    return RedirectToAction(nameof(Dashboard), new { tab = "holdings" });
                 }
                 catch
                 {
@@ -973,7 +979,7 @@ namespace FundWatch.Controllers
                     _cache.Remove(dashboardCacheKey);
                     _logger.LogInformation("Cleared dashboard cache for user {UserId}", userId);
 
-                    return RedirectToAction(nameof(Dashboard));
+                    return RedirectToAction(nameof(Dashboard), new { tab = "holdings" });
                 }
                 catch
                 {

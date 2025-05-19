@@ -58,15 +58,28 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard view loaded - main script');
             
-            // Only ensure the Overview tab is shown, no automatic tab sliding
+            // Check for specific tab to activate
+            var activeTab = '@ViewData["ActiveTab"]';
+            
             setTimeout(function() {
-                // Always default to the overview tab
-                const overviewTab = document.querySelector('#overview-tab');
+                // Determine which tab to show
+                let tabToActivate = null;
+                
+                if (activeTab === 'holdings') {
+                    tabToActivate = document.querySelector('#holdings-tab');
+                } else if (activeTab === 'performance') {
+                    tabToActivate = document.querySelector('#performance-tab');
+                } else if (activeTab === 'analytics') {
+                    tabToActivate = document.querySelector('#analytics-tab');
+                } else {
+                    // Default to overview tab
+                    tabToActivate = document.querySelector('#overview-tab');
+                }
 
-                // Only trigger the overview tab click if it's not already active
-                if (overviewTab && !overviewTab.classList.contains('active')) {
-                    overviewTab.click();
-                    console.log('Set Overview tab as default');
+                // Only trigger the tab click if it's not already active
+                if (tabToActivate && !tabToActivate.classList.contains('active')) {
+                    tabToActivate.click();
+                    console.log('Set ' + (activeTab || 'Overview') + ' tab as active');
                 }
 
                 // Initialize charts in hidden tabs without switching to them
