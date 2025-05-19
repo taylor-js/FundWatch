@@ -95,6 +95,9 @@
                 header.style.height = 'auto';
             });
             
+            // Force a reflow/recalculation
+            window.getComputedStyle(headers[0]).height;
+            
             // Find the maximum height
             headers.forEach(header => {
                 const height = header.offsetHeight;
@@ -107,8 +110,16 @@
             });
         }
         
-        // Run on page load
-        equalizeHeaderHeights();
+        // Run with a slight delay to ensure content is fully rendered
+        setTimeout(equalizeHeaderHeights, 100);
+        
+        // Run when the overview tab is shown
+        const overviewTabBtn = document.querySelector('[data-bs-target="#overviewTab"]');
+        if (overviewTabBtn) {
+            overviewTabBtn.addEventListener('shown.bs.tab', function() {
+                setTimeout(equalizeHeaderHeights, 50);
+            });
+        }
         
         // Run on window resize
         window.addEventListener('resize', equalizeHeaderHeights);
@@ -123,14 +134,13 @@
                 <h5 class="card-title mb-0">Stock Performance History</h5>
             </div>
             <div class="card-body">
-                <div class="chart-description">
-                    <p class="text-center mb-1">
-                        Track the performance of your investments over time. Use the period selectors to view different time ranges.
-                    </p>
-                </div>
                 @if (Model.PerformanceData != null && Model.PerformanceData.Any())
                 {
-                    <div id="stockChart" style="width: 100%; height: 500px; max-height: 500px; overflow: hidden;"></div>
+                    <div class="chart-description">
+                        <p class="text-center mb-1">
+                            Track the performance of your investments over time. Use the period selectors to view different time ranges.
+                        </p>
+                    </div>
 
 
                     <script type="text/javascript">
@@ -366,6 +376,13 @@
             value = s.PerformancePercentage * 100,
             totalValue = s.TotalValue
         }).ToList()));
+
+        // If no data, show message
+        if (!stockPerformance || stockPerformance.length === 0) {
+            document.getElementById('portfolioHeatmapChart').innerHTML =
+                '<div class="alert alert-info text-center p-5">No stock performance data available yet.</div>';
+            return;
+        }
 
         // Format data for heatmap - normalized by market value
         let heatmapData = stockPerformance.map(function(stock) {
