@@ -427,22 +427,26 @@ button[type="submit"] {
     max-width: 100%;
 }
 
-    .e-grid .e-headercell {
-        font-weight: 600;
-        background-color: #1a1a1a !important;
-        color: #fff !important;
-    }
+.e-grid .e-headercell {
+    font-weight: 600;
+    background-color: #1a1a1a !important;
+    color: #fff !important;
+}
 
-    .e-grid .e-rowcell {
-        vertical-align: middle;
-        background-color: #212529 !important;
-        color: #fff !important;
-        border-color: #555 !important;
-    }
+.e-grid .e-rowcell {
+    vertical-align: middle;
+    background-color: #212529 !important;
+    color: #fff !important;
+    border-color: #555 !important;
+}
 
-    .e-grid .e-altrow {
-        background-color: #1a1a1a !important;
-    }
+.e-grid .e-altrow {
+    background-color: #1a1a1a !important;
+}
+
+.e-grid .e-table {
+    border-collapse: unset!important;
+}
 
 /* Ensure the grid pagination is visible */
 .e-pager {
