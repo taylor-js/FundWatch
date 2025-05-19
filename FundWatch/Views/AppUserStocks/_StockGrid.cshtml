@@ -123,6 +123,26 @@
             }
         });
 
+        // Function to add border to last row
+        function addLastRowBorder() {
+            const rows = document.querySelectorAll('#holdingsGrid .e-content .e-row');
+            if (rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                if (lastRow) {
+                    // Add bottom border matching the grid lines
+                    lastRow.style.borderBottom = '1px solid #555';
+                    
+                    // Also add to all cells in the last row for better coverage
+                    const lastRowCells = lastRow.querySelectorAll('.e-rowcell');
+                    lastRowCells.forEach(function(cell) {
+                        cell.style.borderBottom = '1px solid #555';
+                    });
+                    
+                    console.log('Added border to bottom of last row');
+                }
+            }
+        }
+        
         // Initialize grid
         window.addEventListener('load', function () {
             colorPerformanceCells();
@@ -133,15 +153,7 @@
 
                 // Add border to bottom of last row
                 setTimeout(function() {
-                    const rows = document.querySelectorAll('.e-row');
-                    if (rows.length > 0) {
-                        const lastRow = rows[rows.length - 1];
-                        if (lastRow) {
-                            // Add bottom border matching the grid lines
-                            lastRow.style.borderBottom = '1px solid #dee2e6';
-                            console.log('Added border to bottom of last row');
-                        }
-                    }
+                    addLastRowBorder();
 
                     // Force pager visibility
                     const pagerElement = document.querySelector('.e-gridpager');
@@ -151,6 +163,17 @@
                         console.log('Pager visibility forced');
                     }
                 }, 300);
+                
+                // Add event listeners for page changes
+                grid.addEventListener('dataBound', function() {
+                    setTimeout(addLastRowBorder, 100);
+                });
+                
+                grid.addEventListener('actionComplete', function(args) {
+                    if (args.requestType === 'paging') {
+                        setTimeout(addLastRowBorder, 100);
+                    }
+                });
             }
         });
     </script>

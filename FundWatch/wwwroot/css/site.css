@@ -868,8 +868,9 @@ button[type="submit"] {
 }
 
 /* Add bottom border to last grid row */
-#holdingsGrid .e-content .e-row:last-child {
-    border-bottom: 1px solid #dee2e6 !important;
+#holdingsGrid .e-content .e-row:last-child,
+#holdingsGrid .e-content .e-row:last-child .e-rowcell {
+    border-bottom: 1px solid #555 !important;
 }
 
 #performanceTab #rollingReturnsChart,
