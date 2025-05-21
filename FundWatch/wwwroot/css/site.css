@@ -1069,10 +1069,21 @@ button[type="submit"] {
             color: #4361ee;
         }
 
+.hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 .hero-buttons .btn {
     padding: 0.7rem 1.5rem;
     border-radius: 4px;
     font-weight: 500;
+}
+
+@media (max-width: 767.98px) {
+    .hero-buttons {
+        justify-content: center;
+    }
 }
 
 .chart-showcase {
@@ -1280,6 +1291,24 @@ button[type="submit"] {
     }
 
 /* ============================
+   FORM SUBMIT BUTTON
+   ============================ */
+#submitButton {
+    min-width: 100px;
+    position: relative;
+}
+
+#submitButtonText {
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Make sure to use Bootstrap's spinner animation class correctly */
+.spinner-border {
+    vertical-align: -0.125em;
+    border-width: 0.2em;
+}
+
+/* ============================
    RESPONSIVE ADJUSTMENTS FOR DASHBOARD & INDEX
    ============================ */
 @media (max-width: 991.98px) {
@@ -1307,14 +1336,18 @@ button[type="submit"] {
         padding: 1.5rem 0;
     }
 
-        .hero-text h1 {
-            font-size: 2.5rem;
-            line-height: 1.2;
-        }
+    .hero-text h1 {
+        font-size: 2.5rem;
+        line-height: 1.2;
+    }
 
-        .hero-text .lead p {
-            justify-content: center;
-        }
+    .hero-text .lead p {
+        justify-content: center;
+    }
+    
+    .hero-buttons .btn {
+        margin: 0.5rem;
+    }
 }
 
 .feature-list li {

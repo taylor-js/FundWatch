@@ -155,11 +155,8 @@
 
                 <div class="d-flex justify-content-between mt-3">
                     <a asp-action="Dashboard" class="btn btn-secondary">Back to Dashboard</a>
-                    <button type="submit" id="submitButton" class="btn btn-success position-relative">
-                        <span id="submitButtonText">@(Model.Id == 0 ? "Create" : "Save")</span>
-                        <span id="submitButtonLoader" class="spinner-border spinner-border-sm position-absolute top-50 start-50 translate-middle d-none" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </span>
+                    <button type="submit" id="submitButton" class="btn btn-success" data-loading-text="@(Model.Id == 0 ? "Creating..." : "Saving...")">
+                        @(Model.Id == 0 ? "Create" : "Save")
                     </button>
                 </div>
             </form>
@@ -196,6 +193,7 @@
                 currentPrice: false,
                 earliestDate: false,
                 stockCheck: false,
+                symbolValid: lastValidSymbol ? true : false, // Track if symbol is valid
                 currentSymbol: null // Track the current symbol being processed
             };
 
@@ -204,27 +202,29 @@
                 
                 // Check if any requests are still loading
                 var anyLoading = Object.keys(loadingState).some(function(key) {
-                    return key !== 'currentSymbol' && loadingState[key] === true;
+                    return key !== 'currentSymbol' && key !== 'symbolValid' && loadingState[key] === true;
                 });
+                
+                // Disable submit button if loading or symbol isn't valid
+                var isFormReady = !anyLoading && loadingState.symbolValid === true;
                 
                 // Disable submit button while loading
                 if (submitButton) {
-                    submitButton.disabled = anyLoading;
-                    var submitButtonText = document.getElementById('submitButtonText');
-                    var submitButtonLoader = document.getElementById('submitButtonLoader');
+                    submitButton.disabled = !isFormReady;
                     
-                    if (anyLoading) {
-                        if (submitButtonText) submitButtonText.classList.add('opacity-0');
-                        if (submitButtonLoader) submitButtonLoader.classList.remove('d-none');
+                    if (anyLoading || !loadingState.symbolValid) {
+                        // Show spinner in button
+                        var loadingText = submitButton.getAttribute('data-loading-text') || '@(Model.Id == 0 ? "Creating..." : "Saving...")';
+                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + loadingText;
                         submitButton.classList.add('disabled');
                     } else {
-                        if (submitButtonText) submitButtonText.classList.remove('opacity-0');
-                        if (submitButtonLoader) submitButtonLoader.classList.add('d-none');
+                        // Restore original button text
+                        submitButton.innerHTML = '@(Model.Id == 0 ? "Create" : "Save")';
                         submitButton.classList.remove('disabled');
                     }
                 }
                 
-                console.log("Loading state updated:", requestType, isLoading, "Any loading:", anyLoading);
+                console.log("Loading state updated:", requestType, isLoading, "Any loading:", anyLoading, "Symbol valid:", loadingState.symbolValid, "Form ready:", isFormReady);
             }
 
             try {
@@ -343,6 +343,10 @@
             // Function to update prices based on dates and symbol
             function updatePrices() {
                 console.log("⚠️ updatePrices() called");
+                
+                // Show loading spinner immediately when price fetching starts
+                updateLoadingState('purchasePrice', true);
+                updateLoadingState('currentPrice', true);
 
                 // Get symbol value from dropdown
                 var symbolValue;
@@ -402,6 +406,15 @@
 
                 // Don't proceed if we don't have purchase date or symbol
                 if (!purchaseDate || !symbol) {
+                    // Clear loading state since we're not making API calls
+                    updateLoadingState('purchasePrice', false);
+                    updateLoadingState('currentPrice', false);
+                    
+                    // Mark symbol as invalid if it's missing
+                    if (!symbol) {
+                        loadingState.symbolValid = false;
+                        updateLoadingState('symbolValid', false);
+                    }
                     console.warn("Missing required data (purchaseDate or symbol) for price fetch");
                     return;
                 }
@@ -568,6 +581,11 @@
                 stockSymbolField.addEventListener('change', function() {
                     console.log("Stock symbol field changed to:", this.value);
                     lastValidSymbol = this.value;
+                    
+                    // Update symbol validity state
+                    loadingState.symbolValid = this.value ? true : false;
+                    updateLoadingState('symbolValid', loadingState.symbolValid);
+                    
                     if (hiddenStockSymbol) {
                         hiddenStockSymbol.value = this.value;
                     }
@@ -646,6 +664,11 @@
                 stockSymbolDropdown.change = function() {
                     var value = this.value;
                     lastValidSymbol = value;
+                    
+                    // Update symbol validity state
+                    loadingState.symbolValid = value ? true : false;
+                    updateLoadingState('symbolValid', loadingState.symbolValid);
+                    
                     if (hiddenStockSymbol) {
                         hiddenStockSymbol.value = value;
                     }
@@ -836,6 +859,20 @@
                 };
             }
 
+            // Set initial submit button state based on symbol validity
+            var submitButton = document.getElementById('submitButton');
+            var submitButtonText = document.getElementById('submitButtonText');
+            var submitButtonLoader = document.getElementById('submitButtonLoader');
+            
+            if (submitButton && submitButtonText && submitButtonLoader) {
+                if (!stockSymbolField || !stockSymbolField.value) {
+                    // No valid symbol yet, show spinner
+                    submitButtonText.classList.add('opacity-0');
+                    submitButtonLoader.classList.remove('d-none');
+                    submitButton.disabled = true;
+                }
+            }
+            
             // Force an initial prices fetch if we have initial data
             if (stockSymbolField && stockSymbolField.value && datePurchasedPicker) {
                 console.log("Initial data detected, triggering price fetch");
@@ -847,13 +884,13 @@
                             console.log("Setting initial earliest available date:", date, "with price:", price);
                             datePurchasedPicker.value = new Date(date);
                             purchasePriceNumeric.value = price;
-                            setTimeout(updatePrices, 500);
+                            setTimeout(updatePrices, 100);
                         } else {
-                            setTimeout(updatePrices, 500);
+                            setTimeout(updatePrices, 100);
                         }
                     });
                 } else {
-                    setTimeout(updatePrices, 500); // For existing entries, just update prices
+                    setTimeout(updatePrices, 100); // For existing entries, just update prices
                 }
             }
             
@@ -866,17 +903,22 @@
 
                     // Add debugging to track form submission
                     console.log("⚠️ FORM SUBMISSION STARTED");
+                    
+                    // Show the spinner during form submission
+                    if (submitButton) {
+                        var loadingText = submitButton.getAttribute('data-loading-text') || '@(Model.Id == 0 ? "Creating..." : "Saving...")';
+                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + loadingText;
+                        submitButton.disabled = true;
+                    }
 
-                    // Check if any requests are still loading
+                    // Check if any requests are still loading but don't block submission
                     var anyLoading = Object.keys(loadingState).some(function(key) {
                         return key !== 'currentSymbol' && loadingState[key] === true;
                     });
                     
                     if (anyLoading) {
-                        e.preventDefault();
-                        console.error("Form submission blocked - prices still loading");
-                        alert("Please wait for all prices to load before submitting");
-                        return false;
+                        console.warn("Form submitted while prices still loading - proceeding anyway");
+                        // Continue with submission anyway
                     }
 
                     // Get the direct stock symbol value
@@ -932,27 +974,42 @@
 
                     // Add hidden fields for dates if using Syncfusion datepickers
                     if (datePurchasedPicker && datePurchasedPicker.value) {
-                        var hiddenPurchaseDate = document.createElement('input');
-                        hiddenPurchaseDate.type = 'hidden';
-                        hiddenPurchaseDate.name = 'DatePurchased';
-                        hiddenPurchaseDate.value = moment(datePurchasedPicker.value).format('YYYY-MM-DD');
-                        this.appendChild(hiddenPurchaseDate);
+                        var existingPurchaseDate = document.querySelector('input[name="DatePurchased"][type="hidden"]');
+                        if (!existingPurchaseDate) {
+                            var hiddenPurchaseDate = document.createElement('input');
+                            hiddenPurchaseDate.type = 'hidden';
+                            hiddenPurchaseDate.name = 'DatePurchased';
+                            hiddenPurchaseDate.value = moment(datePurchasedPicker.value).format('YYYY-MM-DD');
+                            this.appendChild(hiddenPurchaseDate);
+                        } else {
+                            existingPurchaseDate.value = moment(datePurchasedPicker.value).format('YYYY-MM-DD');
+                        }
                     }
 
                     if (dateSoldPicker && dateSoldPicker.value) {
-                        var hiddenSaleDate = document.createElement('input');
-                        hiddenSaleDate.type = 'hidden';
-                        hiddenSaleDate.name = 'DateSold';
-                        hiddenSaleDate.value = moment(dateSoldPicker.value).format('YYYY-MM-DD');
-                        this.appendChild(hiddenSaleDate);
+                        var existingSaleDate = document.querySelector('input[name="DateSold"][type="hidden"]');
+                        if (!existingSaleDate) {
+                            var hiddenSaleDate = document.createElement('input');
+                            hiddenSaleDate.type = 'hidden';
+                            hiddenSaleDate.name = 'DateSold';
+                            hiddenSaleDate.value = moment(dateSoldPicker.value).format('YYYY-MM-DD');
+                            this.appendChild(hiddenSaleDate);
+                        } else {
+                            existingSaleDate.value = moment(dateSoldPicker.value).format('YYYY-MM-DD');
+                        }
                     }
 
-                    // Create a hidden input for the stock symbol to ensure it's submitted
+                    // Create a hidden input for the stock symbol to ensure it's submitted if it doesn't exist
                     // Note: formElement is already defined in the outer scope
-                    var hiddenSymbolInput = document.createElement('input');
-                    hiddenSymbolInput.type = 'hidden';
-                    hiddenSymbolInput.name = 'StockSymbol';
-                    hiddenSymbolInput.value = symbolValue;
+                    var existingSymbolInput = document.querySelector('input[name="StockSymbol"][type="hidden"]');
+                    if (!existingSymbolInput) {
+                        var hiddenSymbolInput = document.createElement('input');
+                        hiddenSymbolInput.type = 'hidden';
+                        hiddenSymbolInput.name = 'StockSymbol';
+                        hiddenSymbolInput.value = symbolValue;
+                    } else {
+                        existingSymbolInput.value = symbolValue;
+                    }
                     this.appendChild(hiddenSymbolInput); // Using this instead of formElement
                     console.log("Added hidden stock symbol field:", hiddenSymbolInput.value);
 
@@ -1004,44 +1061,59 @@
                     // Log the Model.Id from Razor
                     console.log("Model ID from server: @(Model.Id)");
 
-                    // Create hidden fields for all critical values to ensure they're submitted correctly
-                    var hiddenStockSymbol = document.createElement('input');
-                    hiddenStockSymbol.type = 'hidden';
-                    hiddenStockSymbol.name = 'StockSymbol';
-                    hiddenStockSymbol.value = symbolValue; // Use the value we already captured
-                    this.appendChild(hiddenStockSymbol);
+                    // We already added the StockSymbol hidden field above
 
                     // Add hidden fields for numeric values to ensure they're submitted
                     if (purchasePriceNumeric) {
-                        var hiddenPurchasePrice = document.createElement('input');
-                        hiddenPurchasePrice.type = 'hidden';
-                        hiddenPurchasePrice.name = 'PurchasePrice';
-                        hiddenPurchasePrice.value = purchasePriceNumeric.value || '1.00';
-                        this.appendChild(hiddenPurchasePrice);
+                        var existingPurchasePrice = document.querySelector('input[name="PurchasePrice"][type="hidden"]');
+                        if (!existingPurchasePrice) {
+                            var hiddenPurchasePrice = document.createElement('input');
+                            hiddenPurchasePrice.type = 'hidden';
+                            hiddenPurchasePrice.name = 'PurchasePrice';
+                            hiddenPurchasePrice.value = purchasePriceNumeric.value || '1.00';
+                            this.appendChild(hiddenPurchasePrice);
+                        } else {
+                            existingPurchasePrice.value = purchasePriceNumeric.value || '1.00';
+                        }
                     }
 
                     if (currentPriceNumeric) {
-                        var hiddenCurrentPrice = document.createElement('input');
-                        hiddenCurrentPrice.type = 'hidden';
-                        hiddenCurrentPrice.name = 'CurrentPrice';
-                        hiddenCurrentPrice.value = currentPriceNumeric.value || '1.00';
-                        this.appendChild(hiddenCurrentPrice);
+                        var existingCurrentPrice = document.querySelector('input[name="CurrentPrice"][type="hidden"]');
+                        if (!existingCurrentPrice) {
+                            var hiddenCurrentPrice = document.createElement('input');
+                            hiddenCurrentPrice.type = 'hidden';
+                            hiddenCurrentPrice.name = 'CurrentPrice';
+                            hiddenCurrentPrice.value = currentPriceNumeric.value || '1.00';
+                            this.appendChild(hiddenCurrentPrice);
+                        } else {
+                            existingCurrentPrice.value = currentPriceNumeric.value || '1.00';
+                        }
                     }
 
                     if (sharesPurchasedNumeric) {
-                        var hiddenSharesPurchased = document.createElement('input');
-                        hiddenSharesPurchased.type = 'hidden';
-                        hiddenSharesPurchased.name = 'NumberOfSharesPurchased';
-                        hiddenSharesPurchased.value = sharesPurchasedNumeric.value || '1';
-                        this.appendChild(hiddenSharesPurchased);
+                        var existingSharesPurchased = document.querySelector('input[name="NumberOfSharesPurchased"][type="hidden"]');
+                        if (!existingSharesPurchased) {
+                            var hiddenSharesPurchased = document.createElement('input');
+                            hiddenSharesPurchased.type = 'hidden';
+                            hiddenSharesPurchased.name = 'NumberOfSharesPurchased';
+                            hiddenSharesPurchased.value = sharesPurchasedNumeric.value || '1';
+                            this.appendChild(hiddenSharesPurchased);
+                        } else {
+                            existingSharesPurchased.value = sharesPurchasedNumeric.value || '1';
+                        }
                     }
 
                     if (sharesSoldNumeric) {
-                        var hiddenSharesSold = document.createElement('input');
-                        hiddenSharesSold.type = 'hidden';
-                        hiddenSharesSold.name = 'NumberOfSharesSold';
-                        hiddenSharesSold.value = sharesSoldNumeric.value || '0';
-                        this.appendChild(hiddenSharesSold);
+                        var existingSharesSold = document.querySelector('input[name="NumberOfSharesSold"][type="hidden"]');
+                        if (!existingSharesSold) {
+                            var hiddenSharesSold = document.createElement('input');
+                            hiddenSharesSold.type = 'hidden';
+                            hiddenSharesSold.name = 'NumberOfSharesSold';
+                            hiddenSharesSold.value = sharesSoldNumeric.value || '0';
+                            this.appendChild(hiddenSharesSold);
+                        } else {
+                            existingSharesSold.value = sharesSoldNumeric.value || '0';
+                        }
                     }
 
                     console.log("Form submitting with values:", {
