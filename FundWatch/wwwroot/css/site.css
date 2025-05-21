@@ -28,6 +28,16 @@ html, body {
     padding: 0;
 }
 
+/* Container alignment with body content */
+.container {
+    width: 100%;
+    max-width: 1320px;
+    padding-right: var(--bs-gutter-x, 0.75rem);
+    padding-left: var(--bs-gutter-x, 0.75rem);
+    margin-right: auto;
+    margin-left: auto;
+}
+
 /* Responsive adjustments for navbar spacing */
 @media (max-width: 991.98px) {
     .main-content {
@@ -318,6 +328,40 @@ button[type="submit"] {
         .footer-links a:hover {
             color: #007bff;
         }
+        
+.footer-row {
+    display: flex;
+    align-items: flex-start;
+}
+
+.footer-row .text-lg-start {
+    text-align: left;
+}
+
+.footer-row .text-lg-center {
+    text-align: center;
+}
+
+.footer-row .text-lg-end {
+    text-align: right;
+}
+
+.footer-row .text-lg-end .footer-links {
+    display: inline-block;
+    text-align: right;
+}
+
+.footer-row .text-lg-end h5 {
+    text-align: right;
+}
+
+@media (max-width: 991.98px) {
+    .footer-row .text-lg-start,
+    .footer-row .text-lg-center,
+    .footer-row .text-lg-end {
+        text-align: center;
+    }
+}
 
 .footer-tagline {
     color: #888;
@@ -978,6 +1022,15 @@ button[type="submit"] {
     overflow: hidden;
     padding: 5rem 0;
     margin-top: -1.5rem;
+}
+
+.hero-container .container {
+    max-width: 1320px;
+    width: 100%;
+    padding-right: var(--bs-gutter-x, 0.75rem);
+    padding-left: var(--bs-gutter-x, 0.75rem);
+    margin-right: auto;
+    margin-left: auto;
 }
 
 .chart-background-container {
