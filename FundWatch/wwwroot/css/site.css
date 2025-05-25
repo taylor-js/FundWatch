@@ -361,6 +361,15 @@ button[type="submit"] {
     .footer-row .text-lg-end {
         text-align: center;
     }
+    
+    .footer-row .text-lg-end .footer-links {
+        display: block;
+        text-align: center;
+    }
+    
+    .footer-row .text-lg-end h5 {
+        text-align: center;
+    }
 }
 
 .footer-tagline {
