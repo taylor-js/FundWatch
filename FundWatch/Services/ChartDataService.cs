@@ -272,13 +272,19 @@ namespace FundWatch.Services
         }
 
         /// <summary>
-        /// Calculate portfolio growth data over time compared to benchmark
+        /// Calculate portfolio growth data over time compared to benchmark using a sliding window.
+        /// Implements date-based caching to ensure the growth chart maintains a proper
+        /// time-based sliding window that updates as days progress.
         /// </summary>
         public async Task<List<PortfolioGrowthPoint>> CalculatePortfolioGrowthAsync(List<AppUserStock> userStocks, int days = 1825)
         {
             try
             {
-                var cacheKey = $"PortfolioGrowth_{days}_{string.Join("_", userStocks.Select(s => s.StockSymbol))}";
+                // TIME-AWARE CACHE KEY: Include today's date to ensure cache invalidation
+                // when the sliding window should move forward. This prevents growth charts
+                // from showing outdated date ranges.
+                var today = DateTime.Today.ToString("yyyy-MM-dd");
+                var cacheKey = $"PortfolioGrowth_{today}_{days}_{string.Join("_", userStocks.Select(s => s.StockSymbol))}";
                 if (_cache.TryGetValue(cacheKey, out List<PortfolioGrowthPoint> cachedData) && cachedData != null)
                 {
                     return cachedData;
@@ -428,13 +434,18 @@ namespace FundWatch.Services
         }
 
         /// <summary>
-        /// Calculate risk metrics for portfolio and individual stocks
+        /// Calculate risk metrics for portfolio and individual stocks using a sliding window approach.
+        /// Implements date-based cache invalidation to ensure metrics update as the 5-year window moves.
         /// </summary>
         public async Task<List<RiskAnalysisData>> CalculateRiskMetricsAsync(List<AppUserStock> userStocks)
         {
             try
             {
-                var cacheKey = $"RiskMetrics_{string.Join("_", userStocks.Select(s => s.StockSymbol))}";
+                // DATE-BASED CACHE KEY: Include today's date to ensure cache invalidation
+                // when the sliding window moves forward. This prevents stale risk metrics
+                // from being returned when the 5-year calculation window should update.
+                var today = DateTime.Today.ToString("yyyy-MM-dd");
+                var cacheKey = $"RiskMetrics_{today}_{string.Join("_", userStocks.Select(s => s.StockSymbol))}";
                 if (_cache.TryGetValue(cacheKey, out List<RiskAnalysisData> cachedData) && cachedData != null)
                 {
                     return cachedData;
@@ -606,13 +617,19 @@ namespace FundWatch.Services
         }
 
         /// <summary>
-        /// Calculate drawdown data points for portfolio and benchmark (5 years of data)
+        /// Calculate drawdown data points for portfolio and benchmark using a 5-year sliding window.
+        /// This method implements proper cache invalidation to ensure drawdown charts update
+        /// correctly as time progresses and prevents data from disappearing.
         /// </summary>
         public async Task<List<DrawdownPoint>> CalculateDrawdownSeriesAsync(List<AppUserStock> userStocks)
         {
             try
             {
-                var cacheKey = $"Drawdown_{string.Join("_", userStocks.Select(s => s.StockSymbol))}";
+                // SLIDING WINDOW CACHE KEY: Include today's date in the cache key to ensure
+                // that cached drawdown data becomes invalid when the date changes.
+                // This is critical for maintaining the 5-year sliding window behavior.
+                var today = DateTime.Today.ToString("yyyy-MM-dd");
+                var cacheKey = $"Drawdown_{today}_{string.Join("_", userStocks.Select(s => s.StockSymbol))}";
                 if (_cache.TryGetValue(cacheKey, out List<DrawdownPoint> cachedData) && cachedData != null)
                 {
                     return cachedData;
@@ -881,7 +898,15 @@ namespace FundWatch.Services
             return maxDrawdown;
         }
         
-        // Calculate portfolio values for each day
+        /// <summary>
+        /// Calculate portfolio values for each day using a 5-year sliding window approach.
+        /// This method implements a proper sliding window that automatically moves forward with time,
+        /// ensuring charts always show the most recent 5 years of data and preventing data from
+        /// disappearing when new stocks are added to the portfolio.
+        /// </summary>
+        /// <param name="userStocks">List of user's stock holdings</param>
+        /// <param name="historicalData">Historical price data for all stocks</param>
+        /// <returns>Dictionary mapping dates to portfolio values</returns>
         private Dictionary<DateTime, decimal> CalculatePortfolioDailyValues(
             List<AppUserStock> userStocks, 
             Dictionary<string, List<StockDataPoint>> historicalData)
@@ -891,35 +916,60 @@ namespace FundWatch.Services
             if (!userStocks.Any() || !historicalData.Any())
                 return result;
                 
-            // Get all unique dates from historical data
+            // SLIDING WINDOW IMPLEMENTATION:
+            // Define a proper 5-year sliding window that moves forward with time.
+            // This ensures that as days pass, the window automatically includes new days
+            // and excludes old days beyond the 5-year threshold, maintaining a consistent
+            // 5-year view for risk analysis and drawdown calculations.
+            var endDate = DateTime.Today;
+            var startDate = endDate.AddYears(-5);
+            
+            // OPTIMIZATION: Only collect dates that fall within our sliding window.
+            // This prevents processing of irrelevant historical data and ensures
+            // the chart data remains consistent regardless of when stocks were added.
             var allDates = new HashSet<DateTime>();
             
             foreach (var stockData in historicalData.Values)
             {
                 foreach (var dataPoint in stockData)
                 {
-                    allDates.Add(dataPoint.Date.Date);
+                    var date = dataPoint.Date.Date;
+                    // FILTERING: Only include dates within our 5-year sliding window
+                    // This is crucial for preventing stale data from appearing in charts
+                    if (date >= startDate && date <= endDate)
+                    {
+                        allDates.Add(date);
+                    }
                 }
             }
             
-            // For each date, calculate portfolio value
+            // PORTFOLIO VALUE CALCULATION:
+            // For each trading day in our sliding window, calculate the total portfolio value
+            // by summing the value of all stocks owned on that date.
             foreach (var date in allDates.OrderBy(d => d))
             {
                 decimal portfolioValue = 0;
+                bool hasAnyStock = false; // Track if any stocks exist on this date
                 
                 foreach (var stock in userStocks)
                 {
-                    // Skip if stock was purchased after this date
-                    if (stock.DatePurchased > date)
+                    // OWNERSHIP TIMELINE: Only include stocks that were owned on this specific date
+                    // Skip if stock was purchased after this date (future purchase)
+                    if (stock.DatePurchased.Date > date)
                         continue;
                         
-                    // Skip if stock was sold before this date
-                    if (stock.DateSold.HasValue && stock.DateSold < date)
+                    // Skip if stock was sold before this date (already sold)
+                    if (stock.DateSold.HasValue && stock.DateSold.Value.Date < date)
                         continue;
+                        
+                    // CONTINUITY FLAG: Mark that at least one stock existed on this date
+                    // This ensures we maintain data continuity even if portfolio value is zero
+                    hasAnyStock = true;
                         
                     if (historicalData.TryGetValue(stock.StockSymbol, out var stockData) && stockData.Any())
                     {
-                        // Find the closest price before or on this date
+                        // PRICE LOOKUP: Find the most recent price at or before this date
+                        // This handles cases where market data might be missing for specific days
                         var pricePoint = stockData
                             .Where(dp => dp.Date.Date <= date)
                             .OrderByDescending(dp => dp.Date)
@@ -927,24 +977,29 @@ namespace FundWatch.Services
                             
                         if (pricePoint != null)
                         {
-                            // Calculate shares owned on this date
+                            // SHARE CALCULATION: Determine how many shares were owned on this date
                             decimal shares = stock.NumberOfSharesPurchased;
                             
-                            // If stock was sold on this date, adjust shares
+                            // SALE ADJUSTMENT: If stock was sold on this exact date, adjust share count
                             if (stock.DateSold.HasValue && stock.DateSold.Value.Date == date)
                             {
                                 shares -= (decimal)stock.NumberOfSharesSold;
                             }
                             
+                            // VALUE ACCUMULATION: Add this stock's value to total portfolio value
                             portfolioValue += pricePoint.Close * shares;
                         }
                     }
                 }
                 
-                // Only add dates where portfolio had value
-                if (portfolioValue > 0)
+                // DATA CONTINUITY: Include all dates where stocks existed to prevent chart gaps.
+                // This is critical for proper chart rendering - missing dates can cause
+                // charts to appear empty or display incorrectly.
+                if (hasAnyStock)
                 {
-                    result[date] = portfolioValue;
+                    // MINIMUM VALUE: Use a tiny minimum value to prevent log scale chart issues
+                    // while maintaining the actual portfolio value when it's positive
+                    result[date] = Math.Max(portfolioValue, 0.01m);
                 }
             }
             
