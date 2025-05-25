@@ -225,6 +225,90 @@
                             </div>
                         </div>
 
+                        <div class="p-3 border-bottom border-secondary">
+                            <div class="fw-bold text-info mb-0">Daily Performance</div>
+                            <div class="row g-0">
+                                <div class="col-6">
+                                    <div class="small">Today's Change:</div>
+                                    <div class="small">Day Range:</div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    @{
+                                        // Calculate today's change if we have recent data
+                                        decimal? todayChange = null;
+                                        decimal? todayChangePercent = null;
+                                        decimal? dayHigh = null;
+                                        decimal? dayLow = null;
+                                        
+                                        if (Model.HistoricalData != null && Model.HistoricalData.Count > 1)
+                                        {
+                                            var latestData = Model.HistoricalData.OrderByDescending(d => d.Date).FirstOrDefault();
+                                            var previousData = Model.HistoricalData.OrderByDescending(d => d.Date).Skip(1).FirstOrDefault();
+                                            
+                                            if (latestData != null && previousData != null)
+                                            {
+                                                todayChange = latestData.Close - previousData.Close;
+                                                todayChangePercent = (todayChange / previousData.Close) * 100;
+                                                dayHigh = latestData.High;
+                                                dayLow = latestData.Low;
+                                            }
+                                        }
+                                    }
+                                    <div class="small @(todayChange >= 0 ? "text-success" : "text-danger")">
+                                        @if (todayChange.HasValue)
+                                        {
+                                            @((todayChange.Value >= 0 ? "+" : "") + todayChange.Value.ToString("C2", culture))
+                                            <span>(@((todayChangePercent.Value >= 0 ? "+" : "") + todayChangePercent.Value.ToString("N2"))%)</span>
+                                        }
+                                        else
+                                        {
+                                            <span>N/A</span>
+                                        }
+                                    </div>
+                                    <div class="small">
+                                        @if (dayLow.HasValue && dayHigh.HasValue)
+                                        {
+                                            @($"{dayLow.Value.ToString("C2", culture)} - {dayHigh.Value.ToString("C2", culture)}")
+                                        }
+                                        else
+                                        {
+                                            <span>N/A</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 border-bottom border-secondary flex-grow-1">
+                            <div class="fw-bold text-info mb-0">Return Analysis</div>
+                            <div class="row g-0">
+                                <div class="col-6">
+                                    <div class="small">Annualized Return:</div>
+                                    <div class="small">Days Held:</div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    @{
+                                        // Calculate annualized return
+                                        var daysHeld = (DateTime.Now - Model.Stock.DatePurchased).Days;
+                                        decimal annualizedReturn = 0;
+                                        if (daysHeld > 0)
+                                        {
+                                            var totalReturn = Model.Stock.PerformancePercentage / 100;
+                                            var yearsHeld = daysHeld / 365.25m;
+                                            if (yearsHeld > 0)
+                                            {
+                                                annualizedReturn = (decimal)(Math.Pow((double)(1 + totalReturn), 1 / (double)yearsHeld) - 1) * 100;
+                                            }
+                                        }
+                                    }
+                                    <div class="small @(annualizedReturn >= 0 ? "text-success" : "text-danger")">
+                                        @((annualizedReturn >= 0 ? "+" : "") + annualizedReturn.ToString("N2"))%
+                                    </div>
+                                    <div class="small">@daysHeld.ToString("N0")</div>
+                                </div>
+                            </div>
+                        </div>
+
                         @if (Model.Stock.DateSold.HasValue)
                         {
                             <div class="p-3">
