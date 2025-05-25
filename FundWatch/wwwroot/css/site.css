@@ -559,6 +559,11 @@ button[type="submit"] {
         font-size: 12px !important;
     }
 
+/* Highcharts axis labels styling */
+.highcharts-axis-labels.highcharts-coloraxis-labels text {
+    fill: #ffffff !important;
+}
+
 .chart-description {
     margin-top: 0 !important;
     margin-bottom: 20px !important;
