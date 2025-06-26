@@ -230,7 +230,7 @@
                 fixChartLabels('topHoldingsChart');
                 fixChartLabels('growthAnalysisChart');
                 fixChartLabels('monthlyPerformanceChart');
-                fixChartLabels('riskAnalysisChart');
+                // Risk analysis chart is now using Highcharts and doesn't need this fix
                 // Stock chart is now using Highcharts and doesn't need this fix
             }, 300);
         }
@@ -255,40 +255,9 @@
                 // Handle specific tabs with special needs
                 if (targetTab === '#analyticsTab') {
                     setTimeout(function() {
-                        // Refresh Highcharts risk analysis chart
-                        const riskChartElement = document.getElementById('riskAnalysisChart');
-                        
-                        // For Highcharts
-                        const riskChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === 'riskAnalysisChart');
-                        if (riskChart) {
-                            // Fix any hidden labels
-                            riskChart.series.forEach(series => {
-                                if (series.dataLabelsGroup) {
-                                    series.dataLabelsGroup.element.querySelectorAll('g').forEach(labelGroup => {
-                                        // Force visibility for all text elements
-                                        const textElement = labelGroup.querySelector('text');
-                                        if (textElement) {
-                                            textElement.setAttribute('visibility', 'visible');
-                                            labelGroup.setAttribute('visibility', 'visible');
-                                            labelGroup.setAttribute('filter', 'none');
-                                        }
-                                    });
-                                }
-                            });
-                            
-                            // Redraw chart to apply changes
-                            riskChart.redraw();
-                            console.log('Highcharts risk analysis chart refreshed');
-                        }
-                        
-                        // For Syncfusion (if it exists)
-                        if (riskChartElement && riskChartElement.ej2_instances && riskChartElement.ej2_instances[0]) {
-                            riskChartElement.ej2_instances[0].refresh();
-                            console.log('Risk Analysis chart refreshed');
-                        }
-                        
-                        // Refresh analytics charts when tab is shown
-                        console.log('Analytics tab shown - refreshing charts');
+                        // Trigger analytics chart rendering through the tab's own handler
+                        // The Analytics tab has its own event listener that will handle chart rendering
+                        console.log('Analytics tab shown - charts will be rendered by tab handler');
                     }, 200);
                 } else if (targetTab === '#performanceTab') {
                     setTimeout(function() {

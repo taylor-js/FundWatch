@@ -17,14 +17,15 @@
                               Model.PerformanceData.Any(kvp => kvp.Value != null && kvp.Value.Any());
 }
 
-<div class="container mt-4" id="dashboard-container">
+<div id="dashboard-container">
     <!-- Global loading indicator removed since we're using component-specific loading -->
 
     <!-- Tab Navigation - loaded as a partial view -->
     @await Html.PartialAsync("_DashboardTabs")
 
     <!-- Tab Content Container -->
-    <div class="tab-content" id="dashboardTabContent">
+    <div class="container">
+        <div class="tab-content" id="dashboardTabContent">
     
         <!-- Tab Content: Overview -->
         <div id="overviewTab" class="tab-pane fade" role="tabpanel">
@@ -45,6 +46,7 @@
         <div id="holdingsTab" class="tab-pane fade" role="tabpanel">
             @await Html.PartialAsync("_HoldingsTab", Model)
         </div>
+    </div>
     </div>
 </div>
 

@@ -8,6 +8,12 @@ html, body {
     background-color: #0100;
     color: #b0c4de;
     font-family: 'Roboto', sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+}
+
+body {
+    min-height: 100vh;
 }
 
 /* Accessibility focus styles */
@@ -26,22 +32,87 @@ html, body {
     margin-top: 5rem; /* Space for fixed navbar */
     min-height: calc(100vh - 5rem - 300px);
     padding: 0;
+    overflow-x: hidden;
+    width: 100%;
 }
 
-/* Container alignment with body content */
-.container {
-    width: 100%;
-    max-width: 1320px;
-    padding-right: var(--bs-gutter-x, 0.75rem);
-    padding-left: var(--bs-gutter-x, 0.75rem);
-    margin-right: auto;
+/* Remove margin-top for pages with hero sections */
+body.has-hero .main-content {
+    margin-top: 0;
+}
+
+/* Container alignment - Ensure all containers have symmetric padding */
+.container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
     margin-left: auto;
+    margin-right: auto;
+}
+
+/* Reduce container padding on mobile */
+@media (max-width: 767.98px) {
+    .container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+/* Prevent horizontal scroll on all major containers */
+section, .row, .col, [class*="col-"] {
+    max-width: 100%;
+}
+
+/* Ensure all sections have centered content */
+section {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Center all cards with consistent margins */
+.card {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Ensure dashboard and other page content is centered */
+.dashboard-hero,
+.features-section,
+.chart-showcase-section,
+.cta-section {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Fix row margins to prevent overflow */
+.row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Remove horizontal padding from tab-content */
+.tab-content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
 }
 
 /* Responsive adjustments for navbar spacing */
 @media (max-width: 991.98px) {
     .main-content {
         margin-top: 4.5rem;
+    }
+    
+    body.has-hero .main-content {
+        margin-top: 0;
     }
 }
 
@@ -54,7 +125,51 @@ html, body {
     position: fixed;
     width: 100%;
     top: 0;
-    z-index: 1000;
+    z-index: 1030; /* Higher z-index to stay above scrollbar */
+    right: 0;
+    left: 0;
+}
+
+
+/* Ensure navbar maintains proper height */
+.navbar.navbar-expand-lg {
+    min-height: 5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+/* Adjust navbar brand spacing */
+.navbar-brand {
+    padding: 0;
+    margin-right: 1rem;
+}
+
+/* Ensure navbar content uses full container width */
+.navbar > .container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* Remove any default Bootstrap constraints on navbar */
+@media (min-width: 992px) {
+    .navbar-expand-lg .navbar-collapse {
+        display: flex !important;
+        flex-basis: auto;
+        flex-grow: 1;
+        justify-content: space-between;
+    }
+    
+    .navbar-expand-lg .navbar-nav {
+        flex-direction: row;
+    }
+    
+    .navbar-expand-lg .navbar-nav.me-auto {
+        margin-right: auto !important;
+        flex-grow: 1;
+    }
 }
 
 .navbar-brand {
@@ -62,6 +177,10 @@ html, body {
     font-weight: 700;
     font-size: 1.5rem;
     color: #007bff !important;
+    display: inline-flex;
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
     .navbar-brand .logo-img {
@@ -291,7 +410,6 @@ button[type="submit"] {
     position: relative;
     width: 100%;
     border-top: 1px solid #333;
-    flex-shrink: 0;
     min-height: 300px;
 }
 
@@ -478,6 +596,7 @@ button[type="submit"] {
     border: 1px solid #444;
     margin: 15px 0;
     max-width: 100%;
+    overflow-x: auto;
 }
 
 .e-grid .e-headercell {
@@ -659,6 +778,110 @@ button[type="submit"] {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Tab container styling */
+.tabs-container {
+    background-color: #1a1a1a;
+    padding: 0;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    width: 100vw;
+    border-bottom: 1px solid #333;
+}
+
+.tabs-container .nav-tabs {
+    max-width: 1140px; /* Match Bootstrap container max-width */
+    margin: 0 auto; /* Center the tabs */
+    padding: 0 15px; /* Match Bootstrap container padding */
+    border-bottom: none;
+    display: flex;
+    justify-content: stretch; /* Make tabs stretch to full width */
+    width: 100%;
+}
+
+/* Responsive container widths for nav-tabs to match Bootstrap */
+@media (min-width: 576px) {
+    .tabs-container .nav-tabs {
+        max-width: 540px;
+    }
+}
+
+@media (min-width: 768px) {
+    .tabs-container .nav-tabs {
+        max-width: 720px;
+    }
+}
+
+@media (min-width: 992px) {
+    .tabs-container .nav-tabs {
+        max-width: 960px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .tabs-container .nav-tabs {
+        max-width: 1140px;
+    }
+}
+
+.tabs-container .nav-tabs .nav-item {
+    margin-bottom: 0;
+    flex: 1; /* Make tabs take equal width */
+    /* Removed max-width to allow full container width */
+}
+
+.tabs-container .nav-tabs .nav-link {
+    color: #b0c4de;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 1.25rem 2rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    text-align: center;
+    width: 100%; /* Full width of nav-item */
+}
+
+.tabs-container .nav-tabs .nav-link:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom-color: #007bff;
+}
+
+.tabs-container .nav-tabs .nav-link.active {
+    color: #007bff;
+    background-color: transparent;
+    border-bottom-color: #007bff;
+}
+
+/* Swipeable tabs for mobile */
+@media (max-width: 767.98px) {
+    .tabs-container .nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .tabs-container .nav-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .tabs-container .nav-tabs .nav-item {
+        flex-shrink: 0;
+    }
+    
+    .tabs-container .nav-tabs .nav-link {
+        white-space: nowrap;
+        padding: 0.75rem 1.25rem;
+    }
+}
+
 .dashboard-hero-content {
     position: relative;
     z-index: 2;
@@ -704,6 +927,13 @@ button[type="submit"] {
         font-size: 0.9rem;
         opacity: 0.8;
     }
+
+/* Dashboard container top spacing */
+#dashboard-container {
+    margin-top: 1.5rem;
+}
+
+/* Tab content - no extra margins needed */
 
 #overviewTab, #performanceTab, #analyticsTab, #holdingsTab {
     margin: 0;
@@ -1035,16 +1265,36 @@ button[type="submit"] {
     color: white;
     overflow: hidden;
     padding: 5rem 0;
-    margin-top: -1.5rem;
+    margin-top: 0;
+    padding-top: 8rem; /* navbar height + extra padding */
 }
 
-.hero-container .container {
-    max-width: 1320px;
-    width: 100%;
-    padding-right: var(--bs-gutter-x, 0.75rem);
-    padding-left: var(--bs-gutter-x, 0.75rem);
-    margin-right: auto;
-    margin-left: auto;
+/* Keep navbar container padding symmetric */
+.navbar .container {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+}
+
+/* Add proportional padding for mobile screens */
+@media (max-width: 991.98px) {
+    .navbar .container {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .navbar .container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .navbar .container {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
 }
 
 .chart-background-container {
@@ -1060,6 +1310,7 @@ button[type="submit"] {
 .hero-content {
     position: relative;
     z-index: 2;
+    width: 100%;
 }
 
 .hero-text {
@@ -1328,6 +1579,7 @@ button[type="submit"] {
 @media (max-width: 991.98px) {
     .hero-container {
         padding: 3rem 0;
+        padding-top: 7rem; /* Adjusted navbar height + padding */
     }
 
     .chart-showcase {

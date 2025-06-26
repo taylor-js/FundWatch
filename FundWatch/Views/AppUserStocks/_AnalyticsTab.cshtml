@@ -168,6 +168,13 @@
                 return;
             }
 
+            // Destroy existing chart if it exists
+            const existingChart = Highcharts.charts.find(chart => chart && chart.renderTo && chart.renderTo.id === 'riskAnalysisChart');
+            if (existingChart) {
+                existingChart.destroy();
+                console.log("Destroyed existing risk analysis chart");
+            }
+
             // Create a scatter plot with volatility vs. sharpe ratio
             Highcharts.chart('riskAnalysisChart', {
                 chart: {
@@ -179,15 +186,35 @@
                 },
                 xAxis: {
                     title: {
-                        text: 'Volatility (%)'
+                        text: 'Volatility (%)',
+                        style: {
+                            color: '#FFFFFF'
+                        }
                     },
-                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                    labels: {
+                        style: {
+                            color: '#FFFFFF'
+                        }
+                    },
+                    gridLineColor: 'rgba(255, 255, 255, 0.1)',
+                    lineColor: '#FFFFFF',
+                    tickColor: '#FFFFFF'
                 },
                 yAxis: {
                     title: {
-                        text: 'Sharpe Ratio'
+                        text: 'Sharpe Ratio',
+                        style: {
+                            color: '#FFFFFF'
+                        }
                     },
-                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
+                    labels: {
+                        style: {
+                            color: '#FFFFFF'
+                        }
+                    },
+                    gridLineColor: 'rgba(255, 255, 255, 0.1)',
+                    lineColor: '#FFFFFF',
+                    tickColor: '#FFFFFF'
                 },
                 tooltip: {
                     headerFormat: '<b>{point.key}</b><br>',
@@ -218,6 +245,14 @@
                     }),
                     color: '#4361EE'
                 }],
+                legend: {
+                    itemStyle: {
+                        color: '#FFFFFF'
+                    },
+                    itemHoverStyle: {
+                        color: '#CCCCCC'
+                    }
+                },
                 credits: { enabled: false }
             });
 

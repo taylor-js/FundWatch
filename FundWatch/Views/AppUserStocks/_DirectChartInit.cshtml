@@ -173,27 +173,12 @@
             
             // ANALYTICS TAB CHARTS
             
-            // Risk Analysis Chart
+            // Risk Analysis Chart - Skip initialization here as Analytics tab handles it
             @if (Model.RiskMetrics?.Count > 0)
             {
                 <text>
-                setTimeout(function() {
-                    console.log('Initializing Risk Analysis Chart with @Model.RiskMetrics.Count data points');
-                    try {
-                        // Check if the chart container exists
-                        var container = document.getElementById('riskAnalysisChart');
-                        if (!container) {
-                            console.warn('Risk Analysis Chart container not found');
-                            return;
-                        }
-
-                        var riskData = @Html.Raw(Json.Serialize(Model.RiskMetrics));
-                        ChartManager.renderRiskAnalysisChart(riskData);
-                        console.log('Risk Analysis Chart initialized');
-                    } catch (err) {
-                        console.error('Error initializing Risk Analysis Chart:', err);
-                    }
-                }, 600);
+                // Risk Analysis Chart is handled by the Analytics tab's own initialization
+                console.log('Risk Analysis Chart will be initialized by Analytics tab with @Model.RiskMetrics.Count data points');
                 </text>
             }
             else
@@ -292,12 +277,9 @@
                                     {
                                         <text>ChartManager.renderPortfolioGrowthChart(@Html.Raw(Json.Serialize(Model.PortfolioGrowthData)));</text>
                                     }
-                                } else if (container.id === 'riskAnalysisChart' && typeof ChartManager !== 'undefined') {
-                                    console.log('Re-rendering Risk Analysis Chart');
-                                    @if (Model.RiskMetrics?.Count > 0)
-                                    {
-                                        <text>ChartManager.renderRiskAnalysisChart(@Html.Raw(Json.Serialize(Model.RiskMetrics)));</text>
-                                    }
+                                } else if (container.id === 'riskAnalysisChart') {
+                                    // Risk Analysis Chart is handled by Analytics tab's own initialization
+                                    console.log('Risk Analysis Chart managed by Analytics tab');
                                 } else if (container.id === 'drawdownChart' && typeof ChartManager !== 'undefined') {
                                     console.log('Re-rendering Drawdown Chart');
                                     @if (Model.DrawdownData?.Count > 0)
