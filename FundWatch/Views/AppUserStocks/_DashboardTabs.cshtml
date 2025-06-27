@@ -14,27 +14,35 @@
     <div class="dashboard-hero mb-4">
         <div class="dashboard-hero-content">
             <div class="row align-items-center">
-                <div class="col-lg-6">
+                <div class="col-lg-6 pe-lg-5">
                     <h1>Your Portfolio Dashboard</h1>
                     <p>Track, analyze, and optimize your investments in one place.</p>
                 </div>
                 <div class="col-lg-6">
-                    <div class="dashboard-metrics">
-                        <div class="dashboard-metric">
-                            <div class="value">@portfolioValue.ToString("C0")</div>
-                            <div class="label">Portfolio Value</div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="dashboard-metric">
+                                <div class="value">@portfolioValue.ToString("C0")</div>
+                                <div class="label">Portfolio Value</div>
+                            </div>
                         </div>
-                        <div class="dashboard-metric">
-                            <div class="value">@portfolioTotalCost.ToString("C0")</div>
-                            <div class="label">Total Cost Basis</div>
+                        <div class="col-6">
+                            <div class="dashboard-metric">
+                                <div class="value">@portfolioTotalCost.ToString("C0")</div>
+                                <div class="label">Total Cost Basis</div>
+                            </div>
                         </div>
-                        <div class="dashboard-metric">
-                            <div class="value">@averageCostPerStock.ToString("C0")</div>
-                            <div class="label">Avg Cost Per Stock</div>
+                        <div class="col-6">
+                            <div class="dashboard-metric">
+                                <div class="value">@averageCostPerStock.ToString("C0")</div>
+                                <div class="label">Avg Cost Per Stock</div>
+                            </div>
                         </div>
-                        <div class="dashboard-metric">
-                            <div class="value">@portfolioStockCount</div>
-                            <div class="label">Stocks</div>
+                        <div class="col-6">
+                            <div class="dashboard-metric">
+                                <div class="value">@portfolioStockCount</div>
+                                <div class="label">Stocks</div>
+                            </div>
                         </div>
                     </div>
                 </div>
