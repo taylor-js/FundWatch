@@ -1,13 +1,382 @@
 @model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
-@using Syncfusion.EJ2
-@using Syncfusion.EJ2.Navigations
-@using Syncfusion.EJ2.Charts
-@using Syncfusion.EJ2.Grids
+@using FundWatch.Models.QuantitativeModels
 @{
     var culture = new System.Globalization.CultureInfo("en-US");
+    var hasOptimization = Model.PortfolioOptimization != null;
+    var hasOptions = Model.OptionsAnalysis?.Any() == true;
+    var hasFourier = Model.FourierAnalysis != null;
 }
 
-<!-- Holdings grid without container padding -->
-<div style="padding: 0; margin: 0; width: 100%;">
-    @await Html.PartialAsync("_StockGrid", Model)
+<!-- Enhanced Holdings Tab with Quantitative Metrics -->
+<div class="holdings-container">
+    <!-- Portfolio Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-icon bg-primary">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="metric-content">
+                    <h6>Portfolio Balance</h6>
+                    <h4>@Model.PortfolioMetrics.TotalValue.ToString("C0", culture)</h4>
+                    <small class="@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "text-success" : "text-danger")">
+                        <i class="fas fa-arrow-@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "up" : "down")"></i>
+                        @Math.Abs(Model.PortfolioMetrics.TotalPerformance).ToString("F2")%
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-icon bg-success">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="metric-content">
+                    <h6>Sharpe Ratio</h6>
+                    <h4>@(hasOptimization ? Model.PortfolioOptimization.CurrentPortfolio.SharpeRatio.ToString("F2") : "N/A")</h4>
+                    <small>Risk-adjusted return</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-icon bg-warning">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="metric-content">
+                    <h6>Portfolio VaR (95%)</h6>
+                    <h4>@(hasOptimization ? (Model.PortfolioOptimization.RiskAnalysis.ValueAtRisk95 * 100).ToString("F1") + "%" : "N/A")</h4>
+                    <small>Maximum expected loss</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-icon bg-info">
+                    <i class="fas fa-wave-square"></i>
+                </div>
+                <div class="metric-content">
+                    <h6>Active Cycles</h6>
+                    <h4>@(hasFourier ? Model.FourierAnalysis.MarketCycles.Count(c => c.Strength > 3) : 0)</h4>
+                    <small>Significant patterns</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Holdings Grid -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-briefcase me-2"></i>Holdings with Quantitative Analysis
+            </h5>
+            <div>
+                <button class="btn btn-sm btn-outline-light me-2" onclick="toggleAdvancedColumns()">
+                    <i class="fas fa-columns"></i> Toggle Advanced
+                </button>
+                <a class="btn btn-sm btn-light" href="/AppUserStocks/CreateOrEdit">
+                    <i class="fa-solid fa-plus"></i> Add Stock
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="enhancedHoldingsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Company</th>
+                            <th class="text-end">Shares</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end">Value</th>
+                            <th class="text-end">Return</th>
+                            <th class="text-end">Daily Change</th>
+                            <th class="text-end advanced-column">Weight</th>
+                            <th class="text-end advanced-column">Beta</th>
+                            <th class="text-end advanced-column">Volatility</th>
+                            <th class="text-end advanced-column">Sharpe</th>
+                            <th class="text-end advanced-column">Options IV</th>
+                            <th class="text-center advanced-column">Cycle Phase</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var stock in Model.UserStocks.OrderByDescending(s => s.TotalValue))
+                        {
+                            var sharesOwned = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                            var totalValue = sharesOwned * stock.CurrentPrice;
+                            var returnPct = stock.PurchasePrice > 0 ? ((stock.CurrentPrice - stock.PurchasePrice) / stock.PurchasePrice) * 100 : 0;
+                            var weight = Model.PortfolioMetrics.TotalValue > 0 ? (totalValue / Model.PortfolioMetrics.TotalValue) * 100 : 0;
+                            
+                            // Get quantitative metrics
+                            var optionsData = Model.OptionsAnalysis?.FirstOrDefault(o => o.Symbol == stock.StockSymbol);
+                            var optimizationData = hasOptimization && Model.PortfolioOptimization.CurrentWeights.ContainsKey(stock.StockSymbol) 
+                                ? Model.PortfolioOptimization.CurrentWeights[stock.StockSymbol] : 0;
+                            var optimalWeight = hasOptimization && Model.PortfolioOptimization.OptimalWeights.ContainsKey(stock.StockSymbol)
+                                ? Model.PortfolioOptimization.OptimalWeights[stock.StockSymbol] : 0;
+                            var riskMetric = Model.RiskMetrics?.FirstOrDefault(r => r.Symbol == stock.StockSymbol);
+                            
+                            // Get cycle phase
+                            var cyclePhase = "";
+                            var cycleColor = "secondary";
+                            if (hasFourier && Model.FourierAnalysis.MarketCycles.Any())
+                            {
+                                var primaryCycle = Model.FourierAnalysis.MarketCycles.FirstOrDefault();
+                                if (primaryCycle != null)
+                                {
+                                    cyclePhase = primaryCycle.PhaseDescription.Contains("Rising") ? "↑" : "↓";
+                                    cycleColor = primaryCycle.PhaseDescription.Contains("Rising") ? "success" : "danger";
+                                }
+                            }
+                            
+                            <tr>
+                                <td>
+                                    <strong>@stock.StockSymbol</strong>
+                                </td>
+                                <td>
+                                    <small class="text-muted">@(Model.CompanyDetails.ContainsKey(stock.StockSymbol) ? Model.CompanyDetails[stock.StockSymbol].Name : stock.StockSymbol)</small>
+                                </td>
+                                <td class="text-end">@sharesOwned.ToString("N0")</td>
+                                <td class="text-end">$@stock.CurrentPrice.ToString("F2")</td>
+                                <td class="text-end fw-bold">$@totalValue.ToString("N2")</td>
+                                <td class="text-end">
+                                    <span class="badge @(returnPct >= 0 ? "bg-success" : "bg-danger")">
+                                        @(returnPct >= 0 ? "+" : "")@returnPct.ToString("F2")%
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    @{
+                                        var dailyChange = Model.CompanyDetails.ContainsKey(stock.StockSymbol) ? Model.CompanyDetails[stock.StockSymbol].DailyChange : 0;
+                                        var dailyChangePct = Model.CompanyDetails.ContainsKey(stock.StockSymbol) ? Model.CompanyDetails[stock.StockSymbol].DailyChangePercent : 0;
+                                    }
+                                    <span class="@(dailyChange >= 0 ? "text-success" : "text-danger")">
+                                        @(dailyChange >= 0 ? "+" : "")$@dailyChange.ToString("F2")
+                                        <small>(@(dailyChangePct >= 0 ? "+" : "")@dailyChangePct.ToString("F2")%)</small>
+                                    </span>
+                                </td>
+                                <td class="text-end advanced-column">
+                                    <div class="weight-indicator">
+                                        <span class="current-weight">@weight.ToString("F1")%</span>
+                                        @if (hasOptimization && Math.Abs(optimalWeight * 100 - (double)weight) > 1)
+                                        {
+                                            <small class="optimal-weight @(optimalWeight * 100 > (double)weight ? "text-success" : "text-danger")">
+                                                → @((optimalWeight * 100).ToString("F1"))%
+                                            </small>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-end advanced-column">
+                                    @(riskMetric?.Beta.ToString("F2") ?? "1.00")
+                                </td>
+                                <td class="text-end advanced-column">
+                                    @if (optionsData != null)
+                                    {
+                                        <span>@((optionsData.HistoricalVolatility * 100).ToString("F1"))%</span>
+                                    }
+                                    else if (riskMetric != null)
+                                    {
+                                        <span>@((riskMetric.Volatility * 100).ToString("F1"))%</span>
+                                    }
+                                    else
+                                    {
+                                        <span>N/A</span>
+                                    }
+                                </td>
+                                <td class="text-end advanced-column">
+                                    @(riskMetric?.SharpeRatio.ToString("F2") ?? "N/A")
+                                </td>
+                                <td class="text-end advanced-column">
+                                    @if (optionsData?.OptionChain?.Any() == true)
+                                    {
+                                        var atmOption = optionsData.OptionChain.FirstOrDefault(o => o.Moneyness == "At-the-Money");
+                                        if (atmOption != null)
+                                        {
+                                            <span>@((atmOption.CallImpliedVol * 100).ToString("F1"))%</span>
+                                        }
+                                        else
+                                        {
+                                            <span>N/A</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span>N/A</span>
+                                    }
+                                </td>
+                                <td class="text-center advanced-column">
+                                    @if (!string.IsNullOrEmpty(cyclePhase))
+                                    {
+                                        <span class="badge bg-@cycleColor">@cyclePhase Phase</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a class="btn btn-outline-primary" href="/AppUserStocks/CreateOrEdit/@stock.Id" title="Edit">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </a>
+                                        <a class="btn btn-outline-info" href="/AppUserStocks/Details/@stock.Id" title="Details">
+                                            <i class="fa-solid fa-chart-line"></i>
+                                        </a>
+                                        <form action="/AppUserStocks/Delete/@stock.Id" method="post" class="inline-form">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger delete-btn" title="Delete">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <th colspan="2">Portfolio Total</th>
+                            <th class="text-end">-</th>
+                            <th class="text-end">-</th>
+                            <th class="text-end fw-bold">@Model.PortfolioMetrics.TotalValue.ToString("C2", culture)</th>
+                            <th class="text-end">
+                                <span class="badge @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "bg-success" : "bg-danger")">
+                                    @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "+" : "")@Model.PortfolioMetrics.TotalPerformance.ToString("F2")%
+                                </span>
+                            </th>
+                            <th class="text-end">-</th>
+                            <th class="text-end advanced-column">100%</th>
+                            <th class="text-end advanced-column">-</th>
+                            <th class="text-end advanced-column">-</th>
+                            <th class="text-end advanced-column">
+                                @(hasOptimization ? Model.PortfolioOptimization.CurrentPortfolio.SharpeRatio.ToString("F2") : "-")
+                            </th>
+                            <th class="text-end advanced-column">-</th>
+                            <th class="text-center advanced-column">-</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quantitative Insights Panel -->
+    @if (hasOptimization || hasOptions || hasFourier)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-gradient-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>Quantitative Insights for Your Holdings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @if (hasOptimization && Model.PortfolioOptimization.OptimalWeights.Any())
+                            {
+                                <div class="col-md-4">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-weight me-2"></i>Rebalancing Recommendations
+                                    </h6>
+                                    @foreach (var kvp in Model.PortfolioOptimization.OptimalWeights.OrderByDescending(k => Math.Abs(k.Value - (Model.PortfolioOptimization.CurrentWeights.ContainsKey(k.Key) ? Model.PortfolioOptimization.CurrentWeights[k.Key] : 0))).Take(3))
+                                    {
+                                        var currentWeight = Model.PortfolioOptimization.CurrentWeights.ContainsKey(kvp.Key) ? Model.PortfolioOptimization.CurrentWeights[kvp.Key] : 0;
+                                        var change = kvp.Value - currentWeight;
+                                        if (Math.Abs(change) > 0.01)
+                                        {
+                                            <div class="insight-item mb-2">
+                                                <strong>@kvp.Key:</strong>
+                                                <span class="@(change > 0 ? "text-success" : "text-danger")">
+                                                    @(change > 0 ? "Increase" : "Decrease") by @Math.Abs(change * 100).ToString("F1")%
+                                                </span>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                            
+                            @if (hasOptions)
+                            {
+                                <div class="col-md-4">
+                                    <h6 class="text-success mb-3">
+                                        <i class="fas fa-shield-alt me-2"></i>Options Opportunities
+                                    </h6>
+                                    @foreach (var option in Model.OptionsAnalysis.Where(o => o.OptionChain?.Any() == true).Take(3))
+                                    {
+                                        var atmOption = option.OptionChain.FirstOrDefault(o => o.Moneyness == "At-the-Money");
+                                        if (atmOption != null)
+                                        {
+                                            <div class="insight-item mb-2">
+                                                <strong>@option.Symbol:</strong>
+                                                <span class="text-muted">
+                                                    Covered call yield: @((atmOption.CallPrice / option.CurrentPrice * 12 * 100).ToString("F1"))% annual
+                                                </span>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                            
+                            @if (hasFourier && Model.FourierAnalysis.MarketCycles.Any())
+                            {
+                                <div class="col-md-4">
+                                    <h6 class="text-info mb-3">
+                                        <i class="fas fa-sync-alt me-2"></i>Cycle Timing
+                                    </h6>
+                                    @foreach (var cycle in Model.FourierAnalysis.MarketCycles.Take(2))
+                                    {
+                                        <div class="insight-item mb-2">
+                                            <strong>@cycle.CycleName:</strong>
+                                            <span class="text-muted">
+                                                Next @(cycle.PhaseDescription.Contains("Rising") ? "peak" : "trough") in 
+                                                @((cycle.PhaseDescription.Contains("Rising") ? cycle.NextPeak : cycle.NextTrough).Subtract(DateTime.Now).Days) days
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
+
+<script>
+    function toggleAdvancedColumns() {
+        const advancedColumns = document.querySelectorAll('.advanced-column');
+        advancedColumns.forEach(col => {
+            col.classList.toggle('show');
+        });
+        
+        // Save preference
+        const isShowing = advancedColumns[0].classList.contains('show');
+        localStorage.setItem('showAdvancedColumns', isShowing);
+    }
+    
+    // Delete confirmation
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.delete-btn')) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to delete this stock from your portfolio?')) {
+                e.target.closest('form').submit();
+            }
+        }
+    });
+    
+    // Load saved preference
+    document.addEventListener('DOMContentLoaded', function() {
+        const showAdvanced = localStorage.getItem('showAdvancedColumns') === 'true';
+        if (showAdvanced) {
+            toggleAdvancedColumns();
+        }
+        
+        // Enable tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>

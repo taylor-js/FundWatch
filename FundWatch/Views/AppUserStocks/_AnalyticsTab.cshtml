@@ -1,540 +1,631 @@
 @model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
+@using FundWatch.Models.QuantitativeModels
+@{
+    var hasFourierAnalysis = Model.FourierAnalysis != null;
+    var fourier = Model.FourierAnalysis;
+}
 
-<div class="row g-3 mb-4">
-    <!-- Portfolio Risk Analysis -->
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Portfolio Risk Analysis</h5>
-            </div>
-            <div class="card-body">
-                <div id="riskAnalysisChart" style="height: 450px;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Portfolio Diversification Analysis -->
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">Portfolio Diversification Analysis</h5>
-            </div>
-            <div class="card-body">
-                <div id="diversificationChart" style="height: 450px;"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mb-4">
-    <!-- Portfolio Risk/Return Analysis (Drawdown) -->
-    <div class="col-md-12">
-        <div class="card shadow">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Portfolio Risk/Return Analysis (Drawdown)</h5>
-            </div>
-            <div class="card-body">
-                <div id="drawdownChart" style="width: 100%; height: 500px; max-height: 500px; overflow: hidden;"></div>
+<!-- Fourier Analysis & Market Cycles Introduction -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-lg border-0 bg-gradient-analytics text-white">
+            <div class="card-body py-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-2">Fourier Analysis & Hidden Market Cycles</h4>
+                        <p class="mb-0">
+                            Uncover the hidden rhythms in your portfolio using Fourier transforms - the same mathematics 
+                            that powers music recognition and signal processing. Discover weekly, monthly, and seasonal 
+                            patterns that repeat in market data, plus advanced correlation analysis between your holdings.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="display-6">
+                            <i class="fas fa-wave-square"></i> <i class="fas fa-sync mx-2"></i> <i class="fas fa-project-diagram"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+@if (hasFourierAnalysis && fourier.DominantFrequencies?.Any() == true)
+{
+    <!-- Market Cycles Discovery -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sync-alt me-2"></i>Discovered Market Cycles in Your Portfolio
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="cycles-grid">
+                        @foreach (var cycle in fourier.MarketCycles.Take(4))
+                        {
+                            var phaseColor = cycle.PhaseDescription.Contains("Rising") ? "success" : "danger";
+                            var iconClass = cycle.PhaseDescription.Contains("Rising") ? "fa-arrow-trend-up" : "fa-arrow-trend-down";
+                            
+                            <div class="cycle-card">
+                                <div class="cycle-header">
+                                    <h6 class="mb-0">@cycle.CycleName</h6>
+                                    <span class="badge bg-@phaseColor">
+                                        <i class="fas @iconClass me-1"></i>@cycle.PhaseDescription
+                                    </span>
+                                </div>
+                                <div class="cycle-body">
+                                    <div class="cycle-metric">
+                                        <span class="label">Strength</span>
+                                        <div class="progress progress-height-10">
+                                            <div class="progress-bar bg-info" 
+                                                 style="width: @((cycle.Strength * 20).ToString("F0"))%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="cycle-dates">
+                                        <div class="date-item">
+                                            <i class="fas fa-mountain text-success"></i>
+                                            <span>Next Peak: @cycle.NextPeak.ToString("MMM dd")</span>
+                                        </div>
+                                        <div class="date-item">
+                                            <i class="fas fa-valley text-danger"></i>
+                                            <span>Next Trough: @cycle.NextTrough.ToString("MMM dd")</span>
+                                        </div>
+                                    </div>
+                                    <div class="phase-indicator">
+                                        <canvas id="phase-@cycle.CycleName.Replace(" ", "")" width="100" height="100"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Fourier Analysis Visualizations -->
+    <div class="row mb-4">
+        <!-- Frequency Spectrum & Power Analysis -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-signal me-2"></i>Frequency Power Spectrum
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Higher peaks indicate stronger cyclical patterns. The x-axis shows cycle frequency 
+                        (how often patterns repeat), while height shows the pattern's strength in your portfolio.
+                    </p>
+                    <div id="powerSpectrumChart" class="chart-container-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Decomposition -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-layer-group me-2"></i>Price Decomposition
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Your portfolio value separated into trend (long-term direction), seasonal patterns, 
+                        cyclical movements, and random noise.
+                    </p>
+                    <div id="decompositionChart" class="chart-container-400"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fourier Prediction & Wavelet Analysis -->
+    <div class="row mb-4">
+        <!-- 30-Day Fourier Prediction -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-crystal-ball me-2"></i>Cycle-Based Price Prediction
+                        </h5>
+                        <small>30-Day Forecast</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>How it works:</strong> By combining all discovered cycles and projecting them forward, 
+                        we can estimate future price movements. Confidence decreases over time as shown by the widening bands.
+                    </div>
+                    <div id="fourierPredictionChart" class="chart-container-350"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wavelet Turning Points -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Detected Turning Points
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="turning-points-list">
+                        @if (fourier.WaveletTransform?.DetectedTurningPoints?.Any() == true)
+                        {
+                            foreach (var point in fourier.WaveletTransform.DetectedTurningPoints.OrderByDescending(p => p.Date).Take(10))
+                            {
+                                var iconClass = point.Type == "Peak" ? "fa-mountain text-success" : "fa-valley text-danger";
+                                var confidence = (point.Confidence * 100).ToString("F0");
+                                
+                                <div class="turning-point-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas @iconClass me-2"></i>
+                                            <strong>@point.Type</strong>
+                                            <small class="text-muted ms-2">@point.TimeScale</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <small>@point.Date.ToString("MMM dd, yyyy")</small>
+                                            <div class="confidence-badge">
+                                                <span class="badge bg-secondary">@confidence% confidence</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted">No significant turning points detected in recent data.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Correlation Analysis -->
+    @if (fourier.CrossCorrelations != null && fourier.CrossCorrelations.StrongCorrelations?.Any() == true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-network-wired me-2"></i>Portfolio Correlation Network
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Correlation Matrix Heatmap -->
+                            <div class="col-lg-6">
+                                <h6 class="mb-3">Correlation Heatmap</h6>
+                                <div id="correlationHeatmap" class="chart-container-400"></div>
+                            </div>
+                            
+                            <!-- Network Visualization & Insights -->
+                            <div class="col-lg-6">
+                                <h6 class="mb-3">Key Relationships</h6>
+                                <div class="correlation-insights">
+                                    @foreach (var corr in fourier.CrossCorrelations.StrongCorrelations.Take(5))
+                                    {
+                                        var strength = Math.Abs(corr.Correlation) > 0.8 ? "Very Strong" : "Strong";
+                                        var color = corr.Correlation > 0 ? "success" : "danger";
+                                        
+                                        <div class="correlation-item mb-3 p-3 border-start border-4 border-@color">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>@corr.Symbol1 ↔ @corr.Symbol2</strong>
+                                                    <span class="badge bg-@color ms-2">@corr.Relationship</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <h5 class="mb-0 text-@color">@((corr.Correlation * 100).ToString("F0"))%</h5>
+                                                    <small class="text-muted">@strength</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    
+                                    @if (fourier.CrossCorrelations.LeadLagRelationships?.Any() == true)
+                                    {
+                                        <h6 class="mt-4 mb-3">Lead-Lag Relationships</h6>
+                                        @foreach (var leadLag in fourier.CrossCorrelations.LeadLagRelationships.Take(3))
+                                        {
+                                            <div class="lead-lag-item mb-2 p-2 bg-light rounded">
+                                                <i class="fas fa-clock text-info me-2"></i>
+                                                <strong>@leadLag.Symbol1</strong> @leadLag.Relationship 
+                                                <strong>@leadLag.Symbol2</strong> by 
+                                                <span class="badge bg-info">@Math.Abs(leadLag.LagDays) days</span>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                                
+                                <div class="mt-4 p-3 bg-light rounded">
+                                    <h6 class="mb-2">Portfolio Insight</h6>
+                                    <p class="mb-0 small">
+                                        @if (fourier.CrossCorrelations.StrongCorrelations.Count(c => c.Correlation > 0.7) > 2)
+                                        {
+                                            <i class="fas fa-exclamation-circle text-warning me-1"></i>
+                                            <text>Your portfolio has high internal correlation. Consider diversifying into uncorrelated assets to reduce risk.</text>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-check-circle text-success me-1"></i>
+                                            <text>Your portfolio shows good diversification with limited internal correlations.</text>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Wavelet Energy Analysis -->
+    @if (fourier.WaveletTransform?.Levels?.Any() == true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bolt me-2"></i>Multi-Scale Energy Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Wavelet analysis reveals patterns at different time scales. Higher energy indicates 
+                            stronger price movements at that time scale.
+                        </p>
+                        <div id="waveletEnergyChart" class="chart-container-300"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <!-- No Fourier Analysis Data -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-wave-square fa-4x text-muted mb-3"></i>
+                    <h4>Insufficient Data for Fourier Analysis</h4>
+                    <p class="text-muted">
+                        Fourier analysis requires at least 2 years of historical data with multiple stocks. 
+                        Add more stocks and allow time for data collection to see advanced cycle analysis.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <script>
-    // Initialize Analytics Tab Charts
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('Analytics tab script loaded');
-
-        // Get real data from the model
-        window.riskMetricsData = @Html.Raw(Json.Serialize(Model.RiskMetrics ?? new List<RiskAnalysisData>()));
-        window.diversificationData = @Html.Raw(Json.Serialize(Model.DiversificationData ?? new List<DiversificationData>()));
+document.addEventListener('DOMContentLoaded', function() {
+    @if (hasFourierAnalysis)
+    {
+        <text>
+        // Prepare Fourier analysis data
+        var powerSpectrum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.PowerSpectrum));
+        var decomposition = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.Decomposition));
+        var predictions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.FourierPrediction));
+        var marketCycles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.MarketCycles));
         
-        // Parse drawdown data from the model
-        var rawDrawdownData = @Html.Raw(Json.Serialize(Model.DrawdownData ?? new List<DrawdownPoint>()));
-
-        // Log data availability
-        console.log("Risk metrics data points:", window.riskMetricsData.length);
-        console.log("Diversification data points:", window.diversificationData.length);
-        console.log("Raw drawdown data points:", rawDrawdownData.length);
-
-        // Process drawdown data
-        if (rawDrawdownData && rawDrawdownData.length > 0) {
-            console.log("Processing drawdown data from the model");
-
-            // Ensure the data is processed correctly
-            window.drawdownData = rawDrawdownData.map(function(item) {
-                // Convert date strings to Date objects if needed
-                let date;
-                if (typeof item.date === 'string') {
-                    date = new Date(item.date);
-                } else {
-                    date = new Date(item.date);
-                }
-
-                return {
-                    date: date,
-                    portfolioDrawdown: item.portfolioDrawdown,
-                    benchmarkDrawdown: item.benchmarkDrawdown
-                };
-            });
-
-            if (window.drawdownData && window.drawdownData.length > 0) {
-                console.log("Drawdown data processed:");
-                console.log("- First date:", window.drawdownData[0].date.toISOString());
-                console.log("- Last date:", window.drawdownData[window.drawdownData.length-1].date.toISOString());
-                console.log("- Total data points:", window.drawdownData.length);
-
-                // Calculate additional stats
-                let minPortfolioDrawdown = Math.min(...window.drawdownData.map(d => d.portfolioDrawdown));
-                let minBenchmarkDrawdown = Math.min(...window.drawdownData.map(d => d.benchmarkDrawdown));
-                let peaksPortfolio = window.drawdownData.filter(d => d.portfolioDrawdown >= -0.1).length;
-                let peaksBenchmark = window.drawdownData.filter(d => d.benchmarkDrawdown >= -0.1).length;
-
-                console.log("Drawdown statistics:");
-                console.log("- Max portfolio drawdown:", minPortfolioDrawdown.toFixed(2) + "%");
-                console.log("- Max benchmark drawdown:", minBenchmarkDrawdown.toFixed(2) + "%");
-                console.log("- Periods at peak (portfolio):", peaksPortfolio);
-                console.log("- Periods at peak (benchmark):", peaksBenchmark);
-            }
-        } else {
-            console.warn("No drawdown data available");
-            window.drawdownData = [];
-        }
-
-        console.log("Analytics tab data loaded:");
-        console.log("Risk metrics data points:", window.riskMetricsData.length);
-        console.log("Diversification data points:", window.diversificationData.length);
-        console.log("Drawdown data points:", window.drawdownData.length);
-
-        // Initialize charts immediately
-        renderAnalyticsCharts();
-
-        // Also render when the tab is shown
-        var analyticsTabLink = document.querySelector('a[data-bs-target="#analyticsTab"]');
-        if (analyticsTabLink) {
-            analyticsTabLink.addEventListener('shown.bs.tab', function() {
-                console.log('Analytics tab shown - rendering charts');
-                renderAnalyticsCharts();
-
-                // Force a reflow of all charts after a slight delay
-                setTimeout(function() {
-                    reflowAnalyticsCharts();
-                }, 300);
-            });
-        }
-    });
-
-    function reflowAnalyticsCharts() {
-        if (typeof Highcharts !== 'undefined' && Highcharts.charts) {
-            Highcharts.charts.forEach(function(chart) {
-                if (chart && chart.renderTo) {
-                    var chartId = chart.renderTo.id;
-                    if (chartId === 'riskAnalysisChart' || chartId === 'diversificationChart' || chartId === 'drawdownChart') {
-                        chart.reflow();
-                        console.log('Reflowed chart:', chartId);
-                    }
-                }
-            });
-        }
-    }
-
-    function renderAnalyticsCharts() {
-        try {
-            console.log('Rendering Analytics Tab Charts');
-
-            // Direct rendering for each chart
-            renderRiskAnalysisChart();
-            renderDiversificationChart();
-            renderDrawdownChart();
-
-            // Schedule a reflow after charts are rendered
-            setTimeout(function() {
-                reflowAnalyticsCharts();
-            }, 200);
-
-            console.log('All Analytics charts rendered');
-        } catch (err) {
-            console.error('Error rendering Analytics charts:', err);
-        }
-    }
-
-    function renderRiskAnalysisChart() {
-        try {
-            console.log("Rendering Risk Analysis chart");
-            
-            if (!window.riskMetricsData || window.riskMetricsData.length === 0) {
-                console.warn("No risk metrics data available");
-                document.getElementById('riskAnalysisChart').innerHTML = '<div class="text-center text-muted p-5">No risk metrics data available</div>';
-                return;
-            }
-
-            // Destroy existing chart if it exists
-            const existingChart = Highcharts.charts.find(chart => chart && chart.renderTo && chart.renderTo.id === 'riskAnalysisChart');
-            if (existingChart) {
-                existingChart.destroy();
-                console.log("Destroyed existing risk analysis chart");
-            }
-
-            // Create a scatter plot with volatility vs. sharpe ratio
-            Highcharts.chart('riskAnalysisChart', {
-                chart: {
-                    type: 'scatter',
-                    backgroundColor: '#212529'
-                },
-                title: {
-                    text: null
-                },
-                xAxis: {
-                    title: {
-                        text: 'Volatility (%)',
-                        style: {
-                            color: '#FFFFFF'
-                        }
-                    },
-                    labels: {
-                        style: {
-                            color: '#FFFFFF'
-                        }
-                    },
-                    gridLineColor: 'rgba(255, 255, 255, 0.1)',
-                    lineColor: '#FFFFFF',
-                    tickColor: '#FFFFFF'
-                },
-                yAxis: {
-                    title: {
-                        text: 'Sharpe Ratio',
-                        style: {
-                            color: '#FFFFFF'
-                        }
-                    },
-                    labels: {
-                        style: {
-                            color: '#FFFFFF'
-                        }
-                    },
-                    gridLineColor: 'rgba(255, 255, 255, 0.1)',
-                    lineColor: '#FFFFFF',
-                    tickColor: '#FFFFFF'
-                },
-                tooltip: {
-                    headerFormat: '<b>{point.key}</b><br>',
-                    pointFormat: 'Volatility: {point.x:.2f}%<br>' +
-                                'Sharpe Ratio: {point.y:.2f}<br>' +
-                                'Beta: {point.beta:.2f}<br>' +
-                                'Max Drawdown: {point.maxDrawdown:.2f}%'
-                },
-                plotOptions: {
-                    scatter: {
+        // 1. Power Spectrum Chart
+        if (document.getElementById('powerSpectrumChart') && powerSpectrum) {
+            var spectrumData = [];
+            for (var i = 0; i &lt; powerSpectrum.PowerSpectralDensity.length; i++) {
+                if (powerSpectrum.SignificantPeaks.includes(i)) {
+                    spectrumData.push({
+                        x: 1 / powerSpectrum.Frequencies[i], // Convert to period
+                        y: powerSpectrum.PowerSpectralDensity[i],
                         marker: {
-                            radius: 10,
-                            symbol: 'circle'
+                            radius: 8,
+                            fillColor: '#dc3545'
                         }
-                    }
-                },
-                series: [{
-                    name: 'Portfolio Holdings',
-                    data: window.riskMetricsData.map(function(item) {
-                        return {
-                            x: item.volatility,
-                            y: item.sharpeRatio,
-                            name: item.symbol,
-                            key: item.symbol,
-                            beta: item.beta,
-                            maxDrawdown: item.maxDrawdown
-                        };
-                    }),
-                    color: '#4361EE'
-                }],
-                legend: {
-                    itemStyle: {
-                        color: '#FFFFFF'
-                    },
-                    itemHoverStyle: {
-                        color: '#CCCCCC'
-                    }
-                },
-                credits: { enabled: false }
-            });
-
-            console.log("Risk Analysis chart rendered successfully");
-        } catch (err) {
-            console.error("Error rendering Risk Analysis chart:", err);
-        }
-    }
-
-    function renderDiversificationChart() {
-        try {
-            console.log("Rendering Diversification chart");
-            
-            if (!window.diversificationData || window.diversificationData.length === 0) {
-                console.warn("No diversification data available");
-                document.getElementById('diversificationChart').innerHTML = '<div class="text-center text-muted p-5">No diversification data available</div>';
-                return;
-            }
-
-            // Create a pie chart showing sector allocation
-            Highcharts.chart('diversificationChart', {
-                chart: {
-                    type: 'pie',
-                    backgroundColor: '#212529'
-                },
-                title: {
-                    text: null
-                },
-                tooltip: {
-                    pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b><br>Value: <b>${point.y:,.2f}</b>'
-                },
-                plotOptions: {
-                    pie: {
-                        allowPointSelect: true,
-                        cursor: 'pointer',
-                        dataLabels: {
-                            enabled: true,
-                            format: '<b>{point.name}</b>: {point.percentage:.1f}%',
-                            connectorColor: 'silver'
-                        },
-                        showInLegend: false
-                    }
-                },
-                series: [{
-                    name: 'Sector Allocation',
-                    data: window.diversificationData,
-                    colors: [
-                        '#4361EE', '#3A0CA3', '#F72585', '#4CC9F0', '#7209B7',
-                        '#F77F00', '#D62828', '#FCBF49', '#EAE2B7', '#003049'
-                    ]
-                }],
-                credits: { enabled: false }
-            });
-
-            console.log("Diversification chart rendered successfully");
-        } catch (err) {
-            console.error("Error rendering Diversification chart:", err);
-        }
-    }
-
-    function renderDrawdownChart() {
-        try {
-            console.log("Rendering Drawdown chart with stockChart");
-            
-            if (!window.drawdownData || window.drawdownData.length === 0) {
-                console.warn("No drawdown data available");
-                document.getElementById('drawdownChart').innerHTML = '<div class="text-center text-muted p-5">No drawdown data available</div>';
-                return;
-            }
-
-            // Prepare series data
-            var portfolioSeries = [];
-            var benchmarkSeries = [];
-
-            window.drawdownData.forEach(function(item) {
-                var timestamp;
-                if (item.date instanceof Date) {
-                    timestamp = item.date.getTime();
-                } else if (typeof item.date === 'string') {
-                    timestamp = new Date(item.date).getTime();
+                    });
                 } else {
-                    timestamp = new Date(item.date).getTime();
+                    spectrumData.push({
+                        x: 1 / powerSpectrum.Frequencies[i],
+                        y: powerSpectrum.PowerSpectralDensity[i]
+                    });
                 }
-
-                if (!isNaN(timestamp)) {
-                    portfolioSeries.push([timestamp, item.portfolioDrawdown]);
-                    benchmarkSeries.push([timestamp, item.benchmarkDrawdown]);
-                }
-            });
-
-            // Sort by timestamp
-            portfolioSeries.sort(function(a, b) { return a[0] - b[0]; });
-            benchmarkSeries.sort(function(a, b) { return a[0] - b[0]; });
-
-            // Calculate min/max dates for consistent display
-            let minDate = new Date();
-            minDate.setFullYear(minDate.getFullYear() - 5); // Go back 5 years
-            let maxDate = new Date(); // Current date
-
-            // Create a stockChart for drawdown analysis
-            Highcharts.stockChart('drawdownChart', {
+            }
+            
+            Highcharts.chart('powerSpectrumChart', {
                 chart: {
                     type: 'area',
-                    zoomType: 'x',
-                    backgroundColor: '#212529',
-                    style: {
-                        fontFamily: 'Inter, sans-serif'
-                    },
-                    height: 500 // Set explicit height to match Stock Performance chart
+                    backgroundColor: '#ffffff'
                 },
                 title: {
-                    text: 'Portfolio Drawdown Analysis',
-                    style: {
-                        color: '#CCCCCC',
-                        fontSize: '14px'
-                    }
-                },
-                subtitle: {
-                    text: 'Shows percentage decline from previous peak (0% = at peak, -20% = 20% below peak)',
-                    style: {
-                        color: '#AAAAAA',
-                        fontSize: '12px'
-                    }
-                },
-                // Add range selector buttons
-                rangeSelector: {
-                    selected: 5, // Default to 5Y view
-                    buttons: [
-                        { type: 'month', count: 1, text: '1M' },
-                        { type: 'month', count: 3, text: '3M' },
-                        { type: 'month', count: 6, text: '6M' },
-                        { type: 'ytd', text: 'YTD' },
-                        { type: 'year', count: 1, text: '1Y' },
-                        { type: 'year', count: 5, text: '5Y' },
-                        { type: 'all', text: 'ALL' }
-                    ],
-                    buttonTheme: {
-                        fill: 'none',
-                        stroke: 'none',
-                        'stroke-width': 0,
-                        r: 8,
-                        style: {
-                            color: '#CCCCCC',
-                            fontWeight: 'normal'
-                        },
-                        states: {
-                            hover: {
-                                fill: '#4361EE',
-                                style: { color: 'white' }
-                            },
-                            select: {
-                                fill: '#4361EE',
-                                style: { color: 'white' }
-                            }
-                        }
-                    },
-                    inputEnabled: false
-                },
-                navigator: {
-                    enabled: true,
-                    outlineColor: '#444',
-                    outlineWidth: 1,
-                    handles: {
-                        backgroundColor: '#666',
-                        borderColor: '#AAA'
-                    },
-                    series: {
-                        color: '#F72585',
-                        fillOpacity: 0.05
-                    }
-                },
-                scrollbar: {
-                    enabled: true,
-                    barBackgroundColor: '#555',
-                    barBorderColor: '#999',
-                    barBorderWidth: 1,
-                    buttonBackgroundColor: '#555',
-                    buttonBorderColor: '#999',
-                    buttonBorderWidth: 1,
-                    trackBackgroundColor: '#212529',
-                    trackBorderColor: '#444',
-                    trackBorderWidth: 1
+                    text: 'Dominant Market Cycles'
                 },
                 xAxis: {
-                    type: 'datetime',
-                    min: minDate.getTime(), // Ensure we show 5 years
-                    max: maxDate.getTime(), // Up to today
-                    dateTimeLabelFormats: {
-                        millisecond: '%H:%M:%S.%L',
-                        second: '%H:%M:%S',
-                        minute: '%H:%M',
-                        hour: '%H:%M',
-                        day: '%e. %b',
-                        week: '%e. %b',
-                        month: '%b %Y',
-                        year: '%Y'
-                    },
-                    labels: {
-                        style: { color: '#CCCCCC' }
-                    },
-                    ordinal: false, // This ensures equal spacing between data points
-                    tickInterval: 365 * 24 * 3600 * 1000 // One year intervals for cleaner display
+                    type: 'logarithmic',
+                    title: { text: 'Period (Days)' },
+                    min: 1,
+                    max: 365
                 },
                 yAxis: {
-                    title: {
-                        text: 'Drawdown (%)',
-                        style: { color: '#CCCCCC' }
-                    },
-                    min: -40, // Allow for larger drawdowns
-                    max: 5,   // A small buffer above 0% for better visualization
-                    labels: {
-                        format: '{value}%',
-                        style: { color: '#CCCCCC' }
-                    },
-                    gridLineColor: 'rgba(255, 255, 255, 0.1)',
-                    // Add a zero line for visual reference
-                    plotLines: [{
-                        value: 0,
-                        color: '#AAAAAA',
-                        dashStyle: 'shortdash',
-                        width: 1,
-                        label: {
-                            text: 'Peak',
-                            align: 'right',
-                            style: { color: '#CCCCCC' }
-                        }
-                    }]
+                    title: { text: 'Power Spectral Density' }
                 },
                 tooltip: {
-                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y:.2f}%</b><br/>',
-                    valueDecimals: 2,
-                    shared: true,
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    style: { color: '#FFFFFF' }
-                },
-                plotOptions: {
-                    series: {
-                        marker: {
-                            enabled: false,
-                            states: {
-                                hover: {
-                                    enabled: true,
-                                    radius: 3
-                                }
-                            }
-                        }
-                    },
-                    area: {
-                        fillOpacity: 0.3,
-                        lineWidth: 2,
-                        threshold: null
+                    formatter: function() {
+                        return '<b>Period:</b> ' + this.x.toFixed(1) + ' days<br>' +
+                               '<b>Power:</b> ' + this.y.toFixed(4);
                     }
                 },
                 series: [{
-                    name: 'Your Portfolio (Drawdown)',
-                    data: portfolioSeries,
-                    color: '#F72585',
-                    fillColor: {
-                        linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                        stops: [
-                            [0, 'rgba(247, 37, 133, 0.5)'],
-                            [1, 'rgba(247, 37, 133, 0.05)']
-                        ]
-                    }
-                }, {
-                    name: 'S&P 500 (Drawdown)',
-                    data: benchmarkSeries,
-                    color: '#4CC9F0',
-                    fillColor: {
-                        linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                        stops: [
-                            [0, 'rgba(76, 201, 240, 0.5)'],
-                            [1, 'rgba(76, 201, 240, 0.05)']
-                        ]
-                    }
-                }],
-                credits: { enabled: false }
+                    name: 'Power Spectrum',
+                    data: spectrumData,
+                    color: '#007bff',
+                    fillOpacity: 0.3
+                }]
             });
-
-            console.log("Drawdown chart rendered successfully with stockChart");
-        } catch (err) {
-            console.error("Error rendering Drawdown chart:", err);
         }
+        
+        // 2. Decomposition Chart
+        if (document.getElementById('decompositionChart') && decomposition) {
+            var dates = decomposition.Dates.map(d => new Date(d).getTime());
+            
+            Highcharts.chart('decompositionChart', {
+                chart: {
+                    type: 'line',
+                    backgroundColor: '#ffffff'
+                },
+                title: {
+                    text: 'Time Series Components'
+                },
+                xAxis: {
+                    type: 'datetime'
+                },
+                yAxis: {
+                    title: { text: 'Value' }
+                },
+                tooltip: {
+                    shared: true,
+                    crosshairs: true
+                },
+                series: [{
+                    name: 'Trend',
+                    data: dates.map((d, i) => [d, decomposition.Trend[i]]),
+                    color: '#28a745',
+                    lineWidth: 3
+                }, {
+                    name: 'Seasonal',
+                    data: dates.map((d, i) => [d, decomposition.Seasonal[i]]),
+                    color: '#17a2b8',
+                    lineWidth: 2
+                }, {
+                    name: 'Cyclical',
+                    data: dates.map((d, i) => [d, decomposition.Cyclical[i]]),
+                    color: '#ffc107',
+                    lineWidth: 2
+                }, {
+                    name: 'Residual',
+                    data: dates.map((d, i) => [d, decomposition.Residual[i]]),
+                    color: '#6c757d',
+                    lineWidth: 1,
+                    opacity: 0.5
+                }]
+            });
+        }
+        
+        // 3. Fourier Prediction Chart
+        if (document.getElementById('fourierPredictionChart') && predictions) {
+            var predictionData = predictions.map(p => ({
+                x: new Date(p.Date).getTime(),
+                y: p.PredictedPrice,
+                high: p.UpperBound,
+                low: p.LowerBound,
+                confidence: p.Confidence
+            }));
+            
+            Highcharts.chart('fourierPredictionChart', {
+                chart: {
+                    type: 'arearange',
+                    backgroundColor: '#ffffff'
+                },
+                title: {
+                    text: 'Price Forecast Based on Cycles'
+                },
+                xAxis: {
+                    type: 'datetime'
+                },
+                yAxis: {
+                    title: { text: 'Predicted Price ($)' }
+                },
+                tooltip: {
+                    crosshairs: true,
+                    shared: true,
+                    valuePrefix: '$'
+                },
+                series: [{
+                    name: 'Confidence Range',
+                    data: predictionData.map(p => [p.x, p.low, p.high]),
+                    type: 'arearange',
+                    lineWidth: 0,
+                    color: '#17a2b8',
+                    fillOpacity: 0.3
+                }, {
+                    name: 'Predicted Price',
+                    data: predictionData.map(p => [p.x, p.y]),
+                    color: '#212529',
+                    lineWidth: 3,
+                    marker: {
+                        enabled: false
+                    }
+                }]
+            });
+        }
+        
+        // 4. Phase Indicators for Cycles
+        marketCycles.forEach(function(cycle) {
+            var canvasId = 'phase-' + cycle.CycleName.replace(/\s/g, '');
+            var canvas = document.getElementById(canvasId);
+            if (canvas) {
+                var ctx = canvas.getContext('2d');
+                var centerX = canvas.width / 2;
+                var centerY = canvas.height / 2;
+                var radius = 35;
+                
+                // Draw circle
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#dee2e6';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw phase indicator
+                var phaseRad = cycle.CurrentPhase * Math.PI / 180;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + radius * Math.cos(phaseRad - Math.PI / 2),
+                    centerY + radius * Math.sin(phaseRad - Math.PI / 2)
+                );
+                ctx.strokeStyle = cycle.PhaseDescription.includes('Rising') ? '#28a745' : '#dc3545';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                
+                // Draw phase dot
+                ctx.beginPath();
+                ctx.arc(
+                    centerX + radius * Math.cos(phaseRad - Math.PI / 2),
+                    centerY + radius * Math.sin(phaseRad - Math.PI / 2),
+                    5, 0, 2 * Math.PI
+                );
+                ctx.fillStyle = cycle.PhaseDescription.includes('Rising') ? '#28a745' : '#dc3545';
+                ctx.fill();
+            }
+        });
+        
+        // 5. Correlation Heatmap
+        @if (fourier.CrossCorrelations != null)
+        {
+            <text>
+            if (document.getElementById('correlationHeatmap')) {
+                var correlations = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.CrossCorrelations));
+                var heatmapData = [];
+                
+                for (var i = 0; i &lt; correlations.Symbols.length; i++) {
+                    for (var j = 0; j &lt; correlations.Symbols.length; j++) {
+                        heatmapData.push([i, j, correlations.Matrix[i][j]]);
+                    }
+                }
+                
+                Highcharts.chart('correlationHeatmap', {
+                    chart: {
+                        type: 'heatmap',
+                        backgroundColor: '#ffffff'
+                    },
+                    title: {
+                        text: 'Stock Correlation Matrix'
+                    },
+                    xAxis: {
+                        categories: correlations.Symbols,
+                        opposite: true
+                    },
+                    yAxis: {
+                        categories: correlations.Symbols,
+                        reversed: true
+                    },
+                    colorAxis: {
+                        min: -1,
+                        max: 1,
+                        stops: [
+                            [0, '#dc3545'],
+                            [0.5, '#ffffff'],
+                            [1, '#28a745']
+                        ]
+                    },
+                    legend: {
+                        align: 'right',
+                        layout: 'vertical',
+                        margin: 0,
+                        verticalAlign: 'top',
+                        y: 25,
+                        symbolHeight: 280
+                    },
+                    tooltip: {
+                        formatter: function() {
+                            return '<b>' + this.series.xAxis.categories[this.point.x] + '</b> - <b>' +
+                                   this.series.yAxis.categories[this.point.y] + '</b><br>' +
+                                   'Correlation: <b>' + (this.point.value * 100).toFixed(0) + '%</b>';
+                        }
+                    },
+                    series: [{
+                        name: 'Correlation',
+                        data: heatmapData,
+                        borderWidth: 1,
+                        dataLabels: {
+                            enabled: true,
+                            color: '#000000',
+                            formatter: function() {
+                                return (this.point.value * 100).toFixed(0);
+                            }
+                        }
+                    }]
+                });
+            }
+            </text>
+        }
+        
+        // 6. Wavelet Energy Chart
+        @if (fourier.WaveletTransform?.Levels?.Any() == true)
+        {
+            <text>
+            if (document.getElementById('waveletEnergyChart')) {
+                var waveletLevels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.WaveletTransform.Levels));
+                
+                Highcharts.chart('waveletEnergyChart', {
+                    chart: {
+                        type: 'column',
+                        backgroundColor: '#ffffff'
+                    },
+                    title: {
+                        text: 'Energy Distribution Across Time Scales'
+                    },
+                    xAxis: {
+                        categories: waveletLevels.map(l => l.TimeScale),
+                        title: { text: 'Time Scale' }
+                    },
+                    yAxis: {
+                        title: { text: 'Energy' }
+                    },
+                    tooltip: {
+                        formatter: function() {
+                            return '<b>' + this.x + '</b><br>' +
+                                   'Energy: ' + this.y.toFixed(2) + '<br>' +
+                                   'Level: ' + (this.point.index + 1);
+                        }
+                    },
+                    series: [{
+                        name: 'Wavelet Energy',
+                        data: waveletLevels.map(l => l.Energy),
+                        colorByPoint: true,
+                        colors: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1']
+                    }]
+                });
+            }
+            </text>
+        }
+        </text>
     }
+});
 </script>

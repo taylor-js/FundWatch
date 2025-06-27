@@ -3,619 +3,534 @@
 @using Syncfusion.EJ2.Navigations
 @using Syncfusion.EJ2.Charts
 @using Syncfusion.EJ2.Grids
+@using FundWatch.Services
 @{
     var culture = new System.Globalization.CultureInfo("en-US");
-    // Prepare the series data for Highcharts
-    var seriesData = new List<object>();
-    foreach (var stock in Model.PerformanceData.OrderBy(kvp => kvp.Key))
-    {
-        if (stock.Value != null && stock.Value.Any())
-        {
-            seriesData.Add(new
-            {
-                name = stock.Key,
-                data = stock.Value.Select(p => new object[] {
-                                        p.Date.ToString("yyyy-MM-ddTHH:mm:ss"),
-                                        p.Value
-                            }).ToArray()
-            });
-        }
-    }
-
-    // Serialize to JSON
-    var seriesDataJson = Newtonsoft.Json.JsonConvert.SerializeObject(seriesData);
+    
+    // Get the first stock's options data for featured analysis
+    var featuredOptions = Model.OptionsAnalysis?.FirstOrDefault();
+    var hasOptionsData = featuredOptions != null && featuredOptions.OptionChain?.Any() == true;
 }
 
-<!-- Portfolio Overview Cards -->
-<div class="row mb-4 gy-4" id="overview-metrics">
-    <div class="col-sm-6 col-md-3 d-flex">
-        <div class="card shadow overview-scalar-card w-100">
-            <div class="card-header bg-primary text-white d-flex align-items-center justify-content-center overview-card-header">
-                <h5 class="card-title mb-0 text-center">Total Portfolio Value</h5>
-            </div>
-            <div class="card-body text-center">
-                <h3 class="mb-0">@Model.PortfolioMetrics.TotalValue.ToString("C2", culture)</h3>
-                <small class="@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "text-success" : "text-danger")">
-                    @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "+" : "")@Model.PortfolioMetrics.TotalPerformance.ToString("F2")%
-                </small>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-md-3 d-flex">
-        <div class="card shadow overview-scalar-card w-100">
-            <div class="card-header bg-success text-white d-flex align-items-center justify-content-center overview-card-header">
-                <h5 class="card-title mb-0 text-center">Portfolio Diversity</h5>
-            </div>
-            <div class="card-body text-center">
-                <h3 class="mb-0">@Model.PortfolioMetrics.UniqueSectors</h3>
-                <small class="text-muted">Sectors Represented</small>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-md-3 d-flex">
-        <div class="card shadow overview-scalar-card w-100">
-            <div class="card-header bg-info text-white d-flex align-items-center justify-content-center overview-card-header">
-                <h5 class="card-title mb-0 text-center">Best Performer</h5>
-            </div>
-            <div class="card-body text-center">
-                <h3 class="mb-0">@Model.PortfolioMetrics.BestPerformingStock</h3>
-                <small class="text-success">
-                    @(Model.PortfolioMetrics.BestPerformingStockReturn.ToString("F2") ?? "0.00")%
-                </small>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-md-3 d-flex">
-        <div class="card shadow overview-scalar-card w-100">
-            <div class="card-header bg-danger text-white d-flex align-items-center justify-content-center overview-card-header">
-                <h5 class="card-title mb-0 text-center">Worst Performer</h5>
-            </div>
-            <div class="card-body text-center">
-                <h3 class="mb-0">@Model.PortfolioMetrics.WorstPerformingStock</h3>
-                <small class="text-danger">
-                    @(Model.PortfolioMetrics.WorstPerformingStockReturn.ToString("F2") ?? "0.00")%
-                </small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Function to set equal heights for card headers
-        function equalizeHeaderHeights() {
-            const headers = document.querySelectorAll('#overview-metrics .overview-card-header');
-            let maxHeight = 0;
-            
-            // Reset heights first
-            headers.forEach(header => {
-                header.style.height = 'auto';
-            });
-            
-            // Force a reflow/recalculation
-            window.getComputedStyle(headers[0]).height;
-            
-            // Find the maximum height
-            headers.forEach(header => {
-                const height = header.offsetHeight;
-                maxHeight = Math.max(maxHeight, height);
-            });
-            
-            // Set all headers to the maximum height
-            headers.forEach(header => {
-                header.style.height = maxHeight + 'px';
-            });
-        }
-        
-        // Run with a slight delay to ensure content is fully rendered
-        setTimeout(equalizeHeaderHeights, 100);
-        
-        // Run when the overview tab is shown
-        const overviewTabBtn = document.querySelector('[data-bs-target="#overviewTab"]');
-        if (overviewTabBtn) {
-            overviewTabBtn.addEventListener('shown.bs.tab', function() {
-                setTimeout(equalizeHeaderHeights, 50);
-            });
-        }
-        
-        // Run on window resize
-        window.addEventListener('resize', equalizeHeaderHeights);
-    });
-</script>
-
-<!-- Performance Chart - Part of Overview Tab -->
+<!-- Quantitative Strategy Introduction -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card shadow full-width-chart">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">Stock Performance History</h5>
-            </div>
-            <div class="card-body">
-                @if (Model.PerformanceData != null && Model.PerformanceData.Any())
-                {
-                    <div class="chart-description">
-                        <p class="text-center mb-1">
-                            Track the performance of your investments over time. Use the period selectors to view different time ranges.
+        <div class="card shadow-lg border-0 bg-gradient-primary text-white">
+            <div class="card-body py-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-2">Black-Scholes Options Analysis</h4>
+                        <p class="mb-0">
+                            Discover the hidden value in your portfolio using Nobel Prize-winning mathematics. 
+                            The Black-Scholes model helps you understand option pricing, volatility, and the Greeks - 
+                            key metrics that professional traders use to manage risk and find opportunities.
                         </p>
                     </div>
-                    <div id="stockChart" style="width: 100%; height: 500px; max-height: 500px; overflow: hidden;"></div>
-
-                    <script type="text/javascript">
-                        document.addEventListener('DOMContentLoaded', function() {
-                            // Load series data from server-side JSON
-                            var seriesData = JSON.parse('@Html.Raw(seriesDataJson.Replace("'", "\\'"))');
-                            
-                            // Debug chart library loading
-                            console.log("Highcharts version:", Highcharts?.version);
-                            console.log("Highcharts object:", Highcharts);
-                            console.log("stockChart function available:", typeof Highcharts?.stockChart === 'function');
-                            console.log("StockChart function available:", typeof Highcharts?.StockChart === 'function');
-                            
-                            // Check if chart element exists
-                            var chartElement = document.getElementById('stockChart');
-                            if (!chartElement) {
-                                console.error('Chart element not found');
-                                return;
-                            }
-                            
-                            // Check if we have valid data
-                            if (!seriesData || seriesData.length === 0) {
-                                // Display a user-friendly message
-                                chartElement.innerHTML = `
-                                    <div class="alert alert-info text-center p-5" style="margin-top: 50px;">
-                                        <h5>No performance data available</h5>
-                                        <p class="mb-0">
-                                            Add some stocks to see their performance over time.
-                                        </p>
-                                    </div>`;
-                                return;
-                            }
-                            
-                            // Debug chart libraries
-                            console.log("Highcharts version:", Highcharts?.version);
-                            console.log("stockChart function available:", typeof Highcharts?.stockChart === 'function');
-                            
-                            // Check if Highcharts is available
-                            if (typeof Highcharts === 'undefined' || typeof Highcharts.stockChart !== 'function') {
-                                console.error('Highcharts or stockChart function not available');
-                                chartElement.innerHTML = `
-                                    <div class="alert alert-warning text-center p-5" style="margin-top: 50px;">
-                                        <h5>Chart library not loaded</h5>
-                                        <p class="mb-0">Please refresh the page.</p>
-                                    </div>`;
-                                return;
-                            }
-                            
-                            // Create the Highcharts stock chart
-                            Highcharts.stockChart('stockChart', {
-                                chart: {
-                                    backgroundColor: '#212529',
-                                    style: {
-                                        fontFamily: 'Inter, sans-serif'
-                                    }
-                                },
-                                rangeSelector: {
-                                    selected: 5, // Default to 5Y view
-                                    buttons: [
-                                        { type: 'month', count: 1, text: '1M' },
-                                        { type: 'month', count: 3, text: '3M' },
-                                        { type: 'month', count: 6, text: '6M' },
-                                        { type: 'ytd', text: 'YTD' },
-                                        { type: 'year', count: 1, text: '1Y' },
-                                        { type: 'year', count: 5, text: '5Y' },
-                                        { type: 'all', text: 'ALL' }
-                                    ],
-                                    buttonTheme: {
-                                        fill: 'none',
-                                        stroke: 'none',
-                                        'stroke-width': 0,
-                                        r: 8,
-                                        style: {
-                                            color: '#CCCCCC',
-                                            fontWeight: 'normal'
-                                        },
-                                        states: {
-                                            hover: {
-                                                fill: '#4361EE',
-                                                style: { color: 'white' }
-                                            },
-                                            select: {
-                                                fill: '#4361EE',
-                                                style: { color: 'white' }
-                                            }
-                                        }
-                                    },
-                                    inputEnabled: false
-                                },
-                                title: { text: null },
-                                navigator: { enabled: true },
-                                scrollbar: { enabled: true },
-                                xAxis: {
-                                    type: 'datetime',
-                                    labels: { style: { color: '#CCCCCC' } },
-                                    lineColor: '#666666',
-                                    tickColor: '#666666'
-                                },
-                                yAxis: {
-                                    labels: {
-                                        formatter: function() {
-                                            return '$' + this.value.toFixed(2);
-                                        },
-                                        style: { color: '#CCCCCC' }
-                                    },
-                                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                chart: {
-                                    backgroundColor: '#212529',
-                                    style: {
-                                        fontFamily: 'Inter, sans-serif'
-                                    }
-                                },
-                                rangeSelector: {
-                                    selected: 5, // Default to 5Y view
-                                    buttons: [
-                                        { type: 'month', count: 1, text: '1M' },
-                                        { type: 'month', count: 3, text: '3M' },
-                                        { type: 'month', count: 6, text: '6M' },
-                                        { type: 'ytd', text: 'YTD' },
-                                        { type: 'year', count: 1, text: '1Y' },
-                                        { type: 'year', count: 5, text: '5Y' },
-                                        { type: 'all', text: 'ALL' }
-                                    ],
-                                    buttonTheme: {
-                                        fill: 'none',
-                                        stroke: 'none',
-                                        'stroke-width': 0,
-                                        r: 8,
-                                        style: {
-                                            color: '#CCCCCC',
-                                            fontWeight: 'normal'
-                                        },
-                                        states: {
-                                            hover: {
-                                                fill: '#4361EE',
-                                                style: { color: 'white' }
-                                            },
-                                            select: {
-                                                fill: '#4361EE',
-                                                style: { color: 'white' }
-                                            }
-                                        }
-                                    },
-                                    inputEnabled: false
-                                },
-                                title: { text: null },
-                                navigator: { enabled: true },
-                                scrollbar: { enabled: true },
-                                xAxis: {
-                                    type: 'datetime',
-                                    labels: { style: { color: '#CCCCCC' } },
-                                    lineColor: '#666666',
-                                    tickColor: '#666666'
-                                },
-                                yAxis: {
-                                    labels: {
-                                        formatter: function() {
-                                            return '$' + this.value.toFixed(2);
-                                        },
-                                        style: { color: '#CCCCCC' }
-                                    },
-                                    gridLineColor: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                tooltip: {
-                                    shared: true,
-                                    split: false,
-                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                    style: { color: '#FFFFFF' },
-                                    valueDecimals: 2,
-                                    valuePrefix: '$'
-                                },
-                                legend: {
-                                    enabled: true,
-                                    itemStyle: { color: '#CCCCCC' },
-                                    itemHoverStyle: { color: '#FFFFFF' }
-                                },
-                                plotOptions: {
-                                    series: {
-                                        lineWidth: 2,
-                                        states: {
-                                            hover: { lineWidth: 3 }
-                                        }
-                                    }
-                                },
-                                series: seriesData,
-                                credits: { enabled: false }
-                            });
-                        });
-                    </script>
-                }
-                else
-                {
-                    <div class="alert alert-info">
-                        No performance data available. Add some stocks to see their performance over time.
+                    <div class="col-md-4 text-end">
+                        <div class="display-6">
+                            <i class="fas fa-chart-line"></i> <i class="fas fa-plus mx-2"></i> <i class="fas fa-calculator"></i>
+                        </div>
                     </div>
-                }
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Portfolio Insights Section with 2-column grid -->
-<div class="row g-3 mb-4">
-    <!-- Portfolio Heatmap -->
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-success text-white">
-                <h5 class="card-title mb-0">Portfolio Heatmap</h5>
-            </div>
-            <div class="card-body">
-                <div id="portfolioHeatmapChart" style="width: 100%; height: 450px;"></div>
+<!-- Portfolio Overview with Options Insights -->
+<div class="row mb-4 gy-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-wallet fa-2x text-primary"></i>
+                </div>
+                <h3 class="mb-1">@Model.PortfolioMetrics.TotalValue.ToString("C0", culture)</h3>
+                <p class="text-muted mb-2">Portfolio Value</p>
+                <span class="badge @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "bg-success" : "bg-danger")">
+                    @(Model.PortfolioMetrics.TotalPerformance >= 0 ? "+" : "")@Model.PortfolioMetrics.TotalPerformance.ToString("F2")%
+                </span>
             </div>
         </div>
     </div>
-
-    <!-- Top Performers -->
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="card-title mb-0">Top Performers</h5>
+    
+    <div class="col-md-3 col-sm-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-shield-alt fa-2x text-success"></i>
+                </div>
+                <h3 class="mb-1">@(hasOptionsData ? "$" + featuredOptions.OptionChain.Where(o => o.Moneyness == "At-the-Money").FirstOrDefault()?.PutPrice.ToString("F2") ?? "N/A" : "N/A")</h3>
+                <p class="text-muted mb-2">Portfolio Protection Cost</p>
+                <small class="text-secondary">ATM Put Premium</small>
             </div>
-            <div class="card-body">
-                <div id="topPerformersChart" style="width: 100%; height: 450px;"></div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-chart-area fa-2x text-info"></i>
+                </div>
+                <h3 class="mb-1">@(hasOptionsData ? (featuredOptions.HistoricalVolatility * 100).ToString("F1") + "%" : "N/A")</h3>
+                <p class="text-muted mb-2">Average Volatility</p>
+                <small class="text-secondary">Historical Annual</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-compass fa-2x text-warning"></i>
+                </div>
+                <h3 class="mb-1">@(hasOptionsData ? featuredOptions.MarketOutlook.Split(' ')[0] : "Analyzing...")</h3>
+                <p class="text-muted mb-2">Market Sentiment</p>
+                <small class="text-secondary">Options Flow Analysis</small>
             </div>
         </div>
     </div>
 </div>
 
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('Initializing Overview tab additional charts');
+@if (hasOptionsData)
+{
+    <!-- Interactive Options Chain Visualization -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-0">
+                                <i class="fas fa-th me-2"></i>Interactive Options Chain - @featuredOptions.Symbol
+                            </h5>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <small>Current Price: $@featuredOptions.CurrentPrice.ToString("F2")</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="options-explanation mb-4 p-3 bg-light rounded">
+                        <p class="mb-0">
+                            <strong>Understanding Options:</strong> A <span class="text-success">call option</span> gives you the right to buy at the strike price 
+                            (profitable if stock goes up). A <span class="text-danger">put option</span> gives you the right to sell at the strike price 
+                            (profitable if stock goes down). The Greeks show how option prices change with market conditions.
+                        </p>
+                    </div>
+                    
+                    <!-- Options Payoff Diagram -->
+                    <div id="optionsPayoffChart" class="chart-container-400 mb-4"></div>
+                    
+                    <!-- Greeks Visualization -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="mb-3">The Greeks - Your Risk Dashboard</h6>
+                            <div id="greeksRadarChart" class="chart-container-350"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Options Chain Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover options-chain-table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th colspan="5" class="text-center bg-success text-white">Calls</th>
+                                    <th class="text-center">Strike</th>
+                                    <th colspan="5" class="text-center bg-danger text-white">Puts</th>
+                                </tr>
+                                <tr>
+                                    <th>Price</th>
+                                    <th>Delta</th>
+                                    <th>Gamma</th>
+                                    <th>Theta</th>
+                                    <th>IV%</th>
+                                    <th class="text-center">Strike</th>
+                                    <th>Price</th>
+                                    <th>Delta</th>
+                                    <th>Gamma</th>
+                                    <th>Theta</th>
+                                    <th>IV%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var option in featuredOptions.OptionChain.OrderBy(o => o.StrikePrice))
+                                {
+                                    <tr class="@(option.Moneyness == "At-the-Money" ? "table-warning" : "")">
+                                        <td class="text-success fw-bold">$@option.CallPrice.ToString("F2")</td>
+                                        <td>@option.CallGreeks.Delta.ToString("F3")</td>
+                                        <td>@option.CallGreeks.Gamma.ToString("F3")</td>
+                                        <td>@option.CallGreeks.Theta.ToString("F3")</td>
+                                        <td>@((option.CallImpliedVol * 100).ToString("F1"))%</td>
+                                        <td class="text-center fw-bold @(option.Moneyness == "At-the-Money" ? "bg-warning" : "")">
+                                            $@option.StrikePrice.ToString("F2")
+                                        </td>
+                                        <td class="text-danger fw-bold">$@option.PutPrice.ToString("F2")</td>
+                                        <td>@option.PutGreeks.Delta.ToString("F3")</td>
+                                        <td>@option.PutGreeks.Gamma.ToString("F3")</td>
+                                        <td>@option.PutGreeks.Theta.ToString("F3")</td>
+                                        <td>@((option.PutImpliedVol * 100).ToString("F1"))%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3 text-muted">
+                        <small>
+                            <strong>Greeks Guide:</strong> 
+                            Delta = Price sensitivity | 
+                            Gamma = Delta's rate of change | 
+                            Theta = Time decay | 
+                            IV = Implied Volatility
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Check if Highcharts is loaded
-        if (typeof Highcharts === 'undefined') {
-            console.error('Highcharts not loaded - skipping charts initialization');
-            return;
-        }
-
-        // Generate heatmap data from portfolio stocks
-        let heatmapData = [];
-        let topPerformersData = [];
-
-        // Always generate charts, don't depend on seriesData
-        // Generate portfolio heatmap data
-        renderPortfolioHeatmap();
-
-        // Generate top performers chart
-        renderTopPerformersChart();
-    });
-
-    function renderPortfolioHeatmap() {
-        // First, collect all stock data
-        let stockPerformance = @Html.Raw(Json.Serialize(Model.UserStocks.Select(s => new {
-            name = s.StockSymbol,
-            value = s.PerformancePercentage * 100,
-            totalValue = s.TotalValue
-        }).ToList()));
-
-        // If no data, show message
-        if (!stockPerformance || stockPerformance.length === 0) {
-            document.getElementById('portfolioHeatmapChart').innerHTML =
-                '<div class="alert alert-info text-center p-5">No stock performance data available yet.</div>';
-            return;
-        }
-
-        // Format data for heatmap - normalized by market value
-        let heatmapData = stockPerformance.map(function(stock) {
-            return {
-                name: stock.name,
-                value: stock.value,
-                valueText: (stock.value > 0 ? '+' : '') + stock.value.toFixed(2) + '%',
-                colorValue: stock.value,  // For coloring
-                z: stock.totalValue       // For block size
-            };
-        });
-
-        // Sort by performance
-        heatmapData.sort(function(a, b) {
-            return b.value - a.value;
-        });
-
-        // Create the heatmap
-        Highcharts.chart('portfolioHeatmapChart', {
-            chart: {
-                type: 'treemap',
-                backgroundColor: '#212529'
-            },
-            title: {
-                text: null
-            },
-            subtitle: {
-                text: 'Size corresponds to position value, color to performance',
-                style: { color: '#CCCCCC' }
-            },
-            tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                style: { color: '#FFFFFF' },
-                formatter: function() {
-                    return '<b>' + this.point.name + '</b><br>' +
-                           'Performance: ' + this.point.valueText + '<br>' +
-                           'Value: $' + Highcharts.numberFormat(this.point.z, 2);
-                }
-            },
-            colorAxis: {
-                minColor: '#D33',
-                maxColor: '#5C5',
-                stops: [
-                    [0, '#D33'],     // Red for negative
-                    [0.5, '#ddd'],   // Gray for neutral
-                    [1, '#5C5']      // Green for positive
-                ]
-            },
-            series: [{
-                type: 'treemap',
-                layoutAlgorithm: 'squarified',
-                data: heatmapData,
-                borderWidth: 2,
-                borderColor: '#212529',
-                dataLabels: {
-                    enabled: true,
-                    style: {
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        textOutline: 'none'
-                    },
-                    formatter: function() {
-                        return this.point.name + '<br>' + this.point.valueText;
-                    }
-                }
-            }],
-            credits: { enabled: false }
-        });
-    }
-
-    function renderTopPerformersChart() {
-        // Get all stock data including value for more context
-        let stockPerformance = @Html.Raw(Json.Serialize(Model.UserStocks.Select(s => new {
-            name = s.StockSymbol,
-            performance = s.PerformancePercentage * 100,
-            totalValue = s.TotalValue
-        }).ToList()));
-
-        // If no data, show message
-        if (!stockPerformance || stockPerformance.length === 0) {
-            document.getElementById('topPerformersChart').innerHTML =
-                '<div class="alert alert-info text-center p-5">No stock performance data available yet.</div>';
-            return;
-        }
-
-        // Sort stocks by performance (best to worst)
-        stockPerformance.sort((a, b) => b.performance - a.performance);
-
-        // Get best and worst performers
-        let bestPerformers = stockPerformance.slice(0, Math.min(5, stockPerformance.length));
-        let worstPerformers = [];
-
-        // Only include worst performers if we have enough distinct stocks
-        if (stockPerformance.length > 5) {
-            worstPerformers = stockPerformance.slice(-Math.min(5, stockPerformance.length));
-        }
-
-        // Create two separate series for clear presentation
-        Highcharts.chart('topPerformersChart', {
-            chart: {
-                type: 'bar',
-                backgroundColor: '#212529'
-            },
-            title: {
-                text: 'Portfolio Performance',
-                style: {
-                    color: '#CCCCCC',
-                    fontSize: '14px'
-                }
-            },
-            subtitle: {
-                text: 'Best and worst performers',
-                style: {
-                    color: '#AAAAAA',
-                    fontSize: '12px'
-                }
-            },
-            xAxis: [{
-                categories: bestPerformers.map(item => item.name),
-                title: {
-                    text: 'Best Performers',
-                    style: { color: '#5C5' }
-                },
-                labels: {
-                    style: { color: '#CCCCCC' }
-                },
-                lineColor: '#444'
-            }, {
-                // Only create second axis if we have worst performers
-                categories: worstPerformers.map(item => item.name),
-                title: {
-                    text: worstPerformers.length > 0 ? 'Worst Performers' : '',
-                    style: { color: '#D33' }
-                },
-                labels: {
-                    style: { color: '#CCCCCC' }
-                },
-                opposite: true,
-                linkedTo: 0,
-                lineColor: '#444'
-            }],
-            yAxis: {
-                title: {
-                    text: 'Performance (%)',
-                    style: { color: '#CCCCCC' }
-                },
-                labels: {
-                    formatter: function() {
-                        return this.value + '%';
-                    },
-                    style: { color: '#CCCCCC' }
-                },
-                gridLineColor: 'rgba(255, 255, 255, 0.1)'
-            },
-            tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                style: { color: '#FFFFFF' },
-                formatter: function() {
-                    return '<b>' + this.point.category + '</b><br>' +
-                           'Performance: ' + (this.point.y > 0 ? '+' : '') +
-                           Highcharts.numberFormat(this.point.y, 2) + '%<br>' +
-                           'Value: $' + Highcharts.numberFormat(this.point.custom?.value || 0, 2);
-                }
-            },
-            plotOptions: {
-                series: {
-                    dataLabels: {
-                        enabled: true,
-                        formatter: function() {
-                            return (this.y > 0 ? '+' : '') + Highcharts.numberFormat(this.y, 1) + '%';
-                        },
-                        style: {
-                            color: '#FFFFFF',
-                            textOutline: 'none',
-                            fontSize: '11px'
+    <!-- Volatility Smile Visualization -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-smile me-2"></i>Volatility Smile</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        The "smile" pattern shows how implied volatility changes with strike prices. 
+                        Higher volatility at extremes indicates market expectations of large moves.
+                    </p>
+                    <div id="volatilitySmileChart" class="chart-container-350"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Portfolio Options Summary -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Portfolio Options Insights</h5>
+                </div>
+                <div class="card-body">
+                    <div class="insights-list">
+                        @foreach (var stock in Model.OptionsAnalysis.Take(5))
+                        {
+                            var atmOption = stock.OptionChain.FirstOrDefault(o => o.Moneyness == "At-the-Money");
+                            if (atmOption != null)
+                            {
+                                <div class="insight-item mb-3 p-3 border-start border-4 @(stock.MarketOutlook.StartsWith("Bullish") ? "border-success" : stock.MarketOutlook.StartsWith("Bearish") ? "border-danger" : "border-warning")">
+                                    <h6 class="mb-1">@stock.Symbol - @stock.CompanyName</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-muted">Call Premium: $@atmOption.CallPrice.ToString("F2")</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Put Premium: $@atmOption.PutPrice.ToString("F2")</small>
+                                        </div>
+                                    </div>
+                                    <small class="@(stock.MarketOutlook.StartsWith("Bullish") ? "text-success" : stock.MarketOutlook.StartsWith("Bearish") ? "text-danger" : "text-warning")">
+                                        @stock.MarketOutlook
+                                    </small>
+                                </div>
+                            }
                         }
-                    },
-                    pointPadding: 0.2,
-                    groupPadding: 0.1
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="mb-2">Strategy Suggestion</h6>
+                        <p class="mb-0 small">
+                            @if (featuredOptions.MarketOutlook.StartsWith("Bearish"))
+                            {
+                                <i class="fas fa-shield-alt text-danger me-1"></i>
+                                <text>Consider protective puts to hedge against downside risk. The options market shows increased demand for downside protection.</text>
+                            }
+                            else if (featuredOptions.MarketOutlook.StartsWith("Bullish"))
+                            {
+                                <i class="fas fa-rocket text-success me-1"></i>
+                                <text>Covered calls could generate additional income. The options market indicates optimistic sentiment.</text>
+                            }
+                            else
+                            {
+                                <i class="fas fa-balance-scale text-warning me-1"></i>
+                                <text>Iron condors or straddles might work well in this balanced market environment.</text>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- No Options Data Available -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
+                    <h4>Add Stocks to See Options Analysis</h4>
+                    <p class="text-muted">
+                        Once you add stocks to your portfolio, we'll show you advanced options pricing analysis 
+                        using the Black-Scholes model and market sentiment indicators.
+                    </p>
+                    <button id="addStockButton" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Your First Stock
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- JavaScript for Interactive Charts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Overview tab DOM loaded');
+    console.log('Has options data: @hasOptionsData');
+    console.log('Options analysis count: @(Model.OptionsAnalysis?.Count ?? 0)');
+    
+    @if (hasOptionsData)
+    {
+        <text>
+        console.log('Processing options data for @featuredOptions.Symbol');
+        // Prepare data for charts
+        var currentPrice = @featuredOptions.CurrentPrice;
+        var optionChain = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(featuredOptions.OptionChain));
+        var volatilitySmile = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(featuredOptions.VolatilitySmile));
+        
+        // 1. Options Payoff Diagram
+        if (document.getElementById('optionsPayoffChart')) {
+            // Get ATM option for demonstration
+            var atmOption = optionChain.find(o => o.Moneyness === "At-the-Money") || optionChain[Math.floor(optionChain.length / 2)];
+            
+            // Generate payoff data
+            var priceRange = [];
+            var callPayoff = [];
+            var putPayoff = [];
+            var stockReturns = [];
+            
+            for (var i = currentPrice * 0.7; i &lt;= currentPrice * 1.3; i += currentPrice * 0.01) {
+                priceRange.push(i);
+                
+                // Long call payoff
+                var callProfit = Math.max(0, i - atmOption.StrikePrice) - atmOption.CallPrice;
+                callPayoff.push(callProfit);
+                
+                // Long put payoff
+                var putProfit = Math.max(0, atmOption.StrikePrice - i) - atmOption.PutPrice;
+                putPayoff.push(putProfit);
+                
+                // Stock returns for comparison
+                stockReturns.push(i - currentPrice);
+            }
+            
+            Highcharts.chart('optionsPayoffChart', {
+                chart: {
+                    type: 'line',
+                    backgroundColor: '#f8f9fa'
+                },
+                title: {
+                    text: 'Options Payoff at Expiration'
+                },
+                subtitle: {
+                    text: 'Strike: $' + atmOption.StrikePrice.toFixed(2) + ' | Current: $' + currentPrice.toFixed(2)
+                },
+                xAxis: {
+                    title: { text: 'Stock Price at Expiration' },
+                    plotLines: [{
+                        color: '#666',
+                        width: 2,
+                        value: currentPrice,
+                        label: {
+                            text: 'Current Price',
+                            align: 'center',
+                            style: { color: '#666' }
+                        }
+                    }, {
+                        color: '#999',
+                        width: 1,
+                        value: atmOption.StrikePrice,
+                        dashStyle: 'dash',
+                        label: {
+                            text: 'Strike',
+                            align: 'center',
+                            style: { color: '#999' }
+                        }
+                    }]
+                },
+                yAxis: {
+                    title: { text: 'Profit/Loss ($)' },
+                    plotLines: [{
+                        color: '#000',
+                        width: 1,
+                        value: 0
+                    }]
+                },
+                tooltip: {
+                    shared: true,
+                    valueDecimals: 2,
+                    valuePrefix: '$'
+                },
+                series: [{
+                    name: 'Long Call',
+                    data: priceRange.map((price, i) => [price, callPayoff[i]]),
+                    color: '#28a745',
+                    lineWidth: 3
+                }, {
+                    name: 'Long Put',
+                    data: priceRange.map((price, i) => [price, putPayoff[i]]),
+                    color: '#dc3545',
+                    lineWidth: 3
+                }, {
+                    name: 'Stock Position',
+                    data: priceRange.map((price, i) => [price, stockReturns[i]]),
+                    color: '#6c757d',
+                    lineWidth: 1,
+                    dashStyle: 'dash'
+                }],
+                legend: {
+                    layout: 'horizontal',
+                    align: 'center',
+                    verticalAlign: 'bottom'
                 }
-            },
-            legend: {
-                enabled: true,
-                itemStyle: { color: '#CCCCCC' },
-                verticalAlign: 'top'
-            },
-            series: [{
-                name: 'Best Performers',
-                data: bestPerformers.map(s => ({
-                    y: s.performance,
-                    custom: {
-                        value: s.totalValue
-                    },
-                    color: '#5C5'
-                })),
-                color: '#5C5'
-            },
-            ...(worstPerformers.length > 0 ? [{
-                name: 'Worst Performers',
-                data: worstPerformers.map(s => ({
-                    y: s.performance,
-                    custom: {
-                        value: s.totalValue
-                    },
-                    color: '#D33'
-                })),
-                color: '#D33',
-                xAxis: 1
-            }] : [])],
-            credits: { enabled: false }
-        });
+            });
+        }
+        
+        // 2. Greeks Radar Chart
+        if (document.getElementById('greeksRadarChart')) {
+            var atmOption = optionChain.find(o => o.Moneyness === "At-the-Money") || optionChain[0];
+            
+            Highcharts.chart('greeksRadarChart', {
+                chart: {
+                    polar: true,
+                    type: 'line',
+                    backgroundColor: '#f8f9fa'
+                },
+                title: {
+                    text: 'Options Greeks Profile'
+                },
+                subtitle: {
+                    text: 'Risk sensitivities for ATM options'
+                },
+                pane: {
+                    size: '80%'
+                },
+                xAxis: {
+                    categories: ['Delta', 'Gamma', 'Theta', 'Vega', 'Rho'],
+                    tickmarkPlacement: 'on',
+                    lineWidth: 0
+                },
+                yAxis: {
+                    gridLineInterpolation: 'polygon',
+                    lineWidth: 0,
+                    min: -1,
+                    max: 1
+                },
+                tooltip: {
+                    shared: true,
+                    pointFormat: '<span style="color:{series.color}">{series.name}: <b>{point.y:.3f}</b><br/>'
+                },
+                series: [{
+                    name: 'Call Greeks',
+                    data: [
+                        atmOption.CallGreeks.Delta,
+                        atmOption.CallGreeks.Gamma,
+                        -atmOption.CallGreeks.Theta / 365, // Normalize theta
+                        atmOption.CallGreeks.Vega,
+                        atmOption.CallGreeks.Rho
+                    ],
+                    color: '#28a745',
+                    pointPlacement: 'on'
+                }, {
+                    name: 'Put Greeks',
+                    data: [
+                        atmOption.PutGreeks.Delta,
+                        atmOption.PutGreeks.Gamma,
+                        -atmOption.PutGreeks.Theta / 365, // Normalize theta
+                        atmOption.PutGreeks.Vega,
+                        atmOption.PutGreeks.Rho
+                    ],
+                    color: '#dc3545',
+                    pointPlacement: 'on'
+                }],
+                legend: {
+                    align: 'right',
+                    verticalAlign: 'middle',
+                    layout: 'vertical'
+                }
+            });
+        }
+        
+        // 3. Volatility Smile Chart
+        if (document.getElementById('volatilitySmileChart')) {
+            var smileData = volatilitySmile.map(point => [point.Item1, point.Item2 * 100]);
+            
+            Highcharts.chart('volatilitySmileChart', {
+                chart: {
+                    type: 'line',
+                    backgroundColor: '#f8f9fa'
+                },
+                title: {
+                    text: 'Implied Volatility Smile'
+                },
+                xAxis: {
+                    title: { text: 'Strike Price ($)' },
+                    plotLines: [{
+                        color: '#666',
+                        width: 2,
+                        value: currentPrice,
+                        label: {
+                            text: 'Current Price',
+                            align: 'center',
+                            style: { color: '#666' }
+                        }
+                    }]
+                },
+                yAxis: {
+                    title: { text: 'Implied Volatility (%)' },
+                    min: 0
+                },
+                tooltip: {
+                    valueSuffix: '%',
+                    valueDecimals: 1
+                },
+                series: [{
+                    name: 'Implied Volatility',
+                    data: smileData,
+                    color: '#4361ee',
+                    lineWidth: 3,
+                    marker: {
+                        enabled: true,
+                        radius: 4
+                    }
+                }],
+                legend: {
+                    enabled: false
+                }
+            });
+        }
+        </text>
     }
+    else
+    {
+        <text>
+        console.log('No options data available');
+        console.log('User stocks count: @(Model.UserStocks?.Count ?? 0)');
+        </text>
+    }
+    
+    // Always run this test to verify Highcharts
+    setTimeout(function() {
+        console.log('Testing Highcharts availability...');
+        console.log('Highcharts defined: ' + (typeof Highcharts !== 'undefined'));
+        if (typeof Highcharts !== 'undefined') {
+            console.log('Highcharts version: ' + Highcharts.version);
+        }
+    }, 1000);
+});
 </script>

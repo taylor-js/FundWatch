@@ -23,6 +23,7 @@ namespace FundWatch.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly StockService _stockService;
         private readonly ChartDataService _chartDataService;
+        private readonly QuantitativeAnalysisService _quantAnalysisService;
         private readonly IMemoryCache _cache;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private const int CACHE_DURATION_MINUTES = 15;
@@ -33,6 +34,7 @@ namespace FundWatch.Controllers
         UserManager<IdentityUser> userManager,
         StockService stockService,
         ChartDataService chartDataService,
+        QuantitativeAnalysisService quantAnalysisService,
         IMemoryCache cache)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -40,6 +42,7 @@ namespace FundWatch.Controllers
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _stockService = stockService ?? throw new ArgumentNullException(nameof(stockService));
             _chartDataService = chartDataService ?? throw new ArgumentNullException(nameof(chartDataService));
+            _quantAnalysisService = quantAnalysisService ?? throw new ArgumentNullException(nameof(quantAnalysisService));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
@@ -174,6 +177,15 @@ namespace FundWatch.Controllers
                 viewModel.RiskMetrics = await riskMetricsTask;
                 viewModel.DrawdownData = await drawdownDataTask;
                 viewModel.DiversificationData = await diversificationDataTask;
+                
+                // Add quantitative options analysis
+                viewModel.OptionsAnalysis = await _quantAnalysisService.AnalyzePortfolioOptions(userId);
+                
+                // Add portfolio optimization
+                viewModel.PortfolioOptimization = await _quantAnalysisService.OptimizePortfolio(userId);
+                
+                // Add Fourier analysis for market cycles
+                viewModel.FourierAnalysis = await _quantAnalysisService.AnalyzeMarketCycles(userId);
                 
                 // Log all chart data metrics with extra detail for drawdown data
                 _logger.LogInformation(
@@ -1516,6 +1528,13 @@ namespace FundWatch.Controllers
                     };
                 }
             }
+        }
+        
+        // GET: AppUserStocks/ChartTest
+        [AllowAnonymous]
+        public IActionResult ChartTest()
+        {
+            return View();
         }
     }
 }

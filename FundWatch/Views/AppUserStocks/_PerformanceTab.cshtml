@@ -1,104 +1,601 @@
 @model FundWatch.Models.ViewModels.PortfolioDashboardViewModel
+@using FundWatch.Models.QuantitativeModels
+@{
+    var hasOptimization = Model.PortfolioOptimization != null;
+    var optimization = Model.PortfolioOptimization;
+}
 
-<div class="row g-3 mb-4">
-    <!-- Rolling Returns Chart -->
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Rolling Returns</h5>
-            </div>
-            <div class="card-body">
-                <div id="rollingReturnsChart" style="height: 430px;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Monthly Performance Chart -->
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Monthly Performance</h5>
-            </div>
-            <div class="card-body">
-                <div id="monthlyPerformanceChart" style="height: 430px;"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mb-4">
-    <!-- Portfolio Growth Analysis -->
-    <div class="col-md-12">
-        <div class="card shadow h-100">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Portfolio Growth Analysis</h5>
-            </div>
-            <div class="card-body">
-                <div id="portfolioGrowthChart" style="width: 100%; height: 500px; max-height: 500px; overflow: hidden;"></div>
+<!-- Modern Portfolio Theory Introduction -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-lg border-0 bg-gradient-success text-white">
+            <div class="card-body py-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-2">Portfolio Optimization & Efficient Frontier</h4>
+                        <p class="mb-0">
+                            Discover your optimal portfolio allocation using Modern Portfolio Theory. 
+                            The efficient frontier shows the best risk-return combinations, while Monte Carlo 
+                            simulations reveal potential future outcomes based on 1,000+ scenarios.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="display-6">
+                            <i class="fas fa-chart-area"></i> <i class="fas fa-exchange-alt mx-2"></i> <i class="fas fa-balance-scale"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+@if (hasOptimization && optimization.EfficientFrontier?.Any() == true)
+{
+    <!-- Key Metrics Comparison -->
+    <div class="row mb-4">
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-bullseye fa-2x text-primary"></i>
+                    </div>
+                    <h6 class="text-muted">Current Sharpe Ratio</h6>
+                    <h3 class="mb-0">@optimization.CurrentPortfolio.SharpeRatio.ToString("F2")</h3>
+                    <small class="text-secondary">Risk-adjusted return</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-rocket fa-2x text-success"></i>
+                    </div>
+                    <h6 class="text-muted">Optimal Sharpe Ratio</h6>
+                    <h3 class="mb-0 text-success">@optimization.MaxSharpeRatio.ToString("F2")</h3>
+                    <small class="text-secondary">
+                        <i class="fas fa-arrow-up"></i> 
+                        @((optimization.MaxSharpeRatio - optimization.CurrentPortfolio.SharpeRatio).ToString("F2")) improvement
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-shield-alt fa-2x text-danger"></i>
+                    </div>
+                    <h6 class="text-muted">Value at Risk (95%)</h6>
+                    <h3 class="mb-0 text-danger">@((optimization.RiskAnalysis.ValueAtRisk95 * 100).ToString("F1"))%</h3>
+                    <small class="text-secondary">Max loss in 95% of cases</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-chart-line fa-2x text-info"></i>
+                    </div>
+                    <h6 class="text-muted">Expected Return</h6>
+                    <h3 class="mb-0">@((optimization.OptimalPortfolio.Return * 100).ToString("F1"))%</h3>
+                    <small class="text-secondary">Annualized</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Visualization Area -->
+    <div class="row mb-4">
+        <!-- Efficient Frontier -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-scatter me-2"></i>Efficient Frontier Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="frontier-explanation mb-3 p-3 bg-light rounded">
+                        <p class="mb-0 small">
+                            <strong>The Efficient Frontier:</strong> Each point represents a portfolio with the best possible return 
+                            for a given level of risk. Your current portfolio (●) can be optimized to the green star (★) for better 
+                            risk-adjusted returns.
+                        </p>
+                    </div>
+                    <div id="efficientFrontierChart" class="chart-container-450"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Portfolio Weights Recommendation -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-weight me-2"></i>Optimal Allocation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="allocation-comparison">
+                        <h6 class="mb-3">Recommended Changes:</h6>
+                        @foreach (var symbol in optimization.OptimalWeights.Keys.OrderByDescending(k => optimization.OptimalWeights[k]))
+                        {
+                            var currentWeight = optimization.CurrentWeights.ContainsKey(symbol) ? optimization.CurrentWeights[symbol] : 0;
+                            var optimalWeight = optimization.OptimalWeights[symbol];
+                            var change = optimalWeight - currentWeight;
+                            
+                            <div class="allocation-item mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong>@symbol</strong>
+                                    <span class="badge @(change > 0 ? "bg-success" : change < 0 ? "bg-danger" : "bg-secondary")">
+                                        @(change > 0 ? "+" : "")@((change * 100).ToString("F1"))%
+                                    </span>
+                                </div>
+                                <div class="progress progress-height-25">
+                                    <div class="progress-bar bg-secondary" 
+                                         style="width: @((currentWeight * 100).ToString("F1"))%">
+                                        Current: @((currentWeight * 100).ToString("F1"))%
+                                    </div>
+                                    <div class="progress-bar bg-success" 
+                                         style="width: @(((optimalWeight - currentWeight) * 100).ToString("F1"))%">
+                                        Optimal: @((optimalWeight * 100).ToString("F1"))%
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="mb-2">Rebalancing Impact:</h6>
+                        <ul class="mb-0 small">
+                            <li>Sharpe Ratio: @optimization.CurrentPortfolio.SharpeRatio.ToString("F2") → @optimization.MaxSharpeRatio.ToString("F2")</li>
+                            <li>Risk: @((optimization.CurrentPortfolio.Risk * 100).ToString("F1"))% → @((optimization.OptimalPortfolio.Risk * 100).ToString("F1"))%</li>
+                            <li>Return: @((optimization.CurrentPortfolio.Return * 100).ToString("F1"))% → @((optimization.OptimalPortfolio.Return * 100).ToString("F1"))%</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monte Carlo Simulation Results -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-0">
+                                <i class="fas fa-dice me-2"></i>Monte Carlo Simulation - 1,000 Scenarios
+                            </h5>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <small>5-Year Projection with Optimal Allocation</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Simulation Fan Chart -->
+                        <div class="col-lg-8">
+                            <div id="monteCarloChart" class="chart-container-400"></div>
+                        </div>
+                        
+                        <!-- Probability Distribution -->
+                        <div class="col-lg-4">
+                            <h6 class="mb-3">Outcome Probabilities</h6>
+                            <div id="outcomeDistribution" class="chart-container-350"></div>
+                            
+                            <div class="mt-3">
+                                <h6>Key Statistics:</h6>
+                                <ul class="list-unstyled small">
+                                    <li><strong>Best Case (95th percentile):</strong> 
+                                        $@optimization.MonteCarloSimulations.FirstOrDefault(s => s.Percentile >= 95)?.FinalValue.ToString("F2")</li>
+                                    <li><strong>Median Case:</strong> 
+                                        $@optimization.MonteCarloSimulations.FirstOrDefault(s => s.Percentile >= 50)?.FinalValue.ToString("F2")</li>
+                                    <li><strong>Worst Case (5th percentile):</strong> 
+                                        $@optimization.MonteCarloSimulations.FirstOrDefault(s => s.Percentile >= 5)?.FinalValue.ToString("F2")</li>
+                                    <li><strong>Max Drawdown:</strong> 
+                                        @((optimization.RiskAnalysis.MaxDrawdown * 100).ToString("F1"))%</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Risk Metrics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>Advanced Risk Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div id="riskGaugeChart" class="chart-container-300"></div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="risk-metrics-grid">
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <div class="metric-box p-3 border rounded">
+                                            <h6 class="text-muted mb-1">Sortino Ratio</h6>
+                                            <h4 class="mb-0">@optimization.RiskAnalysis.SortinoRatio.ToString("F2")</h4>
+                                            <small>Downside risk-adjusted return</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="metric-box p-3 border rounded">
+                                            <h6 class="text-muted mb-1">Information Ratio</h6>
+                                            <h4 class="mb-0">@optimization.RiskAnalysis.InformationRatio.ToString("F2")</h4>
+                                            <small>Active return vs tracking error</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="metric-box p-3 border rounded">
+                                            <h6 class="text-muted mb-1">Conditional VaR</h6>
+                                            <h4 class="mb-0 text-danger">@((optimization.RiskAnalysis.ConditionalValueAtRisk * 100).ToString("F1"))%</h4>
+                                            <small>Expected loss beyond VaR</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="metric-box p-3 border rounded">
+                                            <h6 class="text-muted mb-1">Treynor Ratio</h6>
+                                            <h4 class="mb-0">@optimization.RiskAnalysis.TreynorRatio.ToString("F2")</h4>
+                                            <small>Return per unit of market risk</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- No Optimization Data -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-chart-area fa-4x text-muted mb-3"></i>
+                    <h4>Add Multiple Stocks for Portfolio Optimization</h4>
+                    <p class="text-muted">
+                        Portfolio optimization requires at least 2 stocks with sufficient historical data. 
+                        Add more stocks to see efficient frontier analysis and optimal allocation recommendations.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <script>
-    // Initialize Performance Tab Charts
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('Performance tab script loaded');
+document.addEventListener('DOMContentLoaded', function() {
+    @if (hasOptimization)
+    {
+        <text>
+        // Prepare optimization data
+        var efficientFrontier = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier));
+        var currentPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio));
+        var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio));
+        var monteCarloResults = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations.Take(100))); // Sample for performance
         
-        // Store the chart data from the model
-        window.monthlyPerfData = @Html.Raw(Json.Serialize(Model.MonthlyPerformanceData ?? new List<MonthlyPerformanceData>()));
-        window.rollingReturnsData = @Html.Raw(Json.Serialize(Model.RollingReturnsData ?? new List<RollingReturnsData>()));
-        window.portfolioGrowthData = @Html.Raw(Json.Serialize(Model.PortfolioGrowthData ?? new List<PortfolioGrowthPoint>()));
-        
-        // Log data availability
-        console.log("Monthly Performance data points:", window.monthlyPerfData.length);
-        console.log("Rolling Returns data points:", window.rollingReturnsData.length);
-        console.log("Portfolio Growth data points:", window.portfolioGrowthData.length);
-        
-        // Initialize charts immediately
-        renderPerformanceCharts();
-        
-        // Also render when the tab is shown
-        document.querySelector('a[data-bs-target="#performanceTab"]')?.addEventListener('shown.bs.tab', function() {
-            console.log('Performance tab shown - rendering charts');
-            renderPerformanceCharts();
-        });
-    });
-    
-    function renderPerformanceCharts() {
-        try {
-            if (typeof ChartManager === 'undefined') {
-                console.error('ChartManager not defined! Charts cannot be rendered.');
-                return;
-            }
+        // 1. Efficient Frontier Chart
+        if (document.getElementById('efficientFrontierChart')) {
+            var frontierData = efficientFrontier.map(p => ({
+                x: p.Risk * 100,
+                y: p.Return * 100,
+                sharpe: p.SharpeRatio
+            }));
             
-            console.log('Rendering Performance Tab Charts');
-            
-            // Render Monthly Performance Chart
-            if (window.monthlyPerfData && window.monthlyPerfData.length > 0) {
-                ChartManager.renderMonthlyPerformanceChart(window.monthlyPerfData);
-                console.log('Monthly Performance Chart rendered');
-            } else {
-                console.warn('No Monthly Performance data available');
-            }
-            
-            // Render Rolling Returns Chart
-            if (window.rollingReturnsData && window.rollingReturnsData.length > 0) {
-                ChartManager.renderRollingReturnsChart(window.rollingReturnsData);
-                console.log('Rolling Returns Chart rendered');
-            } else {
-                console.warn('No Rolling Returns data available');
-            }
-            
-            // Render Portfolio Growth Chart
-            if (window.portfolioGrowthData && window.portfolioGrowthData.length > 0) {
-                ChartManager.renderPortfolioGrowthChart(window.portfolioGrowthData);
-                console.log('Portfolio Growth Chart rendered');
-            } else {
-                console.warn('No Portfolio Growth data available');
-            }
-        } catch (err) {
-            console.error('Error rendering Performance charts:', err);
+            Highcharts.chart('efficientFrontierChart', {
+                chart: {
+                    type: 'scatter',
+                    backgroundColor: '#ffffff'
+                },
+                title: {
+                    text: 'Risk vs Return Analysis'
+                },
+                xAxis: {
+                    title: { text: 'Risk (Volatility %)' },
+                    min: 0
+                },
+                yAxis: {
+                    title: { text: 'Expected Return (%)' }
+                },
+                tooltip: {
+                    formatter: function() {
+                        if (this.series.name === 'Efficient Frontier') {
+                            return '<b>Efficient Portfolio</b><br>' +
+                                   'Risk: ' + this.x.toFixed(2) + '%<br>' +
+                                   'Return: ' + this.y.toFixed(2) + '%<br>' +
+                                   'Sharpe: ' + this.point.sharpe.toFixed(2);
+                        }
+                        return '<b>' + this.series.name + '</b><br>' +
+                               'Risk: ' + this.x.toFixed(2) + '%<br>' +
+                               'Return: ' + this.y.toFixed(2) + '%';
+                    }
+                },
+                plotOptions: {
+                    scatter: {
+                        marker: {
+                            radius: 5,
+                            states: {
+                                hover: {
+                                    enabled: true,
+                                    lineColor: 'rgb(100,100,100)'
+                                }
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Efficient Frontier',
+                    data: frontierData,
+                    color: '#007bff',
+                    lineWidth: 2,
+                    marker: { radius: 3 },
+                    type: 'line'
+                }, {
+                    name: 'Current Portfolio',
+                    data: [{
+                        x: currentPortfolio.Risk * 100,
+                        y: currentPortfolio.Return * 100
+                    }],
+                    color: '#dc3545',
+                    marker: {
+                        symbol: 'circle',
+                        radius: 10
+                    }
+                }, {
+                    name: 'Optimal Portfolio',
+                    data: [{
+                        x: optimalPortfolio.Risk * 100,
+                        y: optimalPortfolio.Return * 100
+                    }],
+                    color: '#28a745',
+                    marker: {
+                        symbol: 'diamond',
+                        radius: 12
+                    }
+                }],
+                annotations: [{
+                    labels: [{
+                        point: {
+                            x: currentPortfolio.Risk * 100,
+                            y: currentPortfolio.Return * 100
+                        },
+                        text: 'Current'
+                    }, {
+                        point: {
+                            x: optimalPortfolio.Risk * 100,
+                            y: optimalPortfolio.Return * 100
+                        },
+                        text: 'Optimal'
+                    }]
+                }]
+            });
         }
+        
+        // 2. Monte Carlo Fan Chart
+        if (document.getElementById('monteCarloChart')) {
+            // Extract percentile paths
+            var p5 = monteCarloResults.find(r => r.Percentile >= 5);
+            var p25 = monteCarloResults.find(r => r.Percentile >= 25);
+            var p50 = monteCarloResults.find(r => r.Percentile >= 50);
+            var p75 = monteCarloResults.find(r => r.Percentile >= 75);
+            var p95 = monteCarloResults.find(r => r.Percentile >= 95);
+            
+            // Create time series data
+            var categories = [];
+            for (var i = 0; i &lt;= p50.Path.length; i += 63) { // Quarterly points
+                categories.push('Q' + Math.floor(i / 63));
+            }
+            
+            Highcharts.chart('monteCarloChart', {
+                chart: {
+                    type: 'arearange',
+                    backgroundColor: '#f8f9fa'
+                },
+                title: {
+                    text: 'Portfolio Value Projections'
+                },
+                xAxis: {
+                    categories: categories,
+                    title: { text: 'Time (Quarters)' }
+                },
+                yAxis: {
+                    title: { text: 'Portfolio Value ($)' }
+                },
+                tooltip: {
+                    crosshairs: true,
+                    shared: true,
+                    valuePrefix: '$'
+                },
+                series: [{
+                    name: '90% Confidence Interval',
+                    data: categories.map((_, i) => {
+                        var idx = i * 63;
+                        return [p5.Path[idx] || p5.Path[p5.Path.length - 1], 
+                                p95.Path[idx] || p95.Path[p95.Path.length - 1]];
+                    }),
+                    type: 'arearange',
+                    lineWidth: 0,
+                    color: '#28a745',
+                    fillOpacity: 0.2
+                }, {
+                    name: '50% Confidence Interval',
+                    data: categories.map((_, i) => {
+                        var idx = i * 63;
+                        return [p25.Path[idx] || p25.Path[p25.Path.length - 1], 
+                                p75.Path[idx] || p75.Path[p75.Path.length - 1]];
+                    }),
+                    type: 'arearange',
+                    lineWidth: 0,
+                    color: '#28a745',
+                    fillOpacity: 0.4
+                }, {
+                    name: 'Median Path',
+                    data: categories.map((_, i) => {
+                        var idx = i * 63;
+                        return p50.Path[idx] || p50.Path[p50.Path.length - 1];
+                    }),
+                    type: 'line',
+                    lineWidth: 3,
+                    color: '#212529',
+                    marker: { enabled: false }
+                }]
+            });
+        }
+        
+        // 3. Outcome Distribution
+        if (document.getElementById('outcomeDistribution')) {
+            var finalValues = monteCarloResults.map(r => r.FinalValue);
+            var histogram = [];
+            var bins = 20;
+            var min = Math.min(...finalValues);
+            var max = Math.max(...finalValues);
+            var binWidth = (max - min) / bins;
+            
+            for (var i = 0; i &lt; bins; i++) {
+                var binMin = min + i * binWidth;
+                var binMax = binMin + binWidth;
+                var count = finalValues.filter(v => v >= binMin && v &lt; binMax).length;
+                histogram.push({
+                    x: (binMin + binMax) / 2,
+                    y: count
+                });
+            }
+            
+            Highcharts.chart('outcomeDistribution', {
+                chart: {
+                    type: 'column',
+                    backgroundColor: '#ffffff'
+                },
+                title: {
+                    text: 'Final Value Distribution'
+                },
+                xAxis: {
+                    title: { text: 'Portfolio Value ($)' }
+                },
+                yAxis: {
+                    title: { text: 'Frequency' }
+                },
+                series: [{
+                    name: 'Outcomes',
+                    data: histogram,
+                    color: '#17a2b8'
+                }],
+                legend: { enabled: false }
+            });
+        }
+        
+        // 4. Risk Gauge Chart
+        if (document.getElementById('riskGaugeChart')) {
+            var riskScore = optimization.RiskAnalysis.ValueAtRisk95 * 100;
+            
+            Highcharts.chart('riskGaugeChart', {
+                chart: {
+                    type: 'gauge',
+                    backgroundColor: '#ffffff'
+                },
+                title: {
+                    text: 'Portfolio Risk Level'
+                },
+                pane: {
+                    startAngle: -150,
+                    endAngle: 150,
+                    background: [{
+                        backgroundColor: {
+                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                            stops: [
+                                [0, '#FFF'],
+                                [1, '#333']
+                            ]
+                        },
+                        borderWidth: 0,
+                        outerRadius: '109%'
+                    }, {
+                        backgroundColor: {
+                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                            stops: [
+                                [0, '#333'],
+                                [1, '#FFF']
+                            ]
+                        },
+                        borderWidth: 1,
+                        outerRadius: '107%'
+                    }, {
+                        backgroundColor: '#DDD',
+                        borderWidth: 0,
+                        outerRadius: '105%',
+                        innerRadius: '103%'
+                    }]
+                },
+                yAxis: {
+                    min: 0,
+                    max: 50,
+                    minorTickInterval: 'auto',
+                    minorTickWidth: 1,
+                    minorTickLength: 10,
+                    minorTickPosition: 'inside',
+                    minorTickColor: '#666',
+                    tickPixelInterval: 30,
+                    tickWidth: 2,
+                    tickPosition: 'inside',
+                    tickLength: 10,
+                    tickColor: '#666',
+                    labels: {
+                        step: 2,
+                        rotation: 'auto'
+                    },
+                    title: {
+                        text: 'VaR %'
+                    },
+                    plotBands: [{
+                        from: 0,
+                        to: 10,
+                        color: '#55BF3B' // green
+                    }, {
+                        from: 10,
+                        to: 20,
+                        color: '#DDDF0D' // yellow
+                    }, {
+                        from: 20,
+                        to: 30,
+                        color: '#FFA500' // orange
+                    }, {
+                        from: 30,
+                        to: 50,
+                        color: '#DF5353' // red
+                    }]
+                },
+                series: [{
+                    name: 'Risk',
+                    data: [Math.abs(riskScore)],
+                    tooltip: {
+                        valueSuffix: '%'
+                    }
+                }]
+            });
+        }
+        </text>
     }
+});
 </script>

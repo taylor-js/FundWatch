@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using FundWatch.Services;
+using FundWatch.Models.QuantitativeModels;
 
 namespace FundWatch.Models.ViewModels
 {
@@ -20,6 +22,7 @@ namespace FundWatch.Models.ViewModels
             RiskMetrics = new List<RiskAnalysisData>();
             DrawdownData = new List<DrawdownPoint>();
             DiversificationData = new List<DiversificationData>();
+            OptionsAnalysis = new List<QuantitativeAnalysisService.OptionsAnalysisResult>();
         }
 
         public List<AppUserStock> UserStocks { get; set; }
@@ -36,5 +39,8 @@ namespace FundWatch.Models.ViewModels
         public List<RiskAnalysisData> RiskMetrics { get; set; }
         public List<DrawdownPoint> DrawdownData { get; set; }
         public List<DiversificationData> DiversificationData { get; set; }
+        public List<QuantitativeAnalysisService.OptionsAnalysisResult> OptionsAnalysis { get; set; }
+        public PortfolioOptimizationModel.OptimizationResult PortfolioOptimization { get; set; }
+        public FourierAnalysisModel.FourierAnalysisResult FourierAnalysis { get; set; }
     }
 }

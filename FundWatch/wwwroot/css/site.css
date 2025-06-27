@@ -49,6 +49,279 @@ body.has-hero .main-content {
     margin-right: auto;
 }
 
+/* ============================
+   QUANTITATIVE DASHBOARD STYLES
+   ============================ */
+
+/* Overview Tab - Options Analysis */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.options-chain-table {
+    font-size: 0.9rem;
+}
+
+.options-chain-table th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.options-chain-table td {
+    padding: 0.5rem;
+}
+
+.insight-item {
+    background-color: rgba(255, 255, 255, 0.9);
+    transition: all 0.3s ease;
+}
+
+.insight-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.options-explanation {
+    border-left: 4px solid #4361ee;
+}
+
+/* Performance Tab - Portfolio Optimization */
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.icon-wrapper {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 50%;
+}
+
+.allocation-item {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.metric-box {
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.metric-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.frontier-explanation {
+    border-left: 4px solid #28a745;
+}
+
+/* Analytics Tab - Fourier Analysis */
+.bg-gradient-analytics {
+    background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+}
+
+.cycles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.cycle-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.cycle-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.cycle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.cycle-dates {
+    display: flex;
+    justify-content: space-around;
+    margin: 15px 0;
+    font-size: 0.9rem;
+}
+
+.date-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.phase-indicator {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.turning-point-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.turning-point-item:hover {
+    background: #e9ecef;
+}
+
+.correlation-item {
+    background: rgba(255,255,255,0.9);
+    transition: all 0.3s ease;
+}
+
+.correlation-item:hover {
+    transform: translateX(5px);
+}
+
+.lead-lag-item {
+    border-left: 3px solid #17a2b8;
+}
+
+/* Chart container classes for specific heights */
+.chart-container-300 {
+    height: 300px;
+}
+
+.chart-container-350 {
+    height: 350px;
+}
+
+.chart-container-400 {
+    height: 400px;
+}
+
+.chart-container-450 {
+    height: 450px;
+}
+
+/* Progress bar styles */
+.progress-height-10 {
+    height: 10px;
+}
+
+.progress-height-25 {
+    height: 25px;
+}
+
+/* Form styles */
+.inline-form {
+    display: inline;
+}
+
+/* Card body styles */
+.card-body-details {
+    padding: 25px;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+/* Full width chart */
+.chart-full-width {
+    width: 100%;
+}
+
+/* Holdings Tab Enhancements */
+.holdings-container {
+    padding: 20px;
+}
+
+.metric-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+}
+
+.metric-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.metric-content h6 {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-bottom: 5px;
+}
+
+.metric-content h4 {
+    margin-bottom: 5px;
+}
+
+#enhancedHoldingsTable {
+    font-size: 0.9rem;
+}
+
+#enhancedHoldingsTable th {
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.weight-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.optimal-weight {
+    font-size: 0.75rem;
+}
+
+.advanced-column {
+    display: none;
+}
+
+.advanced-column.show {
+    display: table-cell;
+}
+
+.bg-gradient-dark {
+    background: linear-gradient(135deg, #212529 0%, #495057 100%);
+}
+
+.delete-btn {
+    border: none;
+    background: none;
+    color: inherit;
+    padding: 0.25rem 0.5rem;
+}
+
 /* Reduce container padding on mobile */
 @media (max-width: 767.98px) {
     .container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {

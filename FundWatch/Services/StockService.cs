@@ -566,6 +566,8 @@ namespace FundWatch.Services
                             MarketCap = SafeGetDecimal(result, "market_cap"),
                             Website = SafeGetString(result, "homepage_url"),
                             Employees = SafeGetInt(result, "total_employees"),
+                            DailyChange = 0, // Will be populated from snapshot endpoint
+                            DailyChangePercent = 0, // Will be populated from snapshot endpoint
                             Extended = new ExtendedCompanyDetails
                             {
                                 // Using the correct field names as per Polygon.io API docs
@@ -580,6 +582,9 @@ namespace FundWatch.Services
 
                         // Try to fetch recent news for this company
                         _ = FetchCompanyNewsAsync(symbol, companyDetails);
+
+                        // Try to fetch daily change data
+                        await FetchDailyChangeAsync(symbol, companyDetails);
 
                         _logger.LogInformation("Fetched company details for {Symbol}: {@CompanyDetails}",
                             symbol, new
@@ -823,6 +828,42 @@ namespace FundWatch.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching company news for {Symbol}", symbol);
+            }
+        }
+
+        private async Task FetchDailyChangeAsync(string symbol, CompanyDetails companyDetails)
+        {
+            try
+            {
+                // Get the previous day's close data
+                var url = $"/v2/aggs/ticker/{symbol}/prev";
+                await _rateLimiter.WaitForAvailableSlotAsync();
+                var response = await SendApiRequestAsync(url);
+                
+                if (response != null && response["results"] != null)
+                {
+                    var results = response["results"].First();
+                    if (results != null)
+                    {
+                        var prevClose = SafeGetDecimal(results, "c");
+                        var currentClose = SafeGetDecimal(results, "c");
+                        var openPrice = SafeGetDecimal(results, "o");
+                        
+                        // Get current price from real-time data
+                        var priceData = await GetRealTimePricesAsync(new List<string> { symbol });
+                        if (priceData.TryGetValue(symbol, out decimal currentPrice) && currentPrice > 0 && prevClose > 0)
+                        {
+                            // Calculate daily change
+                            companyDetails.DailyChange = currentPrice - prevClose;
+                            companyDetails.DailyChangePercent = prevClose != 0 ? ((currentPrice - prevClose) / prevClose) * 100 : 0;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error fetching daily change for {Symbol}", symbol);
+                // Don't throw - just leave the values as 0
             }
         }
     }

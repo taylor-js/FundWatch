@@ -27,6 +27,8 @@ namespace FundWatch.Models
         public decimal MarketCap { get; set; }
         public string Website { get; set; }
         public int Employees { get; set; }
+        public decimal DailyChange { get; set; }
+        public decimal DailyChangePercent { get; set; }
         public ExtendedCompanyDetails Extended { get; set; } = new ExtendedCompanyDetails();
     }
 
