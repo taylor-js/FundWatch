@@ -2136,6 +2136,60 @@ button[type="submit"] {
 }
 
 /* ============================
+   INDEX PAGE STYLES
+   ============================ */
+.btn-purple {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    color: white;
+}
+
+.btn-purple:hover {
+    background-color: #5a32a3;
+    border-color: #5a32a3;
+    color: white;
+}
+
+/* Hero section alignment for Index page */
+.hero-align-row {
+    min-height: 400px;
+}
+
+/* Hero chart styling */
+.hero-chart-border {
+    border: 5px solid rgba(255, 255, 255, 0.2);
+}
+
+.hero-chart-img {
+    opacity: 0.9;
+}
+
+/* Feature image container */
+.feature-img-container {
+    height: 150px;
+}
+
+.feature-img {
+    object-fit: cover;
+    opacity: 0.1;
+}
+
+/* Chart showcase icon styling */
+.chart-header-icon {
+    width: 40px;
+    height: 40px;
+}
+
+/* Portfolio charts sizing */
+.portfolio-chart-lg {
+    height: 400px;
+}
+
+.portfolio-chart-md {
+    height: 350px;
+}
+
+/* ============================
    RESPONSIVE ADJUSTMENTS FOR DASHBOARD & INDEX
    ============================ */
 @media (max-width: 991.98px) {
@@ -2230,4 +2284,60 @@ button[type="submit"] {
         height: 250px;
         max-height: 250px;
     }
+}
+
+/* ============================
+   INDEX PAGE STYLES
+   ============================ */
+/* Hero section */
+.hero-align-row {
+    min-height: 450px;
+}
+
+.hero-chart-border {
+    border: 3px solid rgba(255,255,255,0.2);
+}
+
+.hero-chart-img {
+    height: 240px;
+    object-fit: cover;
+    object-position: center top;
+}
+
+/* Feature cards */
+.feature-img-container {
+    height: 180px;
+}
+
+.feature-img {
+    object-fit: cover;
+    object-position: center;
+}
+
+/* Chart showcase icons */
+.chart-header-icon {
+    width: 40px;
+    height: 40px;
+}
+
+/* Chart containers for authenticated users */
+.portfolio-chart-lg {
+    height: 400px;
+}
+
+.portfolio-chart-md {
+    height: 350px;
+}
+
+/* Button styles */
+.btn-purple {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    color: white;
+}
+
+.btn-purple:hover {
+    background-color: #5a32a3;
+    border-color: #5a32a3;
+    color: white;
 }

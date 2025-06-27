@@ -1542,5 +1542,84 @@ namespace FundWatch.Controllers
         {
             return View();
         }
+
+        // GET: AppUserStocks/GetPortfolioSummary
+        [HttpGet]
+        public async Task<IActionResult> GetPortfolioSummary()
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new
+                    {
+                        portfolioValue = 0m,
+                        totalReturn = 0m,
+                        totalHoldings = 0,
+                        riskScore = "N/A"
+                    });
+                }
+
+                var stocks = await _context.UserStocks
+                    .Where(s => s.UserId == userId)
+                    .ToListAsync();
+
+                if (!stocks.Any())
+                {
+                    return Json(new
+                    {
+                        portfolioValue = 0m,
+                        totalReturn = 0m,
+                        totalHoldings = 0,
+                        riskScore = "Low"
+                    });
+                }
+
+                // Calculate portfolio metrics
+                decimal totalValue = 0m;
+                decimal totalCost = 0m;
+                int totalHoldings = stocks.Count;
+
+                foreach (var stock in stocks)
+                {
+                    var sharesOwned = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
+                    totalValue += stock.CurrentPrice * sharesOwned;
+                    totalCost += stock.PurchasePrice * stock.NumberOfSharesPurchased;
+                }
+
+                var totalReturn = totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
+
+                // Simple risk score calculation based on portfolio volatility
+                string riskScore = "Low";
+                if (totalHoldings == 1)
+                {
+                    riskScore = "High"; // Concentrated portfolio
+                }
+                else if (totalHoldings < 5)
+                {
+                    riskScore = "Medium";
+                }
+
+                return Json(new
+                {
+                    portfolioValue = totalValue,
+                    totalReturn = totalReturn,
+                    totalHoldings = totalHoldings,
+                    riskScore = riskScore
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating portfolio summary");
+                return Json(new
+                {
+                    portfolioValue = 0m,
+                    totalReturn = 0m,
+                    totalHoldings = 0,
+                    riskScore = "N/A"
+                });
+            }
+        }
     }
 }

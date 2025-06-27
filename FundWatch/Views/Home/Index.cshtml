@@ -1,169 +1,353 @@
-﻿@{
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@{
     ViewData["Title"] = "FundWatch - Portfolio Tracking & Analytics";
     ViewData["BodyClass"] = "has-hero";
+    var isAuthenticated = SignInManager.IsSignedIn(User);
 }
 
-<!-- Hero section with dynamic chart background -->
-<div class="hero-container">
-    <div class="chart-background-container">
-        <canvas id="bgChart"></canvas>
+@if (!isAuthenticated)
+{
+    <!-- Hero section with dynamic chart background for non-authenticated users -->
+    <div class="hero-container">
+        <div class="chart-background-container">
+            <canvas id="bgChart"></canvas>
+        </div>
+        <div class="hero-content">
+            <div class="container">
+                <div class="row align-items-center hero-align-row">
+                    <div class="col-lg-7 hero-text">
+                        <h1 class="display-4 fw-bold text-white mb-2">Smart Portfolio<br class="d-none d-md-inline"> Tracking</h1>
+                        <div class="lead text-white mb-3">
+                            <p class="mb-2"><i class="fas fa-chart-line me-2"></i>Real-time investment visualization</p>
+                            <p class="mb-2"><i class="fas fa-chart-bar me-2"></i>Performance metrics at a glance</p>
+                            <p class="mb-2"><i class="fas fa-chart-pie me-2"></i>Insights for smarter decisions</p>
+                        </div>
+                        <div class="hero-buttons">
+                            <a href="/Identity/Account/Register" class="btn btn-primary btn-lg me-2 mb-2">Get Started</a>
+                            <a href="/Identity/Account/Login" class="btn btn-outline-light btn-lg mb-2">Sign In</a>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 d-none d-lg-block d-flex align-items-center justify-content-center">
+                        <div class="chart-showcase position-relative w-100">
+                            <div class="rounded overflow-hidden shadow-lg hero-chart-border">
+                                <img src="/img/stock-chart-hero.jpg" alt="Interactive stock chart" class="img-fluid w-100 hero-chart-img">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="hero-content">
+
+    <!-- Features section -->
+    <section class="features-section py-5">
         <div class="container">
-            <div class="row align-items-center" style="min-height: 450px;">
-                <div class="col-lg-7 hero-text">
-                    <h1 class="display-4 fw-bold text-white mb-2">Smart Portfolio<br class="d-none d-md-inline"> Tracking</h1>
-                    <div class="lead text-white mb-3">
-                        <p class="mb-2"><i class="fas fa-chart-line me-2"></i>Real-time investment visualization</p>
-                        <p class="mb-2"><i class="fas fa-chart-bar me-2"></i>Performance metrics at a glance</p>
-                        <p class="mb-2"><i class="fas fa-chart-pie me-2"></i>Insights for smarter decisions</p>
-                    </div>
-                    <div class="hero-buttons">
-                        <a href="/AppUserStocks/CreateOrEdit" class="btn btn-primary btn-lg me-2 mb-2">Get Started</a>
-                        <a href="/AppUserStocks/Dashboard" class="btn btn-outline-light btn-lg mb-2">View Dashboard</a>
-                    </div>
-                </div>
-                <div class="col-lg-5 d-none d-lg-block d-flex align-items-center justify-content-center">
-                    <div class="chart-showcase position-relative w-100">
-                        <div class="rounded overflow-hidden shadow-lg" style="border: 3px solid rgba(255,255,255,0.2);">
-                            <img src="/img/stock-chart-hero.jpg" alt="Interactive stock chart" class="img-fluid w-100" style="height: 240px; object-fit: cover; object-position: center top;">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Features section -->
-<section class="features-section py-5">
-    <div class="container">
-        <div class="row justify-content-center mb-5">
-            <div class="col-lg-8 text-center">
-                <h2 class="section-title">Why Choose FundWatch</h2>
-                <p class="section-subtitle">Powerful tools to help you make smarter investment decisions</p>
-            </div>
-        </div>
-        
-        <div class="row equal-height-cards g-4">
-            <div class="col-md-4">
-                <div class="feature-card card h-100 overflow-hidden">
-                    <div class="position-relative" style="height: 180px;">
-                        <img src="/img/portfolio-tracking.png" class="position-absolute w-100 h-100" alt="Portfolio tracking dashboard" style="object-fit: cover; object-position: center;">
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <div class="feature-icon mb-4">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <h3 class="card-title h5">Portfolio Tracking</h3>
-                        <p class="card-text flex-grow-1">Track your investments in real-time with comprehensive dashboards showing performance metrics, gains, and losses at a glance.</p>
-                    </div>
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <h2 class="section-title">Why Choose FundWatch</h2>
+                    <p class="section-subtitle">Powerful tools to help you make smarter investment decisions</p>
                 </div>
             </div>
             
-            <div class="col-md-4">
-                <div class="feature-card card h-100 overflow-hidden">
-                    <div class="position-relative" style="height: 180px;">
-                        <img src="/img/analytics-dashboard.png" class="position-absolute w-100 h-100" alt="Advanced analytics charts" style="object-fit: cover; object-position: center;">
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <div class="feature-icon mb-4">
-                            <i class="fas fa-chart-pie"></i>
+            <div class="row equal-height-cards g-4">
+                <div class="col-md-4">
+                    <div class="feature-card card h-100 overflow-hidden">
+                        <div class="position-relative feature-img-container">
+                            <img src="/img/portfolio-tracking.png" class="position-absolute w-100 h-100 feature-img" alt="Portfolio tracking dashboard">
                         </div>
-                        <h3 class="card-title h5">Advanced Analytics</h3>
-                        <p class="card-text flex-grow-1">Gain insights with interactive charts, sector analysis, and performance comparisons against major market indices.</p>
+                        <div class="card-body d-flex flex-column">
+                            <div class="feature-icon mb-4">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3 class="card-title h5">Portfolio Tracking</h3>
+                            <p class="card-text flex-grow-1">Track your investments in real-time with comprehensive dashboards showing performance metrics, gains, and losses at a glance.</p>
+                        </div>
                     </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="feature-card card h-100 overflow-hidden">
+                        <div class="position-relative feature-img-container">
+                            <img src="/img/analytics-dashboard.png" class="position-absolute w-100 h-100 feature-img" alt="Advanced analytics charts">
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="feature-icon mb-4">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <h3 class="card-title h5">Quantitative Analysis</h3>
+                            <p class="card-text flex-grow-1">Advanced mathematical models including Black-Scholes options pricing, portfolio optimization, and Fourier analysis for market cycles.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="feature-card card h-100 overflow-hidden">
+                        <div class="position-relative feature-img-container">
+                            <img src="/img/secure-platform.png" class="position-absolute w-100 h-100 feature-img" alt="Secure financial platform">
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="feature-icon mb-4">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h3 class="card-title h5">Secure Platform</h3>
+                            <p class="card-text flex-grow-1">Your financial data is protected with enterprise-grade security, ensuring your investment information stays private and secure.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chart showcase section -->
+    <section class="chart-showcase-section py-5">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <h2 class="section-title">Powerful Analytics Tools</h2>
+                    <p class="section-subtitle">Make data-driven decisions with our comprehensive charts and visualizations</p>
                 </div>
             </div>
             
-            <div class="col-md-4">
-                <div class="feature-card card h-100 overflow-hidden">
-                    <div class="position-relative" style="height: 180px;">
-                        <img src="/img/secure-platform.png" class="position-absolute w-100 h-100" alt="Secure financial platform" style="object-fit: cover; object-position: center;">
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <div class="feature-icon mb-4">
-                            <i class="fas fa-shield-alt"></i>
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div class="chart-card card shadow overflow-hidden">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="rounded-circle bg-primary p-2 d-flex align-items-center justify-content-center chart-header-icon">
+                                <i class="fa-solid fa-arrow-trend-up"></i>
+                            </div>
+                            <span class="ms-2 fw-bold">Performance Metrics</span>
                         </div>
-                        <h3 class="card-title h5">Secure Platform</h3>
-                        <p class="card-text flex-grow-1">Your financial data is protected with enterprise-grade security, ensuring your investment information stays private and secure.</p>
+                        <div class="card-body">
+                            <canvas id="performanceChart" class="demo-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <h3>Performance Tracking</h3>
+                    <p class="mb-4">Visualize your portfolio's performance over time with interactive line charts. Compare your investments against major market indices to see how your strategy stacks up.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Real-time performance tracking</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Benchmark comparisons</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Historical trend analysis</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="row align-items-center mt-5 flex-column-reverse flex-lg-row">
+                <div class="col-lg-6">
+                    <h3>Sector Distribution</h3>
+                    <p class="mb-4">Analyze your portfolio's diversification across market sectors to identify concentration risks and opportunities for rebalancing.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Sector allocation visualization</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Diversification scoring</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Risk assessment tools</li>
+                    </ul>
+                </div>
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div class="chart-card card shadow overflow-hidden">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="rounded-circle bg-success p-2 d-flex align-items-center justify-content-center chart-header-icon">
+                                <i class="fa-solid fa-chart-pie text-white"></i>
+                            </div>
+                            <span class="ms-2 fw-bold">Sector Distribution</span>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="sectorChart" class="demo-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <!-- Hero section for authenticated users -->
+    <div class="hero-container">
+        <div class="chart-background-container">
+            <canvas id="bgChart"></canvas>
+        </div>
+        <div class="hero-content">
+            <div class="container">
+                <div class="row align-items-center hero-align-row">
+                    <div class="col-lg-7 hero-text">
+                        <h1 class="display-4 fw-bold text-white mb-2">Welcome back!</h1>
+                        <div class="lead text-white mb-3">
+                            <p class="mb-2"><i class="fas fa-wallet me-2"></i>Your portfolio is being tracked</p>
+                            <p class="mb-2"><i class="fas fa-chart-line me-2"></i>Real-time performance updates</p>
+                            <p class="mb-2"><i class="fas fa-analytics me-2"></i>Advanced analytics at your fingertips</p>
+                        </div>
+                        <div class="hero-buttons">
+                            <a href="/AppUserStocks/Dashboard" class="btn btn-primary btn-lg me-2 mb-2">
+                                <i class="fas fa-chart-line me-2"></i>Go to Dashboard
+                            </a>
+                            <a href="/AppUserStocks/CreateOrEdit" class="btn btn-outline-light btn-lg mb-2">
+                                <i class="fas fa-plus me-2"></i>Add Stock
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 d-none d-lg-block d-flex align-items-center justify-content-center">
+                        <div class="chart-showcase position-relative w-100">
+                            <div class="rounded overflow-hidden shadow-lg hero-chart-border">
+                                <img src="/img/stock-chart-hero.jpg" alt="Interactive stock chart" class="img-fluid w-100 hero-chart-img">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</section>
 
-<!-- Chart showcase section -->
-<section class="chart-showcase-section py-5">
-    <div class="container">
-        <div class="row justify-content-center mb-5">
-            <div class="col-lg-8 text-center">
-                <h2 class="section-title">Powerful Analytics Tools</h2>
-                <p class="section-subtitle">Make data-driven decisions with our comprehensive charts and visualizations</p>
+    <!-- Dashboard Overview Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center mb-4">
+                <div class="col-lg-8 text-center">
+                    <h2 class="section-title">Your Portfolio Overview</h2>
+                    <p class="section-subtitle">Real-time insights and performance metrics</p>
+                </div>
             </div>
-        </div>
-        
-        <div class="row align-items-center">
-            <div class="col-lg-6 mb-4 mb-lg-0">
-                <div class="chart-card card shadow overflow-hidden">
-                    <div class="card-header d-flex align-items-center">
-                        <div class="rounded-circle bg-primary p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                            <i class="fa-solid fa-arrow-trend-up"></i>
-                        </div>
-                        <span class="ms-2 fw-bold">Performance Metrics</span>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="performanceChart" class="demo-chart"></canvas>
+
+            <!-- Portfolio Overview Cards -->
+        <div class="row mb-5">
+            <div class="col-md-3 mb-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-wallet fa-2x text-primary mb-3"></i>
+                        <h6 class="text-muted">Portfolio Value</h6>
+                        <h3 class="mb-0" id="portfolioValue">Loading...</h3>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <h3>Performance Tracking</h3>
-                <p class="mb-4">Visualize your portfolio's performance over time with interactive line charts. Compare your investments against major market indices to see how your strategy stacks up.</p>
-                <ul class="feature-list">
-                    <li><i class="fas fa-check-circle text-success me-2"></i> Real-time performance tracking</li>
-                    <li><i class="fas fa-check-circle text-success me-2"></i> Benchmark comparisons</li>
-                    <li><i class="fas fa-check-circle text-success me-2"></i> Historical trend analysis</li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="row align-items-center mt-5 flex-column-reverse flex-lg-row">
-            <div class="col-lg-6">
-                <h3>Sector Distribution</h3>
-                <p class="mb-4">Analyze your portfolio's diversification across market sectors to identify concentration risks and opportunities for rebalancing.</p>
-                <ul class="feature-list">
-                    <li><i class="fas fa-check-circle text-success me-2"></i> Sector allocation visualization</li>
-                    <li><i class="fas fa-check-circle text-success me-2"></i> Diversification scoring</li>
-                    <li><i class="fas fa-check-circle text-success me-2"></i> Risk assessment tools</li>
-                </ul>
-            </div>
-            <div class="col-lg-6 mb-4 mb-lg-0">
-                <div class="chart-card card shadow overflow-hidden">
-                    <div class="card-header d-flex align-items-center">
-                        <div class="rounded-circle bg-success p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                            <i class="fa-solid fa-chart-pie text-white"></i>
-                        </div>
-                        <span class="ms-2 fw-bold">Sector Distribution</span>
+            <div class="col-md-3 mb-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line fa-2x text-success mb-3"></i>
+                        <h6 class="text-muted">Total Return</h6>
+                        <h3 class="mb-0" id="totalReturn">Loading...</h3>
                     </div>
-                    <div class="card-body">
-                        <canvas id="sectorChart" class="demo-chart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-layer-group fa-2x text-info mb-3"></i>
+                        <h6 class="text-muted">Holdings</h6>
+                        <h3 class="mb-0" id="totalHoldings">Loading...</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-shield-alt fa-2x text-warning mb-3"></i>
+                        <h6 class="text-muted">Risk Score</h6>
+                        <h3 class="mb-0" id="riskScore">Loading...</h3>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- CTA section -->
+    <!-- Charts Section -->
+    <section class="chart-showcase-section py-5">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <h2 class="section-title">Advanced Analytics</h2>
+                    <p class="section-subtitle">Deep dive into your portfolio's performance and risk metrics</p>
+                </div>
+            </div>
+
+            <!-- Three Main Charts -->
+            <div class="row mb-5">
+            <!-- Stock Performance History Chart -->
+            <div class="col-lg-12 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-area me-2"></i>Stock Performance History
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Track the historical performance of your portfolio holdings over time</p>
+                        <div id="stockPerformanceChart" class="portfolio-chart-lg"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Risk Analysis Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Portfolio Risk Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Understand your portfolio's risk profile and volatility metrics</p>
+                        <div id="portfolioRiskChart" class="portfolio-chart-md"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Diversification Analysis Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>Portfolio Diversification Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Analyze your portfolio allocation across different sectors and asset classes</p>
+                        <div id="portfolioDiversificationChart" class="portfolio-chart-md"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-5">
+            <div class="col-12">
+                <h3 class="mb-3">Quick Actions</h3>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="/AppUserStocks/CreateOrEdit" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Add New Stock
+                    </a>
+                    <a href="/AppUserStocks/Dashboard#performance-tab" class="btn btn-info">
+                        <i class="fas fa-chart-bar me-2"></i>View Performance
+                    </a>
+                    <a href="/AppUserStocks/Dashboard#analytics-tab" class="btn btn-purple">
+                        <i class="fas fa-wave-square me-2"></i>Market Analysis
+                    </a>
+                    <a href="/AppUserStocks/Dashboard#holdings-tab" class="btn btn-secondary">
+                        <i class="fas fa-table me-2"></i>Manage Holdings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+<!-- CTA section for both authenticated and non-authenticated users -->
 <section class="cta-section py-5 text-center">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <h2 class="mb-4">Ready to take control of your investments?</h2>
-                <p class="mb-5">Join thousands of investors who use FundWatch to track, analyze, and optimize their portfolios.</p>
-                <a href="/AppUserStocks/CreateOrEdit" class="btn btn-primary btn-lg">Get Started Now</a>
+                @if (!isAuthenticated)
+                {
+                    <h2 class="mb-4">Ready to take control of your investments?</h2>
+                    <p class="mb-5">Join thousands of investors who use FundWatch to track, analyze, and optimize their portfolios.</p>
+                    <a href="/Identity/Account/Register" class="btn btn-primary btn-lg">Get Started Now</a>
+                }
+                else
+                {
+                    <h2 class="mb-4">Need help with your portfolio?</h2>
+                    <p class="mb-5">Explore our advanced analytics tools and quantitative models to optimize your investment strategy.</p>
+                    <a href="/AppUserStocks/Dashboard" class="btn btn-primary btn-lg">Explore Analytics</a>
+                }
             </div>
         </div>
     </div>
@@ -171,36 +355,89 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Background chart animation
-            const bgCanvas = document.getElementById('bgChart');
-            if (bgCanvas) {
-                const bgChart = new Chart(bgCanvas, {
+    
+    @if (!isAuthenticated)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Background chart animation for non-authenticated users
+                const bgCanvas = document.getElementById('bgChart');
+                if (bgCanvas) {
+                    const bgChart = new Chart(bgCanvas, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({length: 24}, (_, i) => i),
+                            datasets: [{
+                                data: [10, 15, 13, 17, 20, 22, 25, 27, 25, 23, 22, 24, 27, 30, 32, 35, 34, 36, 38, 40, 39, 42, 45, 48],
+                                borderColor: 'rgba(0, 123, 255, 0.5)',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4,
+                                fill: {
+                                    target: 'origin',
+                                    above: 'rgba(0, 123, 255, 0.05)'
+                                }
+                            }, 
+                            {
+                                data: [15, 12, 17, 13, 18, 16, 19, 21, 23, 26, 24, 28, 30, 27, 31, 28, 33, 30, 34, 32, 37, 35, 40, 38],
+                                borderColor: 'rgba(40, 167, 69, 0.5)',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4,
+                                fill: {
+                                    target: 'origin',
+                                    above: 'rgba(40, 167, 69, 0.05)'
+                                }
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    enabled: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: false
+                                },
+                                y: {
+                                    display: false
+                                }
+                            },
+                            animation: {
+                                duration: 2000
+                            }
+                        }
+                    });
+                }
+                
+                // Performance chart demo
+                const performanceChart = new Chart(document.getElementById('performanceChart'), {
                     type: 'line',
                     data: {
-                        labels: Array.from({length: 24}, (_, i) => i),
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                         datasets: [{
-                            data: [10, 15, 13, 17, 20, 22, 25, 27, 25, 23, 22, 24, 27, 30, 32, 35, 34, 36, 38, 40, 39, 42, 45, 48],
-                            borderColor: 'rgba(0, 123, 255, 0.5)',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            tension: 0.4,
-                            fill: {
-                                target: 'origin',
-                                above: 'rgba(0, 123, 255, 0.05)'
-                            }
-                        }, 
+                            label: 'Portfolio',
+                            data: [0, 3, 2, 5, 8, 10, 13, 15, 14, 16, 18, 20],
+                            borderColor: 'rgb(0, 123, 255)',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            fill: true
+                        },
                         {
-                            data: [15, 12, 17, 13, 18, 16, 19, 21, 23, 26, 24, 28, 30, 27, 31, 28, 33, 30, 34, 32, 37, 35, 40, 38],
-                            borderColor: 'rgba(40, 167, 69, 0.5)',
+                            label: 'S&P 500',
+                            data: [0, 2, 4, 3, 5, 7, 6, 9, 11, 10, 12, 14],
+                            borderColor: 'rgb(220, 53, 69)',
                             borderWidth: 2,
-                            pointRadius: 0,
-                            tension: 0.4,
-                            fill: {
-                                target: 'origin',
-                                above: 'rgba(40, 167, 69, 0.05)'
-                            }
+                            borderDash: [5, 5],
+                            tension: 0.3,
+                            fill: false
                         }]
                     },
                     options: {
@@ -208,149 +445,336 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                enabled: false
+                                position: 'top'
                             }
                         },
                         scales: {
-                            x: {
-                                display: false
-                            },
                             y: {
-                                display: false
-                            }
-                        },
-                        animation: {
-                            duration: 2000
-                        },
-                        elements: {
-                            line: {
-                                tension: 0.4
+                                title: {
+                                    display: true,
+                                    text: 'Returns (%)'
+                                }
                             }
                         }
                     }
                 });
-            }
-            
-            // Performance chart demo
-            const performanceChart = new Chart(document.getElementById('performanceChart'), {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                    datasets: [{
-                        label: 'My Portfolio',
-                        data: [0, 3, 2, 5, 8, 10, 13, 15, 14, 16, 18, 20],
-                        borderColor: 'rgb(0, 123, 255)',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        fill: true,
-                        pointBackgroundColor: 'rgb(0, 123, 255)',
-                        pointBorderColor: '#fff',
-                        pointRadius: 5
+                
+                // Sector chart demo
+                const sectorChart = new Chart(document.getElementById('sectorChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Industrial', 'Other'],
+                        datasets: [{
+                            data: [30, 20, 15, 15, 10, 10],
+                            backgroundColor: [
+                                'rgba(0, 123, 255, 0.8)',
+                                'rgba(40, 167, 69, 0.8)',
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(111, 66, 193, 0.8)',
+                                'rgba(23, 162, 184, 0.8)',
+                                'rgba(108, 117, 125, 0.8)'
+                            ]
+                        }]
                     },
-                    {
-                        label: 'S&P 500',
-                        data: [0, 2, 4, 3, 5, 7, 6, 9, 11, 10, 12, 14],
-                        borderColor: 'rgb(220, 53, 69)',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        tension: 0.3,
-                        fill: false,
-                        pointBackgroundColor: 'rgb(220, 53, 69)',
-                        pointBorderColor: '#fff',
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.y + '%';
-                                }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
                             }
                         }
-                    },
-                    scales: {
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Performance (%)'
+                    }
+                });
+            });
+        </script>
+    }
+    else
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Background chart animation for authenticated users
+                const bgCanvas = document.getElementById('bgChart');
+                if (bgCanvas) {
+                    const bgChart = new Chart(bgCanvas, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({length: 24}, (_, i) => i),
+                            datasets: [{
+                                data: [10, 15, 13, 17, 20, 22, 25, 27, 25, 23, 22, 24, 27, 30, 32, 35, 34, 36, 38, 40, 39, 42, 45, 48],
+                                borderColor: 'rgba(40, 167, 69, 0.5)',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4,
+                                fill: {
+                                    target: 'origin',
+                                    above: 'rgba(40, 167, 69, 0.05)'
+                                }
+                            }, 
+                            {
+                                data: [15, 12, 17, 13, 18, 16, 19, 21, 23, 26, 24, 28, 30, 27, 31, 28, 33, 30, 34, 32, 37, 35, 40, 38],
+                                borderColor: 'rgba(0, 123, 255, 0.5)',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4,
+                                fill: {
+                                    target: 'origin',
+                                    above: 'rgba(0, 123, 255, 0.05)'
+                                }
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    enabled: false
+                                }
                             },
-                            ticks: {
-                                callback: function(value) {
-                                    return value + '%';
+                            scales: {
+                                x: {
+                                    display: false
+                                },
+                                y: {
+                                    display: false
                                 }
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
+                            },
+                            animation: {
+                                duration: 2000
                             }
                         }
-                    }
+                    });
                 }
-            });
-            
-            // Sector chart demo
-            const sectorChart = new Chart(document.getElementById('sectorChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Technology', 'Healthcare', 'Consumer Cyclical', 'Financial Services', 'Industrials', 'Other'],
-                    datasets: [{
-                        data: [30, 20, 15, 12, 10, 13],
-                        backgroundColor: [
-                            'rgba(0, 123, 255, 0.85)',
-                            'rgba(40, 167, 69, 0.85)',
-                            'rgba(255, 193, 7, 0.85)',
-                            'rgba(111, 66, 193, 0.85)',
-                            'rgba(23, 162, 184, 0.85)',
-                            'rgba(108, 117, 125, 0.85)'
-                        ],
-                        borderWidth: 3,
-                        borderColor: '#ffffff',
-                        hoverBorderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.label}: ${context.parsed}%`;
+
+                // Fetch portfolio data for authenticated users
+                fetch('/AppUserStocks/GetPortfolioSummary')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update summary cards
+                        document.getElementById('portfolioValue').textContent = data.portfolioValue ? '$' + data.portfolioValue.toLocaleString() : '$0';
+                        document.getElementById('totalReturn').textContent = data.totalReturn ? (data.totalReturn >= 0 ? '+' : '') + data.totalReturn.toFixed(2) + '%' : '0%';
+                        document.getElementById('totalHoldings').textContent = data.totalHoldings || '0';
+                        document.getElementById('riskScore').textContent = data.riskScore || 'Low';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching portfolio data:', error);
+                        // Set default values
+                        document.getElementById('portfolioValue').textContent = '$0';
+                        document.getElementById('totalReturn').textContent = '0%';
+                        document.getElementById('totalHoldings').textContent = '0';
+                        document.getElementById('riskScore').textContent = 'N/A';
+                    });
+
+                // Initialize charts after a short delay to ensure DOM is ready
+                setTimeout(function() {
+                    // Check if Highcharts is loaded before using it
+                    if (typeof Highcharts !== 'undefined') {
+                        try {
+                            // Override global dark theme for these charts
+                            const lightTheme = {
+                                chart: {
+                                    backgroundColor: '#ffffff',
+                                    style: {
+                                        fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                    }
+                                },
+                                title: {
+                                    style: {
+                                        color: '#333333'
+                                    }
+                                },
+                                xAxis: {
+                                    labels: {
+                                        style: {
+                                            color: '#666666'
+                                        }
+                                    },
+                                    title: {
+                                        style: {
+                                            color: '#333333'
+                                        }
+                                    }
+                                },
+                                yAxis: {
+                                    labels: {
+                                        style: {
+                                            color: '#666666'
+                                        }
+                                    },
+                                    title: {
+                                        style: {
+                                            color: '#333333'
+                                        }
+                                    }
+                                },
+                                legend: {
+                                    itemStyle: {
+                                        color: '#333333'
+                                    },
+                                    backgroundColor: 'rgba(255, 255, 255, 0.8)'
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(247, 247, 247, 0.95)',
+                                    style: {
+                                        color: '#333333'
+                                    }
+                                }
+                            };
+
+                            // Stock Performance History Chart
+                            if (document.getElementById('stockPerformanceChart')) {
+                                Highcharts.chart('stockPerformanceChart', Highcharts.merge(lightTheme, {
+                            chart: {
+                                type: 'line',
+                                zoomType: 'x'
+                            },
+                            title: {
+                                text: 'Portfolio Performance Over Time'
+                            },
+                            xAxis: {
+                                type: 'datetime'
+                            },
+                            yAxis: {
+                                title: {
+                                    text: 'Portfolio Value ($)'
+                                }
+                            },
+                            tooltip: {
+                                valueDecimals: 2,
+                                valuePrefix: '$'
+                            },
+                            series: [{
+                                name: 'Portfolio Value',
+                                data: generateSampleData(),
+                                color: '#007bff'
+                            }]
+                        }));
+                    }
+
+                    // Portfolio Risk Analysis Chart
+                    if (document.getElementById('portfolioRiskChart')) {
+                        Highcharts.chart('portfolioRiskChart', Highcharts.merge(lightTheme, {
+                    chart: {
+                        type: 'scatter',
+                        zoomType: 'xy'
+                    },
+                    title: {
+                        text: 'Risk vs Return Analysis'
+                    },
+                    xAxis: {
+                        title: {
+                            text: 'Risk (Standard Deviation)'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Expected Return (%)'
+                        }
+                    },
+                    plotOptions: {
+                        scatter: {
+                            marker: {
+                                radius: 5,
+                                states: {
+                                    hover: {
+                                        enabled: true,
+                                        lineColor: 'rgb(100,100,100)'
+                                    }
                                 }
                             }
                         }
                     },
-                    cutout: '60%',
-                    animation: {
-                        animateRotate: true,
-                        animateScale: true
+                    series: [{
+                        name: 'Your Holdings',
+                        color: 'rgba(223, 83, 83, .5)',
+                        data: [[15, 8], [20, 12], [10, 5], [25, 15], [18, 10]]
+                    }, {
+                        name: 'Optimal Portfolio',
+                        color: 'rgba(119, 152, 191, .5)',
+                        data: [[12, 10]]
+                    }]
+                }));
                     }
+
+                    // Portfolio Diversification Chart
+                    if (document.getElementById('portfolioDiversificationChart')) {
+                        Highcharts.chart('portfolioDiversificationChart', Highcharts.merge(lightTheme, {
+                    chart: {
+                        type: 'pie'
+                    },
+                    title: {
+                        text: 'Sector Allocation'
+                    },
+                    tooltip: {
+                        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+                    },
+                    accessibility: {
+                        point: {
+                            valueSuffix: '%'
+                        }
+                    },
+                    plotOptions: {
+                        pie: {
+                            allowPointSelect: true,
+                            cursor: 'pointer',
+                            dataLabels: {
+                                enabled: true,
+                                format: '<b>{point.name}</b>: {point.percentage:.1f} %'
+                            }
+                        }
+                    },
+                    series: [{
+                        name: 'Allocation',
+                        colorByPoint: true,
+                        data: [{
+                            name: 'Technology',
+                            y: 30
+                        }, {
+                            name: 'Healthcare',
+                            y: 20
+                        }, {
+                            name: 'Finance',
+                            y: 15
+                        }, {
+                            name: 'Consumer Goods',
+                            y: 15
+                        }, {
+                            name: 'Energy',
+                            y: 10
+                        }, {
+                            name: 'Other',
+                            y: 10
+                        }]
+                    }]
+                }));
+                    }
+                        } catch (error) {
+                            console.error('Error initializing Highcharts:', error);
+                        }
+                    } else {
+                        console.error('Highcharts library not loaded');
+                    }
+                }, 100); // 100ms delay
+
+                // Helper function to generate sample data
+                function generateSampleData() {
+                    const data = [];
+                    const time = new Date('2022-01-01').getTime();
+                    let value = 10000;
+                    
+                    for (let i = 0; i < 365; i++) {
+                        const change = (Math.random() - 0.48) * 100;
+                        value += change;
+                        data.push([time + i * 24 * 3600 * 1000, parseFloat(value.toFixed(2))]);
+                    }
+                    
+                    return data;
                 }
             });
-            
-        });
-    </script>
+        </script>
+    }
+
 }
