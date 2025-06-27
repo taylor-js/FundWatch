@@ -10,9 +10,9 @@
 <!-- Enhanced Holdings Tab with Quantitative Metrics -->
 <div class="holdings-container">
     <!-- Portfolio Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="metric-card">
+    <div class="row mb-4 g-3">
+        <div class="col-sm-6 col-lg-3">
+            <div class="metric-card h-100">
                 <div class="metric-icon bg-primary">
                     <i class="fas fa-balance-scale"></i>
                 </div>
@@ -26,8 +26,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="metric-card">
+        <div class="col-sm-6 col-lg-3">
+            <div class="metric-card h-100">
                 <div class="metric-icon bg-success">
                     <i class="fas fa-chart-line"></i>
                 </div>
@@ -38,8 +38,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="metric-card">
+        <div class="col-sm-6 col-lg-3">
+            <div class="metric-card h-100">
                 <div class="metric-icon bg-warning">
                     <i class="fas fa-shield-alt"></i>
                 </div>
@@ -50,8 +50,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="metric-card">
+        <div class="col-sm-6 col-lg-3">
+            <div class="metric-card h-100">
                 <div class="metric-icon bg-info">
                     <i class="fas fa-wave-square"></i>
                 </div>
@@ -66,22 +66,26 @@
 
     <!-- Enhanced Holdings Grid -->
     <div class="card shadow">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-briefcase me-2"></i>Holdings with Quantitative Analysis
-            </h5>
-            <div>
-                <button class="btn btn-sm btn-outline-light me-2" onclick="toggleAdvancedColumns()">
-                    <i class="fas fa-columns"></i> Toggle Advanced
-                </button>
-                <a class="btn btn-sm btn-light" href="/AppUserStocks/CreateOrEdit">
-                    <i class="fa-solid fa-plus"></i> Add Stock
-                </a>
+        <div class="card-header bg-dark text-white">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                <h5 class="card-title mb-2 mb-md-0">
+                    <i class="fas fa-briefcase me-2"></i>Holdings with Quantitative Analysis
+                </h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-sm btn-outline-light" onclick="toggleAdvancedColumns()">
+                        <i class="fas fa-columns me-1"></i> 
+                        <span class="d-none d-sm-inline">Toggle Advanced</span>
+                        <span class="d-inline d-sm-none">Advanced</span>
+                    </button>
+                    <a class="btn btn-sm btn-success" href="/AppUserStocks/CreateOrEdit">
+                        <i class="fa-solid fa-plus me-1"></i> Add Stock
+                    </a>
+                </div>
             </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0" id="enhancedHoldingsTable">
+                <table class="table table-hover table-bordered mb-0" id="enhancedHoldingsTable">
                     <thead class="table-dark">
                         <tr>
                             <th>Symbol</th>
@@ -214,16 +218,16 @@
                                     }
                                 </td>
                                 <td class="text-center">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a class="btn btn-outline-primary" href="/AppUserStocks/CreateOrEdit/@stock.Id" title="Edit">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <a class="btn btn-sm btn-outline-primary" href="/AppUserStocks/CreateOrEdit/@stock.Id" title="Edit" data-bs-toggle="tooltip">
                                             <i class="fa-solid fa-pen"></i>
                                         </a>
-                                        <a class="btn btn-outline-info" href="/AppUserStocks/Details/@stock.Id" title="Details">
+                                        <a class="btn btn-sm btn-outline-info" href="/AppUserStocks/Details/@stock.Id" title="Details" data-bs-toggle="tooltip">
                                             <i class="fa-solid fa-chart-line"></i>
                                         </a>
-                                        <form action="/AppUserStocks/Delete/@stock.Id" method="post" class="inline-form">
+                                        <form action="/AppUserStocks/Delete/@stock.Id" method="post" class="d-inline m-0">
                                             @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-danger delete-btn" title="Delete">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger delete-btn" title="Delete" data-bs-toggle="tooltip">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </form>

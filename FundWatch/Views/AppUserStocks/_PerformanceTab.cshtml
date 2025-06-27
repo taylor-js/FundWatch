@@ -274,11 +274,25 @@ else
             <div class="card shadow">
                 <div class="card-body text-center py-5">
                     <i class="fas fa-chart-area fa-4x text-muted mb-3"></i>
-                    <h4>Add Multiple Stocks for Portfolio Optimization</h4>
-                    <p class="text-muted">
-                        Portfolio optimization requires at least 2 stocks with sufficient historical data. 
-                        Add more stocks to see efficient frontier analysis and optimal allocation recommendations.
+                    <h4>Portfolio Optimization Coming Soon</h4>
+                    <p class="text-muted mb-3">
+                        Portfolio optimization requires:
                     </p>
+                    <ul class="list-unstyled text-muted">
+                        <li><i class="fas fa-check-circle text-success me-2"></i>At least 2 stocks in your portfolio</li>
+                        <li><i class="fas fa-clock text-warning me-2"></i>2+ years of historical price data</li>
+                        <li><i class="fas fa-calendar text-info me-2"></i>Regular price updates over time</li>
+                    </ul>
+                    <p class="text-muted mt-3">
+                        The system is currently collecting historical data. Check back in a few days to see 
+                        advanced analytics including efficient frontier, Monte Carlo simulations, and risk metrics.
+                    </p>
+                    @if (Model.UserStocks?.Count < 2)
+                    {
+                        <a href="@Url.Action("CreateOrEdit", "AppUserStocks")" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus me-2"></i>Add More Stocks
+                        </a>
+                    }
                 </div>
             </div>
         </div>

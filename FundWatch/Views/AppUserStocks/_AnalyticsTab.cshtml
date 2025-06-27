@@ -304,11 +304,30 @@ else
             <div class="card shadow">
                 <div class="card-body text-center py-5">
                     <i class="fas fa-wave-square fa-4x text-muted mb-3"></i>
-                    <h4>Insufficient Data for Fourier Analysis</h4>
-                    <p class="text-muted">
-                        Fourier analysis requires at least 2 years of historical data with multiple stocks. 
-                        Add more stocks and allow time for data collection to see advanced cycle analysis.
+                    <h4>Fourier Analysis Coming Soon</h4>
+                    <p class="text-muted mb-3">
+                        Advanced market cycle detection requires:
                     </p>
+                    <ul class="list-unstyled text-muted">
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Multiple stocks in your portfolio</li>
+                        <li><i class="fas fa-clock text-warning me-2"></i>2+ years of historical price data</li>
+                        <li><i class="fas fa-sync text-info me-2"></i>Continuous price updates to detect patterns</li>
+                    </ul>
+                    <p class="text-muted mt-3">
+                        Once sufficient data is collected, you'll see:
+                    </p>
+                    <ul class="list-unstyled text-muted small">
+                        <li><i class="fas fa-chart-line me-2"></i>Hidden market cycles and patterns</li>
+                        <li><i class="fas fa-network-wired me-2"></i>Correlation analysis between holdings</li>
+                        <li><i class="fas fa-crystal-ball me-2"></i>Cycle-based price predictions</li>
+                        <li><i class="fas fa-exclamation-triangle me-2"></i>Turning point detection</li>
+                    </ul>
+                    @if (Model.UserStocks?.Count < 2)
+                    {
+                        <a href="@Url.Action("CreateOrEdit", "AppUserStocks")" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus me-2"></i>Add More Stocks
+                        </a>
+                    }
                 </div>
             </div>
         </div>
