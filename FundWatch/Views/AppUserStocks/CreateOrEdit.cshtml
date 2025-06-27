@@ -1144,6 +1144,37 @@
             if (stockSymbolDropdown && stockSymbolDropdown.value) {
                 updatePrices();
             }
+            
+            // Mobile dropdown fix
+            if (window.innerWidth <= 768 && stockSymbolDropdown) {
+                var scrollPosition = 0;
+                
+                // When dropdown opens
+                stockSymbolDropdown.open = function(args) {
+                    if (window.innerWidth <= 768) {
+                        scrollPosition = window.pageYOffset;
+                        document.body.classList.add('e-ddl-popup-open');
+                        document.body.style.top = `-${scrollPosition}px`;
+                    }
+                };
+                
+                // When dropdown closes
+                stockSymbolDropdown.close = function(args) {
+                    if (document.body.classList.contains('e-ddl-popup-open')) {
+                        document.body.classList.remove('e-ddl-popup-open');
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        window.scrollTo(0, scrollPosition);
+                    }
+                };
+                
+                // Prevent scroll propagation when dropdown is open
+                stockSymbolDropdown.filtering = function(args) {
+                    if (window.innerWidth <= 768) {
+                        args.preventDefaultAction = false;
+                    }
+                };
+            }
         }
         });
     </script>
