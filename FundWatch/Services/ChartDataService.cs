@@ -91,7 +91,7 @@ namespace FundWatch.Services
                                 {
                                     decimal shares = stock.NumberOfSharesPurchased - 
                                         (stock.DateSold.HasValue && stock.DateSold <= lastDayOfMonth 
-                                            ? (decimal)stock.NumberOfSharesSold
+                                            ? (decimal)(stock.NumberOfSharesSold ?? 0)
                                             : 0);
                                             
                                     portfolioStartValue += startPrice * shares;
@@ -223,7 +223,7 @@ namespace FundWatch.Services
                             if (startPoint != null && endPoint != null)
                             {
                                 decimal shares = stock.NumberOfSharesPurchased - 
-                                    (stock.DateSold.HasValue ? (decimal)stock.NumberOfSharesSold : 0);
+                                    (stock.DateSold.HasValue ? (decimal)(stock.NumberOfSharesSold ?? 0) : 0);
                                     
                                 portfolioStartValue += startPoint.Close * shares;
                                 portfolioCurrentValue += endPoint.Close * shares;
@@ -385,7 +385,7 @@ namespace FundWatch.Services
                                 // If stock was sold on this date, adjust shares
                                 if (stock.DateSold.HasValue && stock.DateSold.Value.Date == date.Date)
                                 {
-                                    shares -= (decimal)stock.NumberOfSharesSold;
+                                    shares -= (decimal)(stock.NumberOfSharesSold ?? 0);
                                 }
                                 
                                 portfolioValue += pricePoint.Close * shares;
@@ -1003,7 +1003,7 @@ namespace FundWatch.Services
                             // SALE ADJUSTMENT: If stock was sold on this exact date, adjust share count
                             if (stock.DateSold.HasValue && stock.DateSold.Value.Date == date)
                             {
-                                shares -= (decimal)stock.NumberOfSharesSold;
+                                shares -= (decimal)(stock.NumberOfSharesSold ?? 0);
                             }
                             
                             // VALUE ACCUMULATION: Add this stock's value to total portfolio value
