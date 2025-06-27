@@ -140,6 +140,15 @@ body.has-hero .main-content {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Remove styling from Price History chart in Details view */
+#priceHistoryChart.chart-container-400 {
+    background-color: transparent;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+}
+
 /* Card styling for dark theme */
 .card {
     background-color: rgba(32, 34, 46, 0.8);
