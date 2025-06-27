@@ -2068,21 +2068,26 @@ button[type="submit"] {
 
     .hero-text .lead {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         margin-bottom: 1.5rem;
-        align-items: center;
-        white-space: nowrap;
     }
 
-        .hero-text .lead p {
-            margin-bottom: 0.5rem;
+        .hero-text .lead > div {
             display: flex;
             align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
         }
 
         .hero-text .lead i {
             width: 24px;
             color: #4361ee;
+            flex-shrink: 0;
+        }
+        
+        .hero-text .lead span {
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
     /* Responsive font sizing for hero lead text */
@@ -2483,6 +2488,11 @@ button[type="submit"] {
 
     .hero-text .lead p {
         justify-content: center;
+    }
+    
+    /* Center hero lead items on mobile */
+    .hero-lead-item {
+        justify-content: center !important;
     }
     
     .hero-buttons .btn {
