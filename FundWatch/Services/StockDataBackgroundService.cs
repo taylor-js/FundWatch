@@ -63,17 +63,15 @@ namespace FundWatch.Services
 
             if (!symbols.Any()) return;
 
-            // Process data types sequentially to avoid exceeding API limits
-            await UpdatePriceCache(stockService, symbols, stoppingToken);
+            // Process data types in parallel with proper throttling
+            var tasks = new List<Task>
+            {
+                UpdatePriceCache(stockService, symbols, stoppingToken),
+                UpdateCompanyDetailsCache(stockService, symbols, stoppingToken),
+                UpdateHistoryCache(stockService, symbols, stoppingToken)
+            };
             
-            // Introduce delay between different types of API requests
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-            
-            await UpdateCompanyDetailsCache(stockService, symbols, stoppingToken);
-            
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-            
-            await UpdateHistoryCache(stockService, symbols, stoppingToken);
+            await Task.WhenAll(tasks);
         }
         private async Task UpdatePriceCache(StockService stockService, List<string> symbols, CancellationToken stoppingToken)
         {

@@ -265,10 +265,17 @@ else
             <!-- Stock Performance History Chart -->
             <div class="col-lg-12 mb-4">
                 <div class="card shadow-sm border-0">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-chart-area me-2"></i>Stock Performance History
                         </h5>
+                        <div class="btn-group" role="group" aria-label="Date range selector">
+                            <button type="button" class="btn btn-sm btn-outline-light" data-range="1M">1M</button>
+                            <button type="button" class="btn btn-sm btn-outline-light" data-range="3M">3M</button>
+                            <button type="button" class="btn btn-sm btn-outline-light" data-range="6M">6M</button>
+                            <button type="button" class="btn btn-sm btn-outline-light" data-range="1Y">1Y</button>
+                            <button type="button" class="btn btn-sm btn-outline-light active" data-range="5Y">5Y</button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <p class="text-muted mb-3">Track the historical performance of your portfolio holdings over time</p>
@@ -625,34 +632,135 @@ else
                             };
 
                             // Stock Performance History Chart
+                            let stockPerformanceChart = null;
+                            let currentRange = '5Y'; // Default to 5 years
+                            let portfolioStartDate = new Date('2020-01-01'); // This will be set from actual user data
+                            
                             if (document.getElementById('stockPerformanceChart')) {
-                                Highcharts.chart('stockPerformanceChart', Highcharts.merge(lightTheme, {
-                            chart: {
-                                type: 'line',
-                                zoomType: 'x'
-                            },
-                            title: {
-                                text: 'Portfolio Performance Over Time'
-                            },
-                            xAxis: {
-                                type: 'datetime'
-                            },
-                            yAxis: {
-                                title: {
-                                    text: 'Portfolio Value ($)'
+                                // Initialize the chart
+                                function initStockPerformanceChart(days) {
+                                    const chartConfig = Highcharts.merge(lightTheme, {
+                                        chart: {
+                                            type: 'line',
+                                            zoomType: 'x'
+                                        },
+                                        title: {
+                                            text: 'Portfolio Performance Over Time'
+                                        },
+                                        xAxis: {
+                                            type: 'datetime',
+                                            dateTimeLabelFormats: {
+                                                month: '%b %y',
+                                                year: '%Y'
+                                            }
+                                        },
+                                        yAxis: {
+                                            title: {
+                                                text: 'Portfolio Value ($)'
+                                            }
+                                        },
+                                        tooltip: {
+                                            valueDecimals: 2,
+                                            valuePrefix: '$'
+                                        },
+                                        series: [{
+                                            name: 'Portfolio Value',
+                                            data: generateSampleDataForRange(days),
+                                            color: '#007bff'
+                                        }]
+                                    });
+                                    
+                                    if (stockPerformanceChart) {
+                                        stockPerformanceChart.destroy();
+                                    }
+                                    
+                                    stockPerformanceChart = Highcharts.chart('stockPerformanceChart', chartConfig);
                                 }
-                            },
-                            tooltip: {
-                                valueDecimals: 2,
-                                valuePrefix: '$'
-                            },
-                            series: [{
-                                name: 'Portfolio Value',
-                                data: generateSampleData(),
-                                color: '#007bff'
-                            }]
-                        }));
-                    }
+                                
+                                // Generate sample data for specific date range
+                                function generateSampleDataForRange(days) {
+                                    const data = [];
+                                    const endDate = new Date();
+                                    const startDate = new Date();
+                                    startDate.setDate(endDate.getDate() - days);
+                                    
+                                    // Ensure we don't go before portfolio start date
+                                    if (startDate < portfolioStartDate) {
+                                        startDate.setTime(portfolioStartDate.getTime());
+                                    }
+                                    
+                                    const actualDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+                                    let value = 10000;
+                                    
+                                    for (let i = 0; i <= actualDays; i++) {
+                                        const currentDate = new Date(startDate);
+                                        currentDate.setDate(startDate.getDate() + i);
+                                        
+                                        // Skip weekends for more realistic data
+                                        if (currentDate.getDay() === 0 || currentDate.getDay() === 6) continue;
+                                        
+                                        const change = (Math.random() - 0.48) * 100;
+                                        value += change;
+                                        data.push([currentDate.getTime(), parseFloat(value.toFixed(2))]);
+                                    }
+                                    
+                                    return data;
+                                }
+                                
+                                // Initialize with 5 year view (or from purchase date)
+                                initStockPerformanceChart(1825); // 5 years
+                                
+                                // Handle date range button clicks
+                                document.querySelectorAll('[data-range]').forEach(button => {
+                                    button.addEventListener('click', function() {
+                                        // Update active button
+                                        document.querySelectorAll('[data-range]').forEach(btn => {
+                                            btn.classList.remove('active');
+                                        });
+                                        this.classList.add('active');
+                                        
+                                        // Update chart based on selected range
+                                        const range = this.getAttribute('data-range');
+                                        let days;
+                                        
+                                        switch(range) {
+                                            case '1M':
+                                                days = 30;
+                                                break;
+                                            case '3M':
+                                                days = 90;
+                                                break;
+                                            case '6M':
+                                                days = 180;
+                                                break;
+                                            case '1Y':
+                                                days = 365;
+                                                break;
+                                            case '5Y':
+                                            default:
+                                                days = 1825;
+                                                break;
+                                        }
+                                        
+                                        currentRange = range;
+                                        initStockPerformanceChart(days);
+                                    });
+                                });
+                                
+                                // Fetch actual portfolio data to get the earliest purchase date
+                                fetch('/AppUserStocks/GetPortfolioDateRange')
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.earliestPurchaseDate) {
+                                            portfolioStartDate = new Date(data.earliestPurchaseDate);
+                                            // Refresh the chart with actual date range
+                                            document.querySelector('[data-range="' + currentRange + '"]').click();
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error fetching portfolio date range:', error);
+                                    });
+                            }
 
                     // Portfolio Risk Analysis Chart
                     if (document.getElementById('portfolioRiskChart')) {
@@ -758,21 +866,6 @@ else
                         console.error('Highcharts library not loaded');
                     }
                 }, 100); // 100ms delay
-
-                // Helper function to generate sample data
-                function generateSampleData() {
-                    const data = [];
-                    const time = new Date('2022-01-01').getTime();
-                    let value = 10000;
-                    
-                    for (let i = 0; i < 365; i++) {
-                        const change = (Math.random() - 0.48) * 100;
-                        value += change;
-                        data.push([time + i * 24 * 3600 * 1000, parseFloat(value.toFixed(2))]);
-                    }
-                    
-                    return data;
-                }
             });
         </script>
     }

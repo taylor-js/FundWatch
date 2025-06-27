@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using FundWatch.Models;
@@ -114,7 +115,10 @@ namespace FundWatch.Services
             var expirationDates = new[] { 30, 60, 90, 120, 180, 365 }; // Days to expiration
             var strikeMultipliers = new[] { 0.85, 0.90, 0.95, 0.97, 0.99, 1.00, 1.01, 1.03, 1.05, 1.10, 1.15 };
 
-            foreach (var daysToExpiry in expirationDates.Take(3)) // Focus on near-term for overview
+            var optionChainItems = new ConcurrentBag<OptionChainItem>();
+
+            // Process expiration dates in parallel
+            Parallel.ForEach(expirationDates.Take(3), daysToExpiry => // Focus on near-term for overview
             {
                 var timeToExpiry = daysToExpiry / 365.0;
                 
@@ -157,10 +161,13 @@ namespace FundWatch.Services
 
                     if (daysToExpiry == 30) // Only add to main chain for 30-day options
                     {
-                        result.OptionChain.Add(chainItem);
+                        optionChainItems.Add(chainItem);
                     }
                 }
-            }
+            });
+
+            // Sort and assign the option chain
+            result.OptionChain = optionChainItems.OrderBy(o => o.StrikePrice).ToList();
 
             // Calculate volatility smile
             result.VolatilitySmile = BlackScholesModel.CalculateVolatilitySmile(
@@ -225,7 +232,8 @@ namespace FundWatch.Services
                 ImpliedVols = new double[strikeMultipliers.Length, expirationDays.Length]
             };
 
-            for (int i = 0; i < strikeMultipliers.Length; i++)
+            // Parallel processing for volatility surface generation
+            Parallel.For(0, strikeMultipliers.Length, i =>
             {
                 for (int j = 0; j < expirationDays.Length; j++)
                 {
@@ -241,7 +249,7 @@ namespace FundWatch.Services
                     
                     surface.ImpliedVols[i, j] = baseVol * termStructure * (1 + smile);
                 }
-            }
+            });
 
             return surface;
         }

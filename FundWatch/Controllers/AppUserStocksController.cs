@@ -417,19 +417,14 @@ namespace FundWatch.Controllers
 
             if (uncachedSymbols.Any())
             {
-                // Process in smaller batches to avoid overloading
-                const int batchSize = 3;
-                for (int i = 0; i < uncachedSymbols.Count; i += batchSize)
+                // Process all symbols at once - StockService now handles concurrent API calls efficiently
+                var history = await _stockService.GetRealTimeDataAsync(uncachedSymbols, 1825);
+                
+                foreach (var (symbol, data) in history)
                 {
-                    var batch = uncachedSymbols.Skip(i).Take(batchSize).ToList();
-                    var history = await _stockService.GetRealTimeDataAsync(batch, 1825);
-                    
-                    foreach (var (symbol, data) in history)
-                    {
-                        result[symbol] = data;
-                        // Cache for 24 hours
-                        _cache.Set($"History_{symbol}", data, TimeSpan.FromHours(24));
-                    }
+                    result[symbol] = data;
+                    // Cache for 24 hours
+                    _cache.Set($"History_{symbol}", data, TimeSpan.FromHours(24));
                 }
             }
 
@@ -478,8 +473,14 @@ namespace FundWatch.Controllers
 
             try
             {
-                var companyDetails = await _stockService.GetCompanyDetailsAsync(new List<string> { stock.StockSymbol });
-                var historicalData = await _stockService.GetRealTimeDataAsync(new List<string> { stock.StockSymbol }, 1825); // 5 years
+                // Fetch company details and historical data in parallel
+                var companyDetailsTask = _stockService.GetCompanyDetailsAsync(new List<string> { stock.StockSymbol });
+                var historicalDataTask = _stockService.GetRealTimeDataAsync(new List<string> { stock.StockSymbol }, 1825); // 5 years
+
+                await Task.WhenAll(companyDetailsTask, historicalDataTask);
+
+                var companyDetails = await companyDetailsTask;
+                var historicalData = await historicalDataTask;
 
                 var viewModel = new Models.ViewModels.StockDetailsViewModel
                 {
@@ -1618,6 +1619,53 @@ namespace FundWatch.Controllers
                     totalReturn = 0m,
                     totalHoldings = 0,
                     riskScore = "N/A"
+                });
+            }
+        }
+
+        // GET: AppUserStocks/GetPortfolioDateRange
+        [HttpGet]
+        public async Task<IActionResult> GetPortfolioDateRange()
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new
+                    {
+                        earliestPurchaseDate = DateTime.Now.AddYears(-5),
+                        success = false
+                    });
+                }
+
+                var earliestStock = await _context.UserStocks
+                    .Where(s => s.UserId == userId)
+                    .OrderBy(s => s.DatePurchased)
+                    .FirstOrDefaultAsync();
+
+                if (earliestStock == null)
+                {
+                    return Json(new
+                    {
+                        earliestPurchaseDate = DateTime.Now.AddYears(-5),
+                        success = false
+                    });
+                }
+
+                return Json(new
+                {
+                    earliestPurchaseDate = earliestStock.DatePurchased,
+                    success = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting portfolio date range");
+                return Json(new
+                {
+                    earliestPurchaseDate = DateTime.Now.AddYears(-5),
+                    success = false
                 });
             }
         }

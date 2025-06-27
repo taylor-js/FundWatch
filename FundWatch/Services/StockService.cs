@@ -105,6 +105,8 @@ namespace FundWatch.Services
         private const int MAX_RETRIES = 3;
         private const int CACHE_DURATION_MINUTES = 60; // Increased from 15 minutes to 1 hour
         private readonly RateLimitingHandler _rateLimiter; // Add this field
+        private readonly SemaphoreSlim _apiSemaphore; // For concurrent API calls
+        private readonly int _maxConcurrentApiCalls = 3; // Configurable concurrent calls
 
         public StockService(
     IHttpClientFactory clientFactory,
@@ -127,6 +129,7 @@ namespace FundWatch.Services
             }
             
             _rateLimiter = new RateLimitingHandler(); // Initialize RateLimiter
+            _apiSemaphore = new SemaphoreSlim(_maxConcurrentApiCalls, _maxConcurrentApiCalls);
         }
 
         public class RateLimitingHandler
@@ -186,16 +189,8 @@ namespace FundWatch.Services
             var tomorrow = today.AddDays(1); // Include tomorrow to ensure today's data is included
             var startDate = today.AddDays(-daysBack);
 
-            // Group symbols into manageable batches
-            var batchedSymbols = stockSymbols
-                .Select((symbol, index) => new { symbol, index })
-                .GroupBy(x => x.index / MAX_BATCH_SIZE)
-                .Select(g => g.Select(x => x.symbol).ToList())
-                .ToList();
-
-            foreach (var batch in batchedSymbols)
-            {
-                var tasks = batch.Select(async symbol =>
+            // Process all symbols concurrently with semaphore throttling
+            var tasks = stockSymbols.Select(async symbol =>
                 {
                     var cacheKey = $"HistoricalData_{symbol}_{daysBack}";
                     if (_cache.TryGetValue(cacheKey, out List<StockDataPoint>? cachedData) && cachedData != null)
@@ -218,14 +213,19 @@ namespace FundWatch.Services
 
                             _logger.LogInformation($"Fetching chunk for {symbol}: {chunkStart:yyyy-MM-dd} to {chunkEnd:yyyy-MM-dd}");
 
-                            var chunkData = await FetchHistoricalDataAsync(symbol, chunkStart, chunkEnd);
-                            if (chunkData != null && chunkData.Any())
+                            await _apiSemaphore.WaitAsync();
+                            try
                             {
-                                allData.AddRange(chunkData);
+                                var chunkData = await FetchHistoricalDataAsync(symbol, chunkStart, chunkEnd);
+                                if (chunkData != null && chunkData.Any())
+                                {
+                                    allData.AddRange(chunkData);
+                                }
                             }
-
-                            // Add a small delay between chunks to avoid rate limiting
-                            await Task.Delay(500);
+                            finally
+                            {
+                                _apiSemaphore.Release();
+                            }
                         }
 
                         if (allData.Any())
@@ -244,8 +244,7 @@ namespace FundWatch.Services
                     }
                 });
 
-                await Task.WhenAll(tasks);
-            }
+            await Task.WhenAll(tasks);
 
             return result;
         }
@@ -440,11 +439,11 @@ namespace FundWatch.Services
                 return new Dictionary<string, decimal>();
             }
 
-            var prices = new Dictionary<string, decimal>();
+            var prices = new ConcurrentDictionary<string, decimal>();
             var distinctSymbols = stockSymbols.Distinct().ToList();
 
-            // Process one at a time but with longer cache duration since we only need daily closing prices
-            foreach (var symbol in distinctSymbols)
+            // Process symbols concurrently
+            var tasks = distinctSymbols.Select(async symbol =>
             {
                 try
                 {
@@ -453,40 +452,50 @@ namespace FundWatch.Services
                     if (_cache.TryGetValue(cacheKey, out decimal cachedPrice))
                     {
                         prices[symbol] = cachedPrice;
-                        continue;
+                        return;
                     }
 
-                    await _rateLimiter.WaitForAvailableSlotAsync();
-
-                    var url = $"/v2/aggs/ticker/{symbol}/prev";
-                    var response = await SendApiRequestAsync(url);
-                    if (response == null) continue;
-
-                    var result = response["results"]?.FirstOrDefault();
-                    if (result != null)
+                    await _apiSemaphore.WaitAsync();
+                    try
                     {
-                        var price = result["c"]?.Value<decimal>() ?? 0;
-                        if (price > 0)
-                        {
-                            prices[symbol] = price;
+                        await _rateLimiter.WaitForAvailableSlotAsync();
 
-                            // Cache until next trading day (roughly)
-                            var cacheOptions = new MemoryCacheEntryOptions()
-                                .SetAbsoluteExpiration(GetNextTradingDay())
-                                .SetSlidingExpiration(TimeSpan.FromHours(12)); // Increased from 8 hours
-                            _cache.Set(cacheKey, price, cacheOptions);
-                            // Cache with a consistent key format across the app
-                            _cache.Set($"Price_{symbol}", price, cacheOptions);
+                        var url = $"/v2/aggs/ticker/{symbol}/prev";
+                        var response = await SendApiRequestAsync(url);
+                        if (response == null) return;
+
+                        var result = response["results"]?.FirstOrDefault();
+                        if (result != null)
+                        {
+                            var price = result["c"]?.Value<decimal>() ?? 0;
+                            if (price > 0)
+                            {
+                                prices[symbol] = price;
+
+                                // Cache until next trading day (roughly)
+                                var cacheOptions = new MemoryCacheEntryOptions()
+                                    .SetAbsoluteExpiration(GetNextTradingDay())
+                                    .SetSlidingExpiration(TimeSpan.FromHours(12)); // Increased from 8 hours
+                                _cache.Set(cacheKey, price, cacheOptions);
+                                // Cache with a consistent key format across the app
+                                _cache.Set($"Price_{symbol}", price, cacheOptions);
+                            }
                         }
+                    }
+                    finally
+                    {
+                        _apiSemaphore.Release();
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error fetching daily closing price for {Symbol}", symbol);
                 }
-            }
+            });
 
-            return prices;
+            await Task.WhenAll(tasks);
+
+            return new Dictionary<string, decimal>(prices);
         }
 
         // Method to preload data for a specific user
@@ -528,9 +537,10 @@ namespace FundWatch.Services
                 return new Dictionary<string, CompanyDetails>();
             }
 
-            var details = new Dictionary<string, CompanyDetails>();
+            var details = new ConcurrentDictionary<string, CompanyDetails>();
 
-            foreach (var symbol in symbols)
+            // Process symbols concurrently
+            var tasks = symbols.Select(async symbol =>
             {
                 try
                 {
@@ -538,17 +548,21 @@ namespace FundWatch.Services
                     if (_cache.TryGetValue(cacheKey, out CompanyDetails? cachedDetails) && cachedDetails != null)
                     {
                         details[symbol] = cachedDetails;
-                        continue;
+                        return;
                     }
 
-                    var url = $"/v3/reference/tickers/{symbol}";
-                    _logger.LogInformation("Fetching details for {Symbol} from {Url}", symbol, url);
+                    await _apiSemaphore.WaitAsync();
+                    try
+                    {
+                        var url = $"/v3/reference/tickers/{symbol}";
+                        _logger.LogInformation("Fetching details for {Symbol} from {Url}", symbol, url);
 
-                    var response = await SendApiRequestAsync(url);
+                        await _rateLimiter.WaitForAvailableSlotAsync();
+                        var response = await SendApiRequestAsync(url);
                     if (response == null)
                     {
                         _logger.LogWarning("No response received for {Symbol}", symbol);
-                        continue;
+                        return;
                     }
 
                     // Debug log the raw JSON
@@ -580,11 +594,10 @@ namespace FundWatch.Services
                             }
                         };
 
-                        // Try to fetch recent news for this company
-                        _ = FetchCompanyNewsAsync(symbol, companyDetails);
-
-                        // Try to fetch daily change data
-                        await FetchDailyChangeAsync(symbol, companyDetails);
+                        // Try to fetch recent news and daily change in parallel
+                        var newsTask = FetchCompanyNewsAsync(symbol, companyDetails);
+                        var changeTask = FetchDailyChangeAsync(symbol, companyDetails);
+                        await Task.WhenAll(newsTask, changeTask);
 
                         _logger.LogInformation("Fetched company details for {Symbol}: {@CompanyDetails}",
                             symbol, new
@@ -607,14 +620,21 @@ namespace FundWatch.Services
                     {
                         _logger.LogWarning("No results found in response for {Symbol}", symbol);
                     }
+                    }
+                    finally
+                    {
+                        _apiSemaphore.Release();
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error fetching company details for {Symbol}", symbol);
                 }
-            }
+            });
 
-            return details;
+            await Task.WhenAll(tasks);
+
+            return new Dictionary<string, CompanyDetails>(details);
         }
 
         // Safe helper method to get string values

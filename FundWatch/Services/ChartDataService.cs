@@ -53,9 +53,10 @@ namespace FundWatch.Services
                 var historicalData = await _stockService.GetRealTimeDataAsync(symbols, 200); // ~6 months of trading days
 
                 // Calculate monthly performance data
-                var monthlyData = new List<MonthlyPerformanceData>();
+                var monthlyData = new ConcurrentBag<MonthlyPerformanceData>();
 
-                foreach (var month in months)
+                // Process months in parallel
+                Parallel.ForEach(months, month =>
                 {
                     var firstDayOfMonth = new DateTime(month.Year, month.Month, 1);
                     var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
@@ -138,12 +139,15 @@ namespace FundWatch.Services
                         PortfolioPerformance = portfolioPerformance,
                         BenchmarkPerformance = benchmarkPerformance
                     });
-                }
+                });
+
+                // Sort the data by month order
+                var sortedMonthlyData = monthlyData.OrderBy(m => months.FindIndex(d => d.ToString("MMM") == m.Month)).ToList();
 
                 // Cache the data
-                _cache.Set(cacheKey, monthlyData, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                _cache.Set(cacheKey, sortedMonthlyData, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
 
-                return monthlyData;
+                return sortedMonthlyData;
             }
             catch (Exception ex)
             {
@@ -182,9 +186,10 @@ namespace FundWatch.Services
                 // Fetch historical data for all stocks
                 var historicalData = await _stockService.GetRealTimeDataAsync(symbols, 1095); // 3 years
 
-                var rollingReturns = new List<RollingReturnsData>();
+                var rollingReturns = new ConcurrentBag<RollingReturnsData>();
 
-                foreach (var period in periods)
+                // Process periods in parallel
+                Parallel.ForEach(periods, period =>
                 {
                     var startDate = currentDate.AddDays(-period.Value);
                     
@@ -257,12 +262,18 @@ namespace FundWatch.Services
                         PortfolioReturn = portfolioReturn,
                         BenchmarkReturn = benchmarkReturn
                     });
-                }
+                });
+
+                // Sort by predefined period order
+                var periodOrder = new[] { "1M", "3M", "6M", "1Y", "3Y" };
+                var sortedRollingReturns = rollingReturns
+                    .OrderBy(r => Array.IndexOf(periodOrder, r.TimePeriod))
+                    .ToList();
 
                 // Cache the data
-                _cache.Set(cacheKey, rollingReturns, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                _cache.Set(cacheKey, sortedRollingReturns, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
 
-                return rollingReturns;
+                return sortedRollingReturns;
             }
             catch (Exception ex)
             {
@@ -464,10 +475,10 @@ namespace FundWatch.Services
                     historicalData[pair.Key] = pair.Value;
                 }
                 
-                var riskMetrics = new List<RiskAnalysisData>();
+                var riskMetrics = new ConcurrentBag<RiskAnalysisData>();
                 
-                // Calculate metrics for each stock
-                foreach (var stock in userStocks)
+                // Calculate metrics for each stock in parallel
+                Parallel.ForEach(userStocks, stock =>
                 {
                     if (historicalData.TryGetValue(stock.StockSymbol, out var stockData) && 
                         historicalData.TryGetValue("SPY", out var benchmarkData) &&
@@ -502,7 +513,7 @@ namespace FundWatch.Services
                             MaxDrawdown = Math.Round(maxDrawdown * 100, 2) // Convert to percentage
                         });
                     }
-                }
+                });
                 
                 // Also calculate portfolio-level risk metrics
                 if (userStocks.Any() && historicalData.TryGetValue("SPY", out var spyData))
@@ -526,7 +537,9 @@ namespace FundWatch.Services
                             
                         decimal maxDrawdown = CalculateMaxDrawdownFromValues(portfolioValues);
                         
-                        riskMetrics.Insert(0, new RiskAnalysisData
+                        // Convert to list and add portfolio at the beginning
+                        var riskMetricsList = riskMetrics.ToList();
+                        riskMetricsList.Insert(0, new RiskAnalysisData
                         {
                             Symbol = "Portfolio",
                             Volatility = Math.Round(volatility * 100, 2),
@@ -534,13 +547,19 @@ namespace FundWatch.Services
                             SharpeRatio = Math.Round(sharpeRatio, 2),
                             MaxDrawdown = Math.Round(maxDrawdown * 100, 2)
                         });
+                        
+                        // Cache the data
+                        _cache.Set(cacheKey, riskMetricsList, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                        
+                        return riskMetricsList;
                     }
                 }
                 
-                // Cache the data
-                _cache.Set(cacheKey, riskMetrics, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                // If no portfolio-level metrics, return the individual stock metrics
+                var sortedRiskMetrics = riskMetrics.OrderBy(r => r.Symbol).ToList();
+                _cache.Set(cacheKey, sortedRiskMetrics, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
                 
-                return riskMetrics;
+                return sortedRiskMetrics;
             }
             catch (Exception ex)
             {
@@ -572,8 +591,9 @@ namespace FundWatch.Services
                 var companyDetails = await companyDetailsTask;
                 var prices = await pricesTask;
 
-                // Group by industry and calculate total value  
+                // Group by industry and calculate total value using PLINQ
                 var industryGroups = userStocks
+                    .AsParallel()
                     .Where(stock =>
                     {
                         var sharesOwned = stock.NumberOfSharesPurchased - (stock.NumberOfSharesSold ?? 0);
