@@ -317,6 +317,10 @@ else
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Analytics tab DOM loaded');
+    console.log('Has Fourier analysis: @hasFourierAnalysis');
+    console.log('Fourier analysis: @(Model.FourierAnalysis != null ? "Available" : "Not available")');
+    
     @if (hasFourierAnalysis)
     {
         <text>
@@ -325,6 +329,74 @@ document.addEventListener('DOMContentLoaded', function() {
         var decomposition = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.Decomposition));
         var predictions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.FourierPrediction));
         var marketCycles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.MarketCycles));
+        
+        // Light theme configuration for charts
+        var lightTheme = {
+            chart: {
+                backgroundColor: '#ffffff',
+                borderRadius: 8,
+                style: {
+                    fontFamily: 'Roboto, sans-serif'
+                }
+            },
+            title: {
+                style: {
+                    color: '#333333',
+                    fontSize: '18px',
+                    fontWeight: '600'
+                }
+            },
+            subtitle: {
+                style: {
+                    color: '#666666'
+                }
+            },
+            xAxis: {
+                gridLineColor: '#e0e0e0',
+                labels: {
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                title: {
+                    style: {
+                        color: '#333333',
+                        fontSize: '14px'
+                    }
+                },
+                lineColor: '#cccccc'
+            },
+            yAxis: {
+                gridLineColor: '#e0e0e0',
+                labels: {
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                title: {
+                    style: {
+                        color: '#333333',
+                        fontSize: '14px'
+                    }
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: '#cccccc',
+                style: {
+                    color: '#333333'
+                }
+            },
+            legend: {
+                backgroundColor: '#ffffff',
+                itemStyle: {
+                    color: '#333333'
+                },
+                itemHoverStyle: {
+                    color: '#000000'
+                }
+            }
+        };
         
         // 1. Power Spectrum Chart
         if (document.getElementById('powerSpectrumChart') && powerSpectrum) {

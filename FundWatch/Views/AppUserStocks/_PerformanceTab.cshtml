@@ -287,6 +287,17 @@ else
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Performance tab DOM loaded');
+    console.log('Has optimization data: @hasOptimization');
+    console.log('Portfolio optimization: @(Model.PortfolioOptimization != null ? "Available" : "Not available")');
+    @if (Model.PortfolioOptimization != null)
+    {
+        <text>
+        console.log('Efficient Frontier points: @(optimization.EfficientFrontier?.Count ?? 0)');
+        console.log('Monte Carlo simulations: @(optimization.MonteCarloSimulations?.Count ?? 0)');
+        </text>
+    }
+    
     @if (hasOptimization)
     {
         <text>
@@ -296,6 +307,74 @@ document.addEventListener('DOMContentLoaded', function() {
         var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio));
         var monteCarloResults = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations.Take(100))); // Sample for performance
         
+        // Light theme configuration for charts
+        var lightTheme = {
+            chart: {
+                backgroundColor: '#ffffff',
+                borderRadius: 8,
+                style: {
+                    fontFamily: 'Roboto, sans-serif'
+                }
+            },
+            title: {
+                style: {
+                    color: '#333333',
+                    fontSize: '18px',
+                    fontWeight: '600'
+                }
+            },
+            subtitle: {
+                style: {
+                    color: '#666666'
+                }
+            },
+            xAxis: {
+                gridLineColor: '#e0e0e0',
+                labels: {
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                title: {
+                    style: {
+                        color: '#333333',
+                        fontSize: '14px'
+                    }
+                },
+                lineColor: '#cccccc'
+            },
+            yAxis: {
+                gridLineColor: '#e0e0e0',
+                labels: {
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                title: {
+                    style: {
+                        color: '#333333',
+                        fontSize: '14px'
+                    }
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: '#cccccc',
+                style: {
+                    color: '#333333'
+                }
+            },
+            legend: {
+                backgroundColor: '#ffffff',
+                itemStyle: {
+                    color: '#333333'
+                },
+                itemHoverStyle: {
+                    color: '#000000'
+                }
+            }
+        };
+        
         // 1. Efficient Frontier Chart
         if (document.getElementById('efficientFrontierChart')) {
             var frontierData = efficientFrontier.map(p => ({
@@ -304,10 +383,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 sharpe: p.SharpeRatio
             }));
             
-            Highcharts.chart('efficientFrontierChart', {
+            Highcharts.chart('efficientFrontierChart', Highcharts.merge(lightTheme, {
                 chart: {
-                    type: 'scatter',
-                    backgroundColor: '#ffffff'
+                    type: 'scatter'
                 },
                 title: {
                     text: 'Risk vs Return Analysis'
@@ -390,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         text: 'Optimal'
                     }]
                 }]
-            });
+            }));
         }
         
         // 2. Monte Carlo Fan Chart
@@ -408,10 +486,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 categories.push('Q' + Math.floor(i / 63));
             }
             
-            Highcharts.chart('monteCarloChart', {
+            Highcharts.chart('monteCarloChart', Highcharts.merge(lightTheme, {
                 chart: {
-                    type: 'arearange',
-                    backgroundColor: '#f8f9fa'
+                    type: 'arearange'
                 },
                 title: {
                     text: 'Portfolio Value Projections'
@@ -461,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     color: '#212529',
                     marker: { enabled: false }
                 }]
-            });
+            }));
         }
         
         // 3. Outcome Distribution
@@ -483,10 +560,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            Highcharts.chart('outcomeDistribution', {
+            Highcharts.chart('outcomeDistribution', Highcharts.merge(lightTheme, {
                 chart: {
-                    type: 'column',
-                    backgroundColor: '#ffffff'
+                    type: 'column'
                 },
                 title: {
                     text: 'Final Value Distribution'
@@ -593,8 +669,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         valueSuffix: '%'
                     }
                 }]
-            });
+            }));
         }
+        </text>
+    }
+    else
+    {
+        <text>
+        console.log('Portfolio optimization is not available - need more historical data or stocks');
         </text>
     }
 });
