@@ -1905,8 +1905,10 @@ button[type="submit"] {
 
     .hero-text .lead {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         margin-bottom: 1.5rem;
+        align-items: center;
+        white-space: nowrap;
     }
 
         .hero-text .lead p {
@@ -1919,6 +1921,56 @@ button[type="submit"] {
             width: 24px;
             color: #4361ee;
         }
+        
+    /* Responsive font sizing for hero lead text */
+    @media (max-width: 1200px) {
+        .hero-text .lead {
+            font-size: 0.95rem;
+        }
+        .hero-text .lead i {
+            width: 20px;
+            font-size: 0.9rem;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .hero-text .lead {
+            font-size: 0.85rem;
+        }
+        .hero-text .lead i {
+            width: 18px;
+            font-size: 0.8rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .hero-text .lead {
+            font-size: 0.75rem;
+        }
+        .hero-text .lead i {
+            width: 16px;
+            font-size: 0.7rem;
+        }
+        .hero-text .lead .mx-3 {
+            margin-left: 0.5rem !important;
+            margin-right: 0.5rem !important;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .hero-text .lead {
+            font-size: 0.65rem;
+        }
+        .hero-text .lead i {
+            width: 14px;
+            font-size: 0.6rem;
+            margin-right: 0.25rem !important;
+        }
+        .hero-text .lead .mx-3 {
+            margin-left: 0.25rem !important;
+            margin-right: 0.25rem !important;
+        }
+    }
 
 .hero-buttons {
     display: flex;
