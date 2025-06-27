@@ -125,12 +125,8 @@
                     <div id="optionsPayoffChart" class="chart-container-400 mb-4"></div>
                     
                     <!-- Greeks Visualization -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="mb-3">The Greeks - Your Risk Dashboard</h6>
-                            <div id="greeksRadarChart" class="chart-container-350"></div>
-                        </div>
-                    </div>
+                    <h6 class="mb-3">The Greeks - Your Risk Dashboard</h6>
+                    <div id="greeksRadarChart" class="chart-container-400 mb-4"></div>
                     
                     <!-- Options Chain Table -->
                     <div class="table-responsive">
@@ -195,7 +191,7 @@
     <!-- Volatility Smile Visualization -->
     <div class="row mb-4">
         <div class="col-md-6">
-            <div class="card shadow">
+            <div class="card shadow h-100">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0"><i class="fas fa-smile me-2"></i>Volatility Smile</h5>
                 </div>
@@ -211,12 +207,12 @@
         
         <!-- Portfolio Options Summary -->
         <div class="col-md-6">
-            <div class="card shadow">
+            <div class="card shadow h-100">
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Portfolio Options Insights</h5>
                 </div>
-                <div class="card-body">
-                    <div class="insights-list">
+                <div class="card-body d-flex flex-column">
+                    <div class="insights-list flex-grow-1 overflow-auto" style="max-height: 300px;">
                         @foreach (var stock in Model.OptionsAnalysis.Take(5))
                         {
                             var atmOption = stock.OptionChain.FirstOrDefault(o => o.Moneyness == "At-the-Money");
@@ -304,12 +300,86 @@ document.addEventListener('DOMContentLoaded', function() {
         var greeksData = @Html.Raw(featuredOptions.ChartData.GreeksDataJson);
         var smileData = @Html.Raw(featuredOptions.ChartData.SmileDataJson);
         
+        // Light theme configuration for Highcharts (better visibility in dark app)
+        var lightTheme = {
+            chart: {
+                backgroundColor: '#ffffff',
+                borderRadius: 8,
+                style: {
+                    fontFamily: 'Roboto, sans-serif'
+                }
+            },
+            title: {
+                style: {
+                    color: '#333333',
+                    fontSize: '18px',
+                    fontWeight: '600'
+                }
+            },
+            subtitle: {
+                style: {
+                    color: '#666666'
+                }
+            },
+            xAxis: {
+                gridLineColor: '#e0e0e0',
+                labels: {
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                title: {
+                    style: {
+                        color: '#333333',
+                        fontSize: '14px'
+                    }
+                },
+                lineColor: '#cccccc'
+            },
+            yAxis: {
+                gridLineColor: '#e0e0e0',
+                labels: {
+                    style: {
+                        color: '#333333'
+                    }
+                },
+                title: {
+                    style: {
+                        color: '#333333',
+                        fontSize: '14px'
+                    }
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: '#cccccc',
+                style: {
+                    color: '#333333'
+                }
+            },
+            legend: {
+                backgroundColor: '#ffffff',
+                itemStyle: {
+                    color: '#333333'
+                },
+                itemHoverStyle: {
+                    color: '#000000'
+                }
+            },
+            plotOptions: {
+                series: {
+                    dataLabels: {
+                        color: '#333333'
+                    }
+                }
+            }
+        };
+        
         // 1. Options Payoff Diagram
         if (document.getElementById('optionsPayoffChart')) {
-            Highcharts.chart('optionsPayoffChart', {
+            Highcharts.chart('optionsPayoffChart', Highcharts.merge(lightTheme, {
                 chart: {
-                    type: 'line',
-                    backgroundColor: '#f8f9fa'
+                    type: 'line'
                 },
                 title: {
                     text: 'Options Payoff at Expiration'
@@ -320,23 +390,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 xAxis: {
                     title: { text: 'Stock Price at Expiration' },
                     plotLines: [{
-                        color: '#666',
+                        color: '#2196F3',
                         width: 2,
                         value: payoffData.currentPrice,
                         label: {
                             text: 'Current Price',
                             align: 'center',
-                            style: { color: '#666' }
+                            style: { color: '#2196F3', fontWeight: 'bold' }
                         }
                     }, {
-                        color: '#999',
-                        width: 1,
+                        color: '#FF9800',
+                        width: 2,
                         value: payoffData.strikePrice,
                         dashStyle: 'dash',
                         label: {
                             text: 'Strike',
                             align: 'center',
-                            style: { color: '#999' }
+                            style: { color: '#FF9800', fontWeight: 'bold' }
                         }
                     }]
                 },
@@ -356,35 +426,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 series: [{
                     name: 'Long Call',
                     data: payoffData.callPayoff.map(p => [p.x, p.y]),
-                    color: '#28a745',
-                    lineWidth: 3
+                    color: '#4CAF50',
+                    lineWidth: 3,
+                    marker: {
+                        enabled: false
+                    }
                 }, {
                     name: 'Long Put',
                     data: payoffData.putPayoff.map(p => [p.x, p.y]),
-                    color: '#dc3545',
-                    lineWidth: 3
+                    color: '#F44336',
+                    lineWidth: 3,
+                    marker: {
+                        enabled: false
+                    }
                 }, {
                     name: 'Stock Position',
                     data: payoffData.stockReturns.map(p => [p.x, p.y]),
-                    color: '#6c757d',
-                    lineWidth: 1,
-                    dashStyle: 'dash'
+                    color: '#9E9E9E',
+                    lineWidth: 2,
+                    dashStyle: 'dash',
+                    marker: {
+                        enabled: false
+                    }
                 }],
                 legend: {
                     layout: 'horizontal',
                     align: 'center',
                     verticalAlign: 'bottom'
                 }
-            });
+            }));
         }
         
         // 2. Greeks Radar Chart
         if (document.getElementById('greeksRadarChart')) {
-            Highcharts.chart('greeksRadarChart', {
+            Highcharts.chart('greeksRadarChart', Highcharts.merge(lightTheme, {
                 chart: {
                     polar: true,
-                    type: 'line',
-                    backgroundColor: '#f8f9fa'
+                    type: 'line'
                 },
                 title: {
                     text: 'Options Greeks Profile'
@@ -393,7 +471,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: 'Risk sensitivities for ATM options'
                 },
                 pane: {
-                    size: '80%'
+                    size: '85%',
+                    background: [{
+                        backgroundColor: '#f8f8f8',
+                        borderWidth: 0
+                    }]
                 },
                 xAxis: {
                     categories: greeksData.categories,
@@ -404,7 +486,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     gridLineInterpolation: 'polygon',
                     lineWidth: 0,
                     min: -1,
-                    max: 1
+                    max: 1,
+                    gridLineColor: '#e0e0e0',
+                    alternateGridColor: '#f5f5f5'
                 },
                 tooltip: {
                     shared: true,
@@ -413,28 +497,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 series: [{
                     name: 'Call Greeks',
                     data: greeksData.callGreeks,
-                    color: '#28a745',
-                    pointPlacement: 'on'
+                    color: '#4CAF50',
+                    lineWidth: 2,
+                    pointPlacement: 'on',
+                    marker: {
+                        symbol: 'circle',
+                        radius: 6
+                    }
                 }, {
                     name: 'Put Greeks',
                     data: greeksData.putGreeks,
-                    color: '#dc3545',
-                    pointPlacement: 'on'
+                    color: '#F44336',
+                    lineWidth: 2,
+                    pointPlacement: 'on',
+                    marker: {
+                        symbol: 'circle',
+                        radius: 6
+                    }
                 }],
                 legend: {
                     align: 'right',
                     verticalAlign: 'middle',
                     layout: 'vertical'
                 }
-            });
+            }));
         }
         
         // 3. Volatility Smile Chart
         if (document.getElementById('volatilitySmileChart')) {
-            Highcharts.chart('volatilitySmileChart', {
+            Highcharts.chart('volatilitySmileChart', Highcharts.merge(lightTheme, {
                 chart: {
-                    type: 'line',
-                    backgroundColor: '#f8f9fa'
+                    type: 'line'
                 },
                 title: {
                     text: 'Implied Volatility Smile'
@@ -442,13 +535,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 xAxis: {
                     title: { text: 'Strike Price ($)' },
                     plotLines: [{
-                        color: '#666',
+                        color: '#2196F3',
                         width: 2,
                         value: smileData.currentPrice,
                         label: {
                             text: 'Current Price',
                             align: 'center',
-                            style: { color: '#666' }
+                            style: { color: '#2196F3', fontWeight: 'bold' }
                         }
                     }]
                 },
@@ -463,17 +556,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 series: [{
                     name: 'Implied Volatility',
                     data: smileData.dataPoints.map(p => [p.strike, p.impliedVolatility]),
-                    color: '#4361ee',
+                    color: '#2196F3',
                     lineWidth: 3,
                     marker: {
                         enabled: true,
-                        radius: 4
+                        radius: 5,
+                        fillColor: '#ffffff',
+                        lineWidth: 2,
+                        lineColor: '#2196F3'
                     }
                 }],
                 legend: {
                     enabled: false
                 }
-            });
+            }));
         }
         </text>
     }

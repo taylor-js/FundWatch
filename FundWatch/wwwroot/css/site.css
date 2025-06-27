@@ -60,29 +60,118 @@ body.has-hero .main-content {
 
 .options-chain-table {
     font-size: 0.9rem;
+    background-color: rgba(32, 34, 46, 0.95);
+    color: #b0c4de;
 }
 
 .options-chain-table th {
     font-weight: 600;
     white-space: nowrap;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: #e0e0e0;
 }
 
 .options-chain-table td {
     padding: 0.5rem;
+    border-color: rgba(176, 196, 222, 0.1);
+}
+
+.options-chain-table .table-warning {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+    color: #ffd93d;
 }
 
 .insight-item {
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(32, 34, 46, 0.8);
+    color: #b0c4de;
     transition: all 0.3s ease;
 }
 
 .insight-item:hover {
-    transform: translateX(5px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    background-color: rgba(32, 34, 46, 0.95);
+}
+
+.insight-item h6 {
+    color: #e0e0e0;
+}
+
+/* Insights list styling for proper scrolling */
+.insights-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(176, 196, 222, 0.3) transparent;
+}
+
+.insights-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.insights-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.insights-list::-webkit-scrollbar-thumb {
+    background-color: rgba(176, 196, 222, 0.3);
+    border-radius: 3px;
+}
+
+.insights-list::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(176, 196, 222, 0.5);
 }
 
 .options-explanation {
     border-left: 4px solid #4361ee;
+    background-color: rgba(67, 97, 238, 0.1) !important;
+    color: #b0c4de;
+}
+
+.options-explanation strong {
+    color: #e0e0e0;
+}
+
+/* Chart containers with light backgrounds for visibility */
+.chart-container-350,
+.chart-container-400,
+.chart-container-450 {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Card styling for dark theme */
+.card {
+    background-color: rgba(32, 34, 46, 0.8);
+    border: 1px solid rgba(176, 196, 222, 0.1);
+    color: #b0c4de;
+}
+
+.card-header {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(176, 196, 222, 0.1);
+    color: #e0e0e0;
+}
+
+.card-body {
+    color: #b0c4de;
+}
+
+.table-dark {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.bg-light {
+    background-color: rgba(176, 196, 222, 0.1) !important;
+    color: #b0c4de;
+}
+
+.text-muted {
+    color: #8899a6 !important;
+}
+
+.text-secondary {
+    color: #8899a6 !important;
 }
 
 /* Performance Tab - Portfolio Optimization */
