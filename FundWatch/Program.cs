@@ -81,7 +81,10 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     var polygonApiKey = configuration["PolygonApi:ApiKey"];
     if (string.IsNullOrEmpty(polygonApiKey))
     {
-        throw new InvalidOperationException("Polygon API key is not configured.");
+        // Log warning but don't crash the application
+        Console.WriteLine("WARNING: Polygon API key is not configured. Charts will not display data.");
+        Console.WriteLine("To set your API key, run: dotnet user-secrets set \"PolygonApi:ApiKey\" \"YOUR_API_KEY\" --project FundWatch");
+        polygonApiKey = "MISSING_API_KEY"; // Set a placeholder to prevent null reference
     }
     services.AddHttpClient("PolygonApi", client =>
     {

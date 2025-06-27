@@ -4,8 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using FundWatch.Models;
 using FundWatch.Models.QuantitativeModels;
+using FundWatch.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace FundWatch.Services
 {
@@ -14,15 +16,17 @@ namespace FundWatch.Services
         private readonly ApplicationDbContext _context;
         private readonly StockService _stockService;
         private readonly IMemoryCache _cache;
+        private readonly ILogger<QuantitativeAnalysisService> _logger;
         
         // Treasury yield for risk-free rate (can be updated from external source)
         private const double DEFAULT_RISK_FREE_RATE = 0.045; // 4.5% annual
 
-        public QuantitativeAnalysisService(ApplicationDbContext context, StockService stockService, IMemoryCache cache)
+        public QuantitativeAnalysisService(ApplicationDbContext context, StockService stockService, IMemoryCache cache, ILogger<QuantitativeAnalysisService> logger)
         {
             _context = context;
             _stockService = stockService;
             _cache = cache;
+            _logger = logger;
         }
 
         public class OptionsAnalysisResult
@@ -36,6 +40,7 @@ namespace FundWatch.Services
             public List<(double Strike, double ImpliedVol)> VolatilitySmile { get; set; }
             public VolatilitySurface VolSurface { get; set; }
             public string MarketOutlook { get; set; } // Bullish, Bearish, Neutral based on options data
+            public OptionsChartData ChartData { get; set; } // Pre-calculated chart data
         }
 
         public class OptionChainItem
@@ -171,6 +176,9 @@ namespace FundWatch.Services
             // Determine market outlook based on put/call skew
             result.MarketOutlook = DetermineMarketOutlook(result.OptionChain);
 
+            // Generate chart data
+            result.ChartData = GenerateOptionsChartData(result);
+
             _cache.Set(cacheKey, result, TimeSpan.FromHours(1));
             return result;
         }
@@ -255,22 +263,124 @@ namespace FundWatch.Services
             return "Neutral - Balanced options activity";
         }
 
+        private OptionsChartData GenerateOptionsChartData(OptionsAnalysisResult analysisResult)
+        {
+            var chartData = new OptionsChartData();
+            
+            // Get ATM option for payoff calculation
+            var atmOption = analysisResult.OptionChain.FirstOrDefault(o => o.Moneyness == "At-the-Money") 
+                ?? analysisResult.OptionChain[analysisResult.OptionChain.Count / 2];
+
+            // 1. Generate Payoff Chart Data
+            chartData.PayoffData = new OptionsChartData.PayoffChartData
+            {
+                CurrentPrice = analysisResult.CurrentPrice,
+                StrikePrice = atmOption.StrikePrice,
+                CallPremium = atmOption.CallPrice,
+                PutPremium = atmOption.PutPrice
+            };
+
+            // Calculate payoff for price range from 70% to 130% of current price
+            var minPrice = analysisResult.CurrentPrice * 0.7;
+            var maxPrice = analysisResult.CurrentPrice * 1.3;
+            var priceStep = analysisResult.CurrentPrice * 0.01;
+
+            for (var price = minPrice; price <= maxPrice; price += priceStep)
+            {
+                chartData.PayoffData.PriceRange.Add(Math.Round(price, 2));
+                
+                // Long call payoff
+                var callProfit = Math.Max(0, price - atmOption.StrikePrice) - atmOption.CallPrice;
+                chartData.PayoffData.CallPayoff.Add(new OptionsChartData.PayoffDataPoint { X = price, Y = callProfit });
+                
+                // Long put payoff
+                var putProfit = Math.Max(0, atmOption.StrikePrice - price) - atmOption.PutPrice;
+                chartData.PayoffData.PutPayoff.Add(new OptionsChartData.PayoffDataPoint { X = price, Y = putProfit });
+                
+                // Stock returns for comparison
+                var stockReturn = price - analysisResult.CurrentPrice;
+                chartData.PayoffData.StockReturns.Add(new OptionsChartData.PayoffDataPoint { X = price, Y = stockReturn });
+            }
+
+            // 2. Generate Greeks Chart Data
+            chartData.GreeksData = new OptionsChartData.GreeksChartData
+            {
+                CallGreeks = new List<double>
+                {
+                    atmOption.CallGreeks.Delta,
+                    atmOption.CallGreeks.Gamma,
+                    -atmOption.CallGreeks.Theta / 365, // Normalize theta to daily
+                    atmOption.CallGreeks.Vega,
+                    atmOption.CallGreeks.Rho
+                },
+                PutGreeks = new List<double>
+                {
+                    atmOption.PutGreeks.Delta,
+                    atmOption.PutGreeks.Gamma,
+                    -atmOption.PutGreeks.Theta / 365, // Normalize theta to daily
+                    atmOption.PutGreeks.Vega,
+                    atmOption.PutGreeks.Rho
+                }
+            };
+
+            // 3. Generate Volatility Smile Data
+            chartData.SmileData = new OptionsChartData.VolatilitySmileData
+            {
+                CurrentPrice = analysisResult.CurrentPrice,
+                DataPoints = analysisResult.VolatilitySmile.Select(point => 
+                    new OptionsChartData.SmileDataPoint 
+                    { 
+                        Strike = point.Strike, 
+                        ImpliedVolatility = point.ImpliedVol * 100 // Convert to percentage
+                    }).ToList()
+            };
+
+            // Pre-serialize the data for JavaScript
+            var jsonSettings = new Newtonsoft.Json.JsonSerializerSettings
+            {
+                ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+            };
+            
+            chartData.PayoffDataJson = Newtonsoft.Json.JsonConvert.SerializeObject(chartData.PayoffData, jsonSettings);
+            chartData.GreeksDataJson = Newtonsoft.Json.JsonConvert.SerializeObject(chartData.GreeksData, jsonSettings);
+            chartData.SmileDataJson = Newtonsoft.Json.JsonConvert.SerializeObject(chartData.SmileData, jsonSettings);
+
+            return chartData;
+        }
+
         public async Task<List<OptionsAnalysisResult>> AnalyzePortfolioOptions(string userId)
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            
             var userStocks = await _context.UserStocks
                 .Where(us => us.UserId == userId)
                 .ToListAsync();
 
-            var results = new List<OptionsAnalysisResult>();
-            
-            foreach (var stock in userStocks)
+            if (!userStocks.Any())
             {
-                var analysis = await AnalyzeStockOptions(stock.StockSymbol, userId);
-                if (analysis != null)
-                {
-                    results.Add(analysis);
-                }
+                return new List<OptionsAnalysisResult>();
             }
+
+            // Process options analysis in parallel for better performance
+            var tasks = userStocks.Select(async stock =>
+            {
+                try
+                {
+                    return await AnalyzeStockOptions(stock.StockSymbol, userId);
+                }
+                catch (Exception ex)
+                {
+                    // Log error but don't fail the entire operation
+                    _logger.LogError(ex, "Error analyzing options for {Symbol}", stock.StockSymbol);
+                    return null;
+                }
+            });
+
+            var analysisResults = await Task.WhenAll(tasks);
+            var results = analysisResults.Where(r => r != null).ToList();
+
+            sw.Stop();
+            _logger.LogInformation($"AnalyzePortfolioOptions completed in {sw.ElapsedMilliseconds}ms for {userStocks.Count} stocks");
 
             return results;
         }

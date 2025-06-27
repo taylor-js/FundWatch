@@ -111,6 +111,9 @@ namespace FundWatch.Controllers
             
             try
             {
+                // Performance tracking for parallel operations
+                var dataFetchSw = System.Diagnostics.Stopwatch.StartNew();
+                
                 // Fetch all required data in parallel
                 var pricesTask = GetCachedPrices(symbols);
                 var detailsTask = GetCachedCompanyDetails(symbols);
@@ -130,6 +133,9 @@ namespace FundWatch.Controllers
                     monthlyPerformanceTask, rollingReturnsTask, portfolioGrowthTask, 
                     riskMetricsTask, drawdownDataTask, diversificationDataTask
                 );
+                
+                dataFetchSw.Stop();
+                _logger.LogInformation($"Parallel data fetch completed in {dataFetchSw.ElapsedMilliseconds}ms");
 
                 var cachedPrices = await pricesTask;
                 var cachedDetails = await detailsTask;

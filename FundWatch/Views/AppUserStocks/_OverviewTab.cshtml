@@ -298,37 +298,14 @@ document.addEventListener('DOMContentLoaded', function() {
     {
         <text>
         console.log('Processing options data for @featuredOptions.Symbol');
-        // Prepare data for charts
-        var currentPrice = @featuredOptions.CurrentPrice;
-        var optionChain = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(featuredOptions.OptionChain));
-        var volatilitySmile = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(featuredOptions.VolatilitySmile));
+        
+        // Use pre-calculated chart data from server
+        var payoffData = @Html.Raw(featuredOptions.ChartData.PayoffDataJson);
+        var greeksData = @Html.Raw(featuredOptions.ChartData.GreeksDataJson);
+        var smileData = @Html.Raw(featuredOptions.ChartData.SmileDataJson);
         
         // 1. Options Payoff Diagram
         if (document.getElementById('optionsPayoffChart')) {
-            // Get ATM option for demonstration
-            var atmOption = optionChain.find(o => o.Moneyness === "At-the-Money") || optionChain[Math.floor(optionChain.length / 2)];
-            
-            // Generate payoff data
-            var priceRange = [];
-            var callPayoff = [];
-            var putPayoff = [];
-            var stockReturns = [];
-            
-            for (var i = currentPrice * 0.7; i &lt;= currentPrice * 1.3; i += currentPrice * 0.01) {
-                priceRange.push(i);
-                
-                // Long call payoff
-                var callProfit = Math.max(0, i - atmOption.StrikePrice) - atmOption.CallPrice;
-                callPayoff.push(callProfit);
-                
-                // Long put payoff
-                var putProfit = Math.max(0, atmOption.StrikePrice - i) - atmOption.PutPrice;
-                putPayoff.push(putProfit);
-                
-                // Stock returns for comparison
-                stockReturns.push(i - currentPrice);
-            }
-            
             Highcharts.chart('optionsPayoffChart', {
                 chart: {
                     type: 'line',
@@ -338,14 +315,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: 'Options Payoff at Expiration'
                 },
                 subtitle: {
-                    text: 'Strike: $' + atmOption.StrikePrice.toFixed(2) + ' | Current: $' + currentPrice.toFixed(2)
+                    text: 'Strike: $' + payoffData.strikePrice.toFixed(2) + ' | Current: $' + payoffData.currentPrice.toFixed(2)
                 },
                 xAxis: {
                     title: { text: 'Stock Price at Expiration' },
                     plotLines: [{
                         color: '#666',
                         width: 2,
-                        value: currentPrice,
+                        value: payoffData.currentPrice,
                         label: {
                             text: 'Current Price',
                             align: 'center',
@@ -354,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, {
                         color: '#999',
                         width: 1,
-                        value: atmOption.StrikePrice,
+                        value: payoffData.strikePrice,
                         dashStyle: 'dash',
                         label: {
                             text: 'Strike',
@@ -378,17 +355,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 series: [{
                     name: 'Long Call',
-                    data: priceRange.map((price, i) => [price, callPayoff[i]]),
+                    data: payoffData.callPayoff.map(p => [p.x, p.y]),
                     color: '#28a745',
                     lineWidth: 3
                 }, {
                     name: 'Long Put',
-                    data: priceRange.map((price, i) => [price, putPayoff[i]]),
+                    data: payoffData.putPayoff.map(p => [p.x, p.y]),
                     color: '#dc3545',
                     lineWidth: 3
                 }, {
                     name: 'Stock Position',
-                    data: priceRange.map((price, i) => [price, stockReturns[i]]),
+                    data: payoffData.stockReturns.map(p => [p.x, p.y]),
                     color: '#6c757d',
                     lineWidth: 1,
                     dashStyle: 'dash'
@@ -403,8 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 2. Greeks Radar Chart
         if (document.getElementById('greeksRadarChart')) {
-            var atmOption = optionChain.find(o => o.Moneyness === "At-the-Money") || optionChain[0];
-            
             Highcharts.chart('greeksRadarChart', {
                 chart: {
                     polar: true,
@@ -421,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     size: '80%'
                 },
                 xAxis: {
-                    categories: ['Delta', 'Gamma', 'Theta', 'Vega', 'Rho'],
+                    categories: greeksData.categories,
                     tickmarkPlacement: 'on',
                     lineWidth: 0
                 },
@@ -437,24 +412,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 series: [{
                     name: 'Call Greeks',
-                    data: [
-                        atmOption.CallGreeks.Delta,
-                        atmOption.CallGreeks.Gamma,
-                        -atmOption.CallGreeks.Theta / 365, // Normalize theta
-                        atmOption.CallGreeks.Vega,
-                        atmOption.CallGreeks.Rho
-                    ],
+                    data: greeksData.callGreeks,
                     color: '#28a745',
                     pointPlacement: 'on'
                 }, {
                     name: 'Put Greeks',
-                    data: [
-                        atmOption.PutGreeks.Delta,
-                        atmOption.PutGreeks.Gamma,
-                        -atmOption.PutGreeks.Theta / 365, // Normalize theta
-                        atmOption.PutGreeks.Vega,
-                        atmOption.PutGreeks.Rho
-                    ],
+                    data: greeksData.putGreeks,
                     color: '#dc3545',
                     pointPlacement: 'on'
                 }],
@@ -468,8 +431,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 3. Volatility Smile Chart
         if (document.getElementById('volatilitySmileChart')) {
-            var smileData = volatilitySmile.map(point => [point.Item1, point.Item2 * 100]);
-            
             Highcharts.chart('volatilitySmileChart', {
                 chart: {
                     type: 'line',
@@ -483,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     plotLines: [{
                         color: '#666',
                         width: 2,
-                        value: currentPrice,
+                        value: smileData.currentPrice,
                         label: {
                             text: 'Current Price',
                             align: 'center',
@@ -501,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 series: [{
                     name: 'Implied Volatility',
-                    data: smileData,
+                    data: smileData.dataPoints.map(p => [p.strike, p.impliedVolatility]),
                     color: '#4361ee',
                     lineWidth: 3,
                     marker: {
