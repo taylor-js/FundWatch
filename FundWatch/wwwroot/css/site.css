@@ -468,6 +468,25 @@ body.has-hero .main-content {
     height: 450px;
 }
 
+/* Details View Button Styling */
+@media (max-width: 575.98px) {
+    /* Make buttons full width on mobile */
+    .w-sm-auto {
+        width: auto !important;
+    }
+}
+
+/* Ensure consistent button styling in details view */
+.details-actions .btn {
+    min-width: 120px;
+}
+
+@media (max-width: 575.98px) {
+    .details-actions .btn {
+        min-width: 100%;
+    }
+}
+
 /* Progress bar styles */
 .progress-height-10 {
     height: 10px;

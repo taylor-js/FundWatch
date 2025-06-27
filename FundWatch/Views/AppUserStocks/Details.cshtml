@@ -355,21 +355,21 @@
     </div>
 
     <!-- Action Buttons -->
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex flex-column flex-md-row justify-content-between">
-                <a asp-action="CreateOrEdit" asp-route-id="@Model.Stock.Id" class="btn btn-warning mb-2 mb-md-0">
+            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-between details-actions">
+                <a asp-action="CreateOrEdit" asp-route-id="@Model.Stock.Id" class="btn btn-warning text-nowrap">
                     <i class="fas fa-edit"></i> Edit
                 </a>
-                <div class="d-flex flex-column flex-md-row">
-                    <form asp-action="Delete" asp-route-id="@Model.Stock.Id" method="post" class="d-inline me-0 me-md-2 mb-2 mb-md-0">
+                <div class="d-flex flex-column flex-sm-row gap-2 flex-grow-1 flex-sm-grow-0">
+                    <form asp-action="Delete" asp-route-id="@Model.Stock.Id" method="post" class="d-grid d-sm-block">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this stock?');">
+                        <button type="submit" class="btn btn-danger text-nowrap" onclick="return confirm('Are you sure you want to delete this stock?');">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </form>
-                    <a asp-action="Dashboard" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    <a asp-action="Dashboard" class="btn btn-secondary w-100 w-sm-auto text-nowrap">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
                     </a>
                 </div>
             </div>
