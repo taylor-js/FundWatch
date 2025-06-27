@@ -665,6 +665,24 @@ section {
         padding-top: 1rem;
     }
     
+    /* Reduce column padding on mobile for dashboard */
+    #dashboardTabContent .col-md-3,
+    #dashboardTabContent .col-md-4,
+    #dashboardTabContent .col-md-6,
+    #dashboardTabContent .col-lg-3,
+    #dashboardTabContent .col-lg-4,
+    #dashboardTabContent .col-lg-6,
+    #dashboardTabContent .col-12 {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    /* Reduce row gaps on mobile */
+    #dashboardTabContent .row {
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+    }
+    
     /* Fix for when virtual keyboard appears */
     input:focus,
     textarea:focus,
@@ -1536,6 +1554,38 @@ button[type="submit"] {
     margin-bottom: 25px;
 }
 
+/* Mobile responsive margins and padding for dashboard cards */
+@media (max-width: 767.98px) {
+    #dashboardTabContent .card {
+        margin-bottom: 15px;
+        border-radius: 8px;
+    }
+    
+    #dashboardTabContent .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    #dashboardTabContent .card-body {
+        padding: 1rem;
+    }
+    
+    /* Reduce tab content padding on mobile */
+    .tab-content {
+        padding: 0 !important;
+    }
+    
+    /* Reduce container margins on mobile */
+    #dashboard-container {
+        margin-top: 0.5rem;
+    }
+    
+    /* Reduce chart description padding */
+    .chart-description {
+        padding: 0.5rem !important;
+        margin-bottom: 10px !important;
+    }
+}
+
 #dashboardTabContent .card {
     transform: translateY(-5px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -1583,6 +1633,25 @@ button[type="submit"] {
 #overviewTab .overview-scalar-card .card-body {
     padding: 1.5rem;
     text-align: center;
+}
+
+/* Mobile responsive for overview cards */
+@media (max-width: 767.98px) {
+    .overview-scalar-card .card-body {
+        padding: 0.75rem;
+    }
+    
+    #overviewTab .overview-scalar-card .card-body {
+        padding: 1rem;
+    }
+    
+    #overviewTab .overview-scalar-card h3 {
+        font-size: 1.5rem;
+    }
+    
+    #overviewTab .overview-scalar-card small {
+        font-size: 0.875rem;
+    }
 }
 
 #overviewTab .overview-scalar-card h3 {
@@ -1677,6 +1746,32 @@ button[type="submit"] {
         overflow: visible;
     }
 
+/* Mobile responsive for analytics tab */
+@media (max-width: 767.98px) {
+    #analyticsTab .card {
+        margin-bottom: 15px;
+    }
+    
+    #analyticsTab .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    #analyticsTab .card-body {
+        padding: 1rem;
+    }
+    
+    #analyticsTab .chart-description {
+        padding: 0.5rem;
+        margin-bottom: 10px;
+    }
+    
+    .analytics-equal-cards .card-body,
+    .analytics-card-body {
+        padding: 10px;
+        min-height: 300px;
+    }
+}
+
 /* Performance tab styling */
 #performanceTab .card {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -1758,6 +1853,39 @@ button[type="submit"] {
     margin-bottom: 15px;
 }
 
+/* Mobile responsive for performance tab */
+@media (max-width: 767.98px) {
+    #performanceTab .card {
+        margin-bottom: 15px;
+    }
+    
+    #performanceTab .card-header {
+        padding: 0.75rem;
+    }
+    
+    #performanceTab .card-body {
+        padding: 0.75rem;
+    }
+    
+    #performanceTab .chart-description {
+        padding: 0.5rem;
+        margin-bottom: 8px;
+    }
+    
+    #performanceTab .chart-description p {
+        font-size: 0.85rem;
+    }
+    
+    #performanceTab #rollingReturnsChart,
+    #performanceTab #topHoldingsChart,
+    #performanceTab #growthAnalysisChart,
+    #performanceTab #monthlyPerformanceChart,
+    #performanceTab #portfolioTreemap {
+        height: 300px !important;
+        margin-bottom: 10px;
+    }
+}
+
 /* Holdings tab styling */
 #holdingsTab .card {
     border: none;
@@ -1778,6 +1906,41 @@ button[type="submit"] {
     padding: 1.5rem;
     background-color: #212529;
     max-width: 100%;
+}
+
+/* Mobile responsive for holdings tab */
+@media (max-width: 767.98px) {
+    #holdingsTab .card {
+        margin-bottom: 1.5rem;
+    }
+    
+    #holdingsTab .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    #holdingsTab .card-body {
+        padding: 1rem;
+    }
+    
+    /* Metric cards in holdings */
+    .metric-card {
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .metric-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+    }
+    
+    .metric-content h6 {
+        font-size: 0.75rem;
+    }
+    
+    .metric-content h4 {
+        font-size: 1.25rem;
+    }
 }
 
 #holdingsTab .card .e-grid-container {
