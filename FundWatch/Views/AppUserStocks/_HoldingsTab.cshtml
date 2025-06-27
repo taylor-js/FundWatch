@@ -9,64 +9,68 @@
 
 <!-- Enhanced Holdings Tab with Quantitative Metrics -->
 <div class="holdings-container">
-    <!-- Portfolio Summary Cards -->
-    <div class="row mb-4 g-3">
-        <div class="col-sm-6 col-lg-3">
-            <div class="metric-card h-100">
-                <div class="metric-icon bg-primary">
-                    <i class="fas fa-balance-scale"></i>
+    <!-- Wrapper container for consistent margins -->
+    <div class="container-fluid px-0">
+        <!-- Portfolio Summary Cards -->
+        <div class="row mb-4 g-3 mx-0">
+            <div class="col-sm-6 col-lg-3 px-2">
+                <div class="metric-card h-100">
+                    <div class="metric-icon bg-primary">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h6>Portfolio Balance</h6>
+                        <h4>@Model.PortfolioMetrics.TotalValue.ToString("C0", culture)</h4>
+                        <small class="@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "text-success" : "text-danger")">
+                            <i class="fas fa-arrow-@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "up" : "down")"></i>
+                            @Math.Abs(Model.PortfolioMetrics.TotalPerformance).ToString("F2")%
+                        </small>
+                    </div>
                 </div>
-                <div class="metric-content">
-                    <h6>Portfolio Balance</h6>
-                    <h4>@Model.PortfolioMetrics.TotalValue.ToString("C0", culture)</h4>
-                    <small class="@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "text-success" : "text-danger")">
-                        <i class="fas fa-arrow-@(Model.PortfolioMetrics.TotalPerformance >= 0 ? "up" : "down")"></i>
-                        @Math.Abs(Model.PortfolioMetrics.TotalPerformance).ToString("F2")%
-                    </small>
+            </div>
+            <div class="col-sm-6 col-lg-3 px-2">
+                <div class="metric-card h-100">
+                    <div class="metric-icon bg-success">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h6>Sharpe Ratio</h6>
+                        <h4>@(hasOptimization ? Model.PortfolioOptimization.CurrentPortfolio.SharpeRatio.ToString("F2") : "N/A")</h4>
+                        <small>Risk-adjusted return</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3 px-2">
+                <div class="metric-card h-100">
+                    <div class="metric-icon bg-warning">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h6>Portfolio VaR (95%)</h6>
+                        <h4>@(hasOptimization ? (Model.PortfolioOptimization.RiskAnalysis.ValueAtRisk95 * 100).ToString("F1") + "%" : "N/A")</h4>
+                        <small>Maximum expected loss</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3 px-2">
+                <div class="metric-card h-100">
+                    <div class="metric-icon bg-info">
+                        <i class="fas fa-wave-square"></i>
+                    </div>
+                    <div class="metric-content">
+                        <h6>Active Cycles</h6>
+                        <h4>@(hasFourier ? Model.FourierAnalysis.MarketCycles.Count(c => c.Strength > 3) : 0)</h4>
+                        <small>Significant patterns</small>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="metric-card h-100">
-                <div class="metric-icon bg-success">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="metric-content">
-                    <h6>Sharpe Ratio</h6>
-                    <h4>@(hasOptimization ? Model.PortfolioOptimization.CurrentPortfolio.SharpeRatio.ToString("F2") : "N/A")</h4>
-                    <small>Risk-adjusted return</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="metric-card h-100">
-                <div class="metric-icon bg-warning">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <div class="metric-content">
-                    <h6>Portfolio VaR (95%)</h6>
-                    <h4>@(hasOptimization ? (Model.PortfolioOptimization.RiskAnalysis.ValueAtRisk95 * 100).ToString("F1") + "%" : "N/A")</h4>
-                    <small>Maximum expected loss</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="metric-card h-100">
-                <div class="metric-icon bg-info">
-                    <i class="fas fa-wave-square"></i>
-                </div>
-                <div class="metric-content">
-                    <h6>Active Cycles</h6>
-                    <h4>@(hasFourier ? Model.FourierAnalysis.MarketCycles.Count(c => c.Strength > 3) : 0)</h4>
-                    <small>Significant patterns</small>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Enhanced Holdings Grid -->
-    <div class="card shadow">
-        <div class="card-header bg-dark text-white">
+        <!-- Enhanced Holdings Grid -->
+        <div class="row mx-0">
+            <div class="col-12 px-2">
+                <div class="card shadow border-0 mb-4" style="background-color: white;">
+                    <div class="card-header bg-dark text-white">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
                 <h5 class="card-title mb-2 mb-md-0">
                     <i class="fas fa-briefcase me-2"></i>Holdings with Quantitative Analysis
@@ -138,7 +142,7 @@
                                     <strong>@stock.StockSymbol</strong>
                                 </td>
                                 <td>
-                                    <small class="text-muted">@(Model.CompanyDetails.ContainsKey(stock.StockSymbol) ? Model.CompanyDetails[stock.StockSymbol].Name : stock.StockSymbol)</small>
+                                    <small class="text-secondary">@(Model.CompanyDetails.ContainsKey(stock.StockSymbol) ? Model.CompanyDetails[stock.StockSymbol].Name : stock.StockSymbol)</small>
                                 </td>
                                 <td class="text-end">@sharesOwned.ToString("N0")</td>
                                 <td class="text-end">$@stock.CurrentPrice.ToString("F2")</td>
@@ -214,7 +218,7 @@
                                     }
                                     else
                                     {
-                                        <span class="text-muted">-</span>
+                                        <span class="text-secondary">-</span>
                                     }
                                 </td>
                                 <td class="text-center">
@@ -262,20 +266,22 @@
                 </table>
             </div>
         </div>
-    </div>
+                </div>
+            </div>
+        </div>
 
-    <!-- Quantitative Insights Panel -->
-    @if (hasOptimization || hasOptions || hasFourier)
-    {
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card shadow">
-                    <div class="card-header bg-gradient-dark text-white">
+        <!-- Quantitative Insights Panel -->
+        @if (hasOptimization || hasOptions || hasFourier)
+        {
+            <div class="row mx-0">
+                <div class="col-12 px-2">
+                    <div class="card shadow border-0" style="background-color: white;">
+                        <div class="card-header bg-gradient-dark text-white">
                         <h5 class="mb-0">
                             <i class="fas fa-lightbulb me-2"></i>Quantitative Insights for Your Holdings
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body" style="background-color: white; color: #212529;">
                         <div class="row">
                             @if (hasOptimization && Model.PortfolioOptimization.OptimalWeights.Any())
                             {
@@ -289,7 +295,7 @@
                                         var change = kvp.Value - currentWeight;
                                         if (Math.Abs(change) > 0.01)
                                         {
-                                            <div class="insight-item mb-2">
+                                            <div class="insight-item mb-2 p-2 rounded" style="background-color: #f8f9fa;">
                                                 <strong>@kvp.Key:</strong>
                                                 <span class="@(change > 0 ? "text-success" : "text-danger")">
                                                     @(change > 0 ? "Increase" : "Decrease") by @Math.Abs(change * 100).ToString("F1")%
@@ -311,9 +317,9 @@
                                         var atmOption = option.OptionChain.FirstOrDefault(o => o.Moneyness == "At-the-Money");
                                         if (atmOption != null)
                                         {
-                                            <div class="insight-item mb-2">
+                                            <div class="insight-item mb-2 p-2 rounded" style="background-color: #f8f9fa;">
                                                 <strong>@option.Symbol:</strong>
-                                                <span class="text-muted">
+                                                <span class="text-secondary">
                                                     Covered call yield: @((atmOption.CallPrice / option.CurrentPrice * 12 * 100).ToString("F1"))% annual
                                                 </span>
                                             </div>
@@ -330,9 +336,9 @@
                                     </h6>
                                     @foreach (var cycle in Model.FourierAnalysis.MarketCycles.Take(2))
                                     {
-                                        <div class="insight-item mb-2">
+                                        <div class="insight-item mb-2 p-2 rounded" style="background-color: #f8f9fa;">
                                             <strong>@cycle.CycleName:</strong>
-                                            <span class="text-muted">
+                                            <span class="text-secondary">
                                                 Next @(cycle.PhaseDescription.Contains("Rising") ? "peak" : "trough") in 
                                                 @((cycle.PhaseDescription.Contains("Rising") ? cycle.NextPeak : cycle.NextTrough).Subtract(DateTime.Now).Days) days
                                             </span>
@@ -345,7 +351,8 @@
                 </div>
             </div>
         </div>
-    }
+        }
+    </div>
 </div>
 
 <script>
