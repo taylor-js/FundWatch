@@ -37,26 +37,28 @@
                 <input type="hidden" asp-for="Industry" value="@(string.IsNullOrEmpty(Model.Industry) ? "Other" : Model.Industry)" />
 
                 <!-- Stock Symbol with Syncfusion dropdown -->
-                <div class="mb-3">
-                    <label for="StockSymbol" class="form-label">Stock Symbol</label>
-                    @(Html.EJS().DropDownList("StockSymbol")
-                        .Placeholder("Stock Symbol or Company Name")
-                        .AllowFiltering(true)
-                        .FilterBarPlaceholder("Search by symbol or company name...")
-                        .FilterType(FilterType.Contains)
-                        .PopupHeight("300px")
-                        .Width("100%")
-                        .Fields(new DropDownListFieldSettings
-                        {
-                            Text = "display",
-                            Value = "symbol"
-                        })
-                        .DataSource(ViewBag.InitialStock ?? new List<object>())
-                        .Value(Model.StockSymbol)
-                        .IgnoreAccent(true)
-                        .Render())
-                    <span asp-validation-for="StockSymbol" class="text-danger"></span>
-                    <input type="hidden" id="hiddenStockSymbol" name="hiddenStockSymbol" value="@Model.StockSymbol" />
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="StockSymbol" class="form-label">Stock Symbol</label>
+                        @(Html.EJS().DropDownList("StockSymbol")
+                            .Placeholder("Stock Symbol or Company Name")
+                            .AllowFiltering(true)
+                            .FilterBarPlaceholder("Search by symbol or company name...")
+                            .FilterType(FilterType.Contains)
+                            .PopupHeight("300px")
+                            .Width("100%")
+                            .Fields(new DropDownListFieldSettings
+                            {
+                                Text = "display",
+                                Value = "symbol"
+                            })
+                            .DataSource(ViewBag.InitialStock ?? new List<object>())
+                            .Value(Model.StockSymbol)
+                            .IgnoreAccent(true)
+                            .Render())
+                        <span asp-validation-for="StockSymbol" class="text-danger"></span>
+                        <input type="hidden" id="hiddenStockSymbol" name="hiddenStockSymbol" value="@Model.StockSymbol" />
+                    </div>
                 </div>
 
                 <div class="row">
@@ -153,11 +155,15 @@
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between mt-3">
-                    <a asp-action="Dashboard" class="btn btn-secondary">Back to Dashboard</a>
-                    <button type="submit" id="submitButton" class="btn btn-success" data-loading-text="@(Model.Id == 0 ? "Creating..." : "Saving...")">
-                        @(Model.Id == 0 ? "Create" : "Save")
-                    </button>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between mt-3">
+                            <a asp-action="Dashboard" class="btn btn-secondary">Back to Dashboard</a>
+                            <button type="submit" id="submitButton" class="btn btn-success" data-loading-text="@(Model.Id == 0 ? "Creating..." : "Saving...")">
+                                @(Model.Id == 0 ? "Create" : "Save")
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>

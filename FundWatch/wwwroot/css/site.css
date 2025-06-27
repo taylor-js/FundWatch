@@ -515,7 +515,7 @@ body.has-hero .main-content {
 
 /* Holdings Tab Enhancements */
 .holdings-container {
-    padding: 20px;
+    padding: 0;
 }
 
 .metric-card {
@@ -594,21 +594,6 @@ body.has-hero .main-content {
     background: none;
     color: inherit;
     padding: 0.25rem 0.5rem;
-}
-
-/* Reduce container padding on mobile */
-@media (max-width: 767.98px) {
-    .container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-    }
-}
-
-@media (max-width: 575.98px) {
-    .container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-    }
 }
 
 /* Prevent horizontal scroll on all major containers */
@@ -1484,7 +1469,7 @@ button[type="submit"] {
 
 #overviewTab, #performanceTab, #analyticsTab, #holdingsTab {
     margin: 0;
-    padding: 20px 0;
+    padding: 0;
 }
 
 /* Dashboard cards styling */
@@ -2108,6 +2093,10 @@ button[type="submit"] {
 #submitButton {
     min-width: 100px;
     position: relative;
+    height: 38px; /* Fixed height to prevent size change */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #submitButtonText {
@@ -2118,6 +2107,21 @@ button[type="submit"] {
 .spinner-border {
     vertical-align: -0.125em;
     border-width: 0.2em;
+}
+
+/* Prevent button size change when spinner is added */
+.btn .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+}
+
+/* Ensure consistent button sizing */
+.btn-secondary,
+.btn-success {
+    min-height: 38px;
+    padding: 0.375rem 0.75rem;
+    line-height: 1.5;
 }
 
 /* ============================
