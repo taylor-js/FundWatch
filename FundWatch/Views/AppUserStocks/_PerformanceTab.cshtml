@@ -312,14 +312,23 @@ document.addEventListener('DOMContentLoaded', function() {
         </text>
     }
     
-    @if (hasOptimization)
-    {
-        <text>
-        // Prepare optimization data
-        var efficientFrontier = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier));
-        var currentPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio));
-        var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio));
-        var monteCarloResults = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations.Take(100))); // Sample for performance
+    // Add tab visibility check and delay chart initialization
+    function initializePerformanceCharts() {
+        @if (hasOptimization)
+        {
+            <text>
+            console.log('Initializing Performance tab charts...');
+            
+            // Prepare optimization data
+            var efficientFrontier = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier ?? new List<object>()));
+            var currentPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio));
+            var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio));
+            var monteCarloResults = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations?.Take(100) ?? new List<object>())); // Sample for performance
+            
+            console.log('Efficient Frontier data:', efficientFrontier);
+            console.log('Current Portfolio:', currentPortfolio);
+            console.log('Optimal Portfolio:', optimalPortfolio);
+            console.log('Monte Carlo Results:', monteCarloResults);
         
         // Light theme configuration for charts
         var lightTheme = {
@@ -686,12 +695,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }));
         }
         </text>
+        }
+        else
+        {
+            <text>
+            console.log('Portfolio optimization is not available - need more historical data or stocks');
+            </text>
+        }
     }
-    else
-    {
-        <text>
-        console.log('Portfolio optimization is not available - need more historical data or stocks');
-        </text>
+    
+    // Initialize charts when tab becomes visible
+    setTimeout(function() {
+        initializePerformanceCharts();
+    }, 100);
+    
+    // Also initialize when tab is shown
+    var performanceTab = document.querySelector('#performance-tab');
+    if (performanceTab) {
+        performanceTab.addEventListener('shown.bs.tab', function() {
+            setTimeout(initializePerformanceCharts, 100);
+        });
     }
 });
 </script>

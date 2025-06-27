@@ -340,14 +340,23 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Has Fourier analysis: @hasFourierAnalysis');
     console.log('Fourier analysis: @(Model.FourierAnalysis != null ? "Available" : "Not available")');
     
-    @if (hasFourierAnalysis)
-    {
-        <text>
-        // Prepare Fourier analysis data
-        var powerSpectrum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.PowerSpectrum));
-        var decomposition = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.Decomposition));
-        var predictions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.FourierPrediction));
-        var marketCycles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.MarketCycles));
+    // Add tab visibility check and delay chart initialization
+    function initializeAnalyticsCharts() {
+        @if (hasFourierAnalysis)
+        {
+            <text>
+            console.log('Initializing Analytics tab charts...');
+            
+            // Prepare Fourier analysis data
+            var powerSpectrum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.PowerSpectrum ?? new { }));
+            var decomposition = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.Decomposition ?? new { }));
+            var predictions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.FourierPrediction ?? new List<object>()));
+            var marketCycles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.MarketCycles ?? new List<object>()));
+            
+            console.log('Power Spectrum:', powerSpectrum);
+            console.log('Decomposition:', decomposition);
+            console.log('Predictions:', predictions);
+            console.log('Market Cycles:', marketCycles);
         
         // Light theme configuration for charts
         var lightTheme = {
@@ -717,6 +726,26 @@ document.addEventListener('DOMContentLoaded', function() {
             </text>
         }
         </text>
+        }
+        else
+        {
+            <text>
+            console.log('Fourier analysis is not available - need more historical data');
+            </text>
+        }
+    }
+    
+    // Initialize charts when tab becomes visible
+    setTimeout(function() {
+        initializeAnalyticsCharts();
+    }, 100);
+    
+    // Also initialize when tab is shown
+    var analyticsTab = document.querySelector('#analytics-tab');
+    if (analyticsTab) {
+        analyticsTab.addEventListener('shown.bs.tab', function() {
+            setTimeout(initializeAnalyticsCharts, 100);
+        });
     }
 });
 </script>
