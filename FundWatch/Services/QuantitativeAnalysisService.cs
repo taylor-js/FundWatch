@@ -395,7 +395,7 @@ namespace FundWatch.Services
 
         public async Task<PortfolioOptimizationModel.OptimizationResult> OptimizePortfolio(string userId)
         {
-            var cacheKey = $"portfolio_optimization_{userId}_{DateTime.UtcNow:yyyyMMdd}_v2"; // v2 to bypass old cache
+            var cacheKey = $"portfolio_optimization_{userId}_{DateTime.UtcNow:yyyyMMddHHmm}_v3"; // v3 with minute timestamp to force refresh
             
             if (_cache.TryGetValue(cacheKey, out PortfolioOptimizationModel.OptimizationResult cachedResult))
             {
@@ -413,6 +413,8 @@ namespace FundWatch.Services
                 _logger.LogWarning($"No stocks found for user {userId} - cannot perform portfolio optimization");
                 return null;
             }
+            
+            _logger.LogInformation($"Found {userStocks.Count} stocks for user {userId} in portfolio optimization");
                 
             // If we have only 1 stock, create a synthetic second asset (cash position)
             if (userStocks.Count == 1)
@@ -423,6 +425,13 @@ namespace FundWatch.Services
                 var stock = userStocks.First();
                 var stockReturn = ((double)(stock.CurrentPrice - stock.PurchasePrice) / (double)stock.PurchasePrice);
                 var annualizedReturn = stockReturn / Math.Max(1, (DateTime.Now - stock.DatePurchased).Days / 365.0);
+                
+                // If no price movement, use a small positive return for visualization
+                if (Math.Abs(annualizedReturn) < 0.001)
+                {
+                    annualizedReturn = 0.05; // 5% default return
+                    _logger.LogInformation($"Stock {stock.StockSymbol} has no price movement, using default 5% return for visualization");
+                }
                 
                 var singleStockResult = new PortfolioOptimizationModel.OptimizationResult
                 {
@@ -489,6 +498,13 @@ namespace FundWatch.Services
                     TreynorRatio = annualizedReturn,
                     InformationRatio = 0.5
                 };
+                
+                // Generate historical backtest
+                singleStockResult.HistoricalPerformance = await GenerateHistoricalBacktest(
+                    new List<AppUserStock> { stock }, 
+                    singleStockResult.OptimalWeights,
+                    singleStockResult.CurrentWeights
+                );
                 
                 _cache.Set(cacheKey, singleStockResult, TimeSpan.FromHours(6));
                 return singleStockResult;
@@ -563,6 +579,13 @@ namespace FundWatch.Services
 
             if (result != null)
             {
+                // Add historical backtest
+                result.HistoricalPerformance = await GenerateHistoricalBacktest(
+                    userStocks,
+                    result.OptimalWeights ?? new Dictionary<string, double>(),
+                    result.CurrentWeights ?? currentWeights
+                );
+                
                 _cache.Set(cacheKey, result, TimeSpan.FromHours(6));
             }
             return result;
@@ -618,6 +641,14 @@ namespace FundWatch.Services
             var dataPoints = new List<StockDataPoint>();
             var currentReturn = ((double)(stock.CurrentPrice - stock.PurchasePrice) / (double)stock.PurchasePrice);
             var daysSincePurchase = Math.Max(1, (DateTime.Now - stock.DatePurchased).Days);
+            
+            // If no price movement, add some synthetic movement for analysis
+            if (Math.Abs(currentReturn) < 0.001)
+            {
+                currentReturn = 0.05; // 5% synthetic return
+                _logger.LogInformation($"Stock {stock.StockSymbol} has no price movement, using synthetic 5% return for data generation");
+            }
+            
             var dailyReturn = Math.Pow(1 + currentReturn, 1.0 / daysSincePurchase) - 1;
             
             // Generate daily prices with some realistic volatility
@@ -683,7 +714,7 @@ namespace FundWatch.Services
 
         public async Task<FourierAnalysisModel.FourierAnalysisResult> AnalyzeMarketCycles(string userId)
         {
-            var cacheKey = $"fourier_analysis_{userId}_{DateTime.UtcNow:yyyyMMdd}_v2"; // v2 to bypass old cache
+            var cacheKey = $"fourier_analysis_{userId}_{DateTime.UtcNow:yyyyMMddHHmm}_v3"; // v3 with minute timestamp to force refresh
             
             if (_cache.TryGetValue(cacheKey, out FourierAnalysisModel.FourierAnalysisResult cachedResult))
             {
@@ -806,10 +837,13 @@ namespace FundWatch.Services
                     var totalValue = (double)userStocks.Sum(s => s.TotalValue);
                     var random = new Random();
                     
-                    // Generate 30 days of synthetic portfolio values
+                    // Generate 30 days of synthetic portfolio values with guaranteed variation
                     for (int i = 0; i < 30; i++)
                     {
-                        var dailyReturn = (random.NextDouble() - 0.5) * 0.02; // +/- 2% daily
+                        // Create a trend with noise
+                        var trend = 0.001 * (i - 15); // Slight upward trend
+                        var noise = (random.NextDouble() - 0.5) * 0.02; // +/- 2% daily noise
+                        var dailyReturn = trend + noise;
                         totalValue *= (1 + dailyReturn);
                         syntheticValues.Add(totalValue);
                         syntheticDates.Add(DateTime.Now.AddDays(-30 + i));
@@ -974,6 +1008,136 @@ namespace FundWatch.Services
             }
             
             return result;
+        }
+        
+        private async Task<PortfolioOptimizationModel.HistoricalBacktest> GenerateHistoricalBacktest(
+            List<AppUserStock> userStocks,
+            Dictionary<string, double> optimalWeights,
+            Dictionary<string, double> actualWeights)
+        {
+            var backtest = new PortfolioOptimizationModel.HistoricalBacktest
+            {
+                ActualPerformance = new List<PortfolioOptimizationModel.HistoricalDataPoint>(),
+                OptimalPerformance = new List<PortfolioOptimizationModel.HistoricalDataPoint>(),
+                EfficientFrontierPerformance = new List<PortfolioOptimizationModel.HistoricalDataPoint>(),
+                WhatIfReturns = new Dictionary<string, double>()
+            };
+            
+            if (!userStocks.Any())
+                return backtest;
+            
+            // Get the earliest purchase date
+            backtest.StartDate = userStocks.Min(s => s.DatePurchased);
+            backtest.EndDate = DateTime.Now;
+            
+            // Get historical data for all stocks
+            var symbols = userStocks.Select(s => s.StockSymbol).ToList();
+            var daysSinceStart = (backtest.EndDate - backtest.StartDate).Days;
+            var historicalData = await _stockService.GetRealTimeDataAsync(symbols, Math.Min(daysSinceStart, 730));
+            
+            // Calculate portfolio values for each strategy
+            var actualPortfolioValue = 100000.0; // Start with $100k
+            var optimalPortfolioValue = 100000.0;
+            var startingValues = new Dictionary<string, double>();
+            
+            foreach (var stock in userStocks)
+            {
+                startingValues[stock.StockSymbol] = (double)stock.PurchasePrice;
+            }
+            
+            // Process each day
+            var allDates = historicalData.Values
+                .Where(v => v != null)
+                .SelectMany(d => d.Select(p => p.Date))
+                .Distinct()
+                .Where(d => d >= backtest.StartDate)
+                .OrderBy(d => d)
+                .ToList();
+            
+            foreach (var date in allDates)
+            {
+                double actualDayValue = 0;
+                double optimalDayValue = 0;
+                
+                foreach (var stock in userStocks)
+                {
+                    if (date < stock.DatePurchased)
+                        continue;
+                    
+                    double priceOnDate = (double)stock.PurchasePrice;
+                    
+                    if (historicalData.ContainsKey(stock.StockSymbol))
+                    {
+                        var dayData = historicalData[stock.StockSymbol]
+                            ?.FirstOrDefault(d => d.Date.Date == date.Date);
+                        
+                        if (dayData != null)
+                        {
+                            priceOnDate = (double)dayData.Close;
+                        }
+                    }
+                    
+                    // Calculate returns from purchase price
+                    var returnFromPurchase = (priceOnDate - (double)stock.PurchasePrice) / (double)stock.PurchasePrice;
+                    
+                    // Actual portfolio (current weights)
+                    var actualWeight = actualWeights.ContainsKey(stock.StockSymbol) 
+                        ? actualWeights[stock.StockSymbol] 
+                        : 0;
+                    actualDayValue += actualPortfolioValue * actualWeight * (1 + returnFromPurchase);
+                    
+                    // Optimal portfolio
+                    var optimalWeight = optimalWeights.ContainsKey(stock.StockSymbol) 
+                        ? optimalWeights[stock.StockSymbol] 
+                        : 0;
+                    optimalDayValue += optimalPortfolioValue * optimalWeight * (1 + returnFromPurchase);
+                }
+                
+                // Add data points
+                var actualReturn = (actualDayValue - 100000) / 100000;
+                var optimalReturn = (optimalDayValue - 100000) / 100000;
+                
+                backtest.ActualPerformance.Add(new PortfolioOptimizationModel.HistoricalDataPoint
+                {
+                    Date = date,
+                    Value = actualDayValue,
+                    CumulativeReturn = actualReturn,
+                    Drawdown = CalculateDrawdown(backtest.ActualPerformance, actualDayValue)
+                });
+                
+                backtest.OptimalPerformance.Add(new PortfolioOptimizationModel.HistoricalDataPoint
+                {
+                    Date = date,
+                    Value = optimalDayValue,
+                    CumulativeReturn = optimalReturn,
+                    Drawdown = CalculateDrawdown(backtest.OptimalPerformance, optimalDayValue)
+                });
+            }
+            
+            // Calculate final statistics
+            if (backtest.ActualPerformance.Any() && backtest.OptimalPerformance.Any())
+            {
+                backtest.ActualReturn = backtest.ActualPerformance.Last().CumulativeReturn;
+                backtest.OptimalReturn = backtest.OptimalPerformance.Last().CumulativeReturn;
+                backtest.MissedGains = backtest.OptimalReturn - backtest.ActualReturn;
+                
+                // Calculate what-if scenarios
+                backtest.WhatIfReturns["Conservative (60/40)"] = backtest.ActualReturn * 0.6 + 0.02 * 0.4;
+                backtest.WhatIfReturns["Aggressive (90/10)"] = backtest.ActualReturn * 0.9 + 0.02 * 0.1;
+                backtest.WhatIfReturns["Equal Weight"] = userStocks.Average(s => 
+                    ((double)s.CurrentPrice - (double)s.PurchasePrice) / (double)s.PurchasePrice);
+            }
+            
+            return backtest;
+        }
+        
+        private double CalculateDrawdown(List<PortfolioOptimizationModel.HistoricalDataPoint> performance, double currentValue)
+        {
+            if (!performance.Any())
+                return 0;
+            
+            var peak = performance.Max(p => p.Value);
+            return peak > 0 ? (peak - currentValue) / peak : 0;
         }
     }
 }

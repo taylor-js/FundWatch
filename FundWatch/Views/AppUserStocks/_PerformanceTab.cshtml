@@ -32,6 +32,62 @@
 
 @if (hasOptimization)
 {
+    <!-- Historical Performance vs Optimal Strategy -->
+    @if (optimization.HistoricalPerformance != null && optimization.HistoricalPerformance.ActualPerformance?.Any() == true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-lg border-0 bg-gradient-info text-white">
+                    <div class="card-body">
+                        <h5 class="mb-3">
+                            <i class="fas fa-history me-2"></i>Historical Performance Analysis
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6>Your Actual Return</h6>
+                                <h3>@((optimization.HistoricalPerformance.ActualReturn * 100).ToString("F2"))%</h3>
+                                <small>Since @optimization.HistoricalPerformance.StartDate.ToString("MMM yyyy")</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Optimal Strategy Return</h6>
+                                <h3 class="text-warning">@((optimization.HistoricalPerformance.OptimalReturn * 100).ToString("F2"))%</h3>
+                                <small>What you could have earned</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Missed Gains</h6>
+                                <h3 class="@(optimization.HistoricalPerformance.MissedGains > 0 ? "text-danger" : "text-success")">
+                                    @((optimization.HistoricalPerformance.MissedGains * 100).ToString("F2"))%
+                                </h3>
+                                <small>Opportunity cost</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Days Analyzed</h6>
+                                <h3>@((optimization.HistoricalPerformance.EndDate - optimization.HistoricalPerformance.StartDate).Days)</h3>
+                                <small>Historical data points</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Historical Performance Chart -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>Historical Performance: Actual vs Optimal Strategy
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="historicalPerformanceChart" class="chart-container-450"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    
     <!-- Key Metrics Comparison -->
     <div class="row mb-4">
         <div class="col-md-6 col-lg-3 mb-3">
@@ -326,11 +382,13 @@ document.addEventListener('DOMContentLoaded', function() {
             var currentPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio));
             var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio));
             var monteCarloResults = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations?.Take(100) ?? new List<PortfolioOptimizationModel.MonteCarloResult>())); // Sample for performance
+            var historicalPerformance = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.HistoricalPerformance));
             
             console.log('Efficient Frontier data:', efficientFrontier);
             console.log('Current Portfolio:', currentPortfolio);
             console.log('Optimal Portfolio:', optimalPortfolio);
             console.log('Monte Carlo Results:', monteCarloResults);
+            console.log('Historical Performance:', historicalPerformance);
         
         // Light theme configuration for charts
         var lightTheme = {
@@ -693,6 +751,110 @@ document.addEventListener('DOMContentLoaded', function() {
                     tooltip: {
                         valueSuffix: '%'
                     }
+                }]
+            }));
+        }
+        
+        // 5. Historical Performance Chart
+        if (document.getElementById('historicalPerformanceChart') && historicalPerformance && historicalPerformance.ActualPerformance) {
+            // Prepare data series
+            var actualData = historicalPerformance.ActualPerformance.map(p => ({
+                x: new Date(p.Date).getTime(),
+                y: p.Value
+            }));
+            
+            var optimalData = historicalPerformance.OptimalPerformance.map(p => ({
+                x: new Date(p.Date).getTime(),
+                y: p.Value
+            }));
+            
+            Highcharts.chart('historicalPerformanceChart', Highcharts.merge(lightTheme, {
+                chart: {
+                    type: 'line',
+                    zoomType: 'x'
+                },
+                title: {
+                    text: 'Portfolio Performance: Actual vs Optimal Strategy'
+                },
+                subtitle: {
+                    text: 'What could have been earned with optimal allocation from ' + 
+                          new Date(historicalPerformance.StartDate).toLocaleDateString()
+                },
+                xAxis: {
+                    type: 'datetime',
+                    title: { text: 'Date' }
+                },
+                yAxis: {
+                    title: { text: 'Portfolio Value ($)' }
+                },
+                tooltip: {
+                    shared: true,
+                    crosshairs: true,
+                    formatter: function() {
+                        var date = new Date(this.x).toLocaleDateString();
+                        var s = '<b>' + date + '</b>';
+                        
+                        this.points.forEach(function(point) {
+                            var value = point.y.toFixed(2);
+                            var actualPoint = historicalPerformance.ActualPerformance.find(p => 
+                                new Date(p.Date).getTime() === point.x);
+                            var optimalPoint = historicalPerformance.OptimalPerformance.find(p => 
+                                new Date(p.Date).getTime() === point.x);
+                            
+                            if (point.series.name === 'Your Actual Strategy' && actualPoint) {
+                                s += '<br/>' + point.series.name + ': $' + value + 
+                                     ' (' + (actualPoint.CumulativeReturn * 100).toFixed(2) + '% return)';
+                            } else if (point.series.name === 'Optimal Strategy' && optimalPoint) {
+                                s += '<br/>' + point.series.name + ': $' + value + 
+                                     ' (' + (optimalPoint.CumulativeReturn * 100).toFixed(2) + '% return)';
+                            }
+                        });
+                        
+                        return s;
+                    }
+                },
+                plotOptions: {
+                    line: {
+                        marker: {
+                            enabled: false
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Your Actual Strategy',
+                    data: actualData,
+                    color: '#dc3545',
+                    lineWidth: 2
+                }, {
+                    name: 'Optimal Strategy',
+                    data: optimalData,
+                    color: '#28a745',
+                    lineWidth: 2,
+                    dashStyle: 'shortdash'
+                }],
+                annotations: [{
+                    labelOptions: {
+                        backgroundColor: 'rgba(255,255,255,0.8)',
+                        borderColor: '#666',
+                        borderRadius: 5
+                    },
+                    labels: [{
+                        point: {
+                            xAxis: 0,
+                            yAxis: 0,
+                            x: actualData[actualData.length - 1].x,
+                            y: actualData[actualData.length - 1].y
+                        },
+                        text: 'Actual: $' + actualData[actualData.length - 1].y.toFixed(2)
+                    }, {
+                        point: {
+                            xAxis: 0,
+                            yAxis: 0,
+                            x: optimalData[optimalData.length - 1].x,
+                            y: optimalData[optimalData.length - 1].y
+                        },
+                        text: 'Optimal: $' + optimalData[optimalData.length - 1].y.toFixed(2)
+                    }]
                 }]
             }));
         }

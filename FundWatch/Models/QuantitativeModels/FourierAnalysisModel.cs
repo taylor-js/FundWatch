@@ -16,6 +16,9 @@ namespace FundWatch.Models.QuantitativeModels
             public List<PredictionPoint> FourierPrediction { get; set; }
             public CorrelationMatrix CrossCorrelations { get; set; }
             public WaveletAnalysis WaveletTransform { get; set; }
+            
+            // Historical pattern validation
+            public PatternBacktest HistoricalValidation { get; set; }
         }
 
         public class FrequencyComponent
@@ -105,6 +108,35 @@ namespace FundWatch.Models.QuantitativeModels
             public string Type { get; set; } // Peak or Trough
             public double Confidence { get; set; }
             public string TimeScale { get; set; }
+        }
+
+        public class PatternBacktest
+        {
+            public List<CycleValidation> ValidatedCycles { get; set; }
+            public double PatternAccuracy { get; set; }
+            public double PredictionAccuracy { get; set; }
+            public List<HistoricalPrediction> PastPredictions { get; set; }
+            public Dictionary<string, double> CycleReliability { get; set; }
+        }
+
+        public class CycleValidation
+        {
+            public string CycleName { get; set; }
+            public int PredictedPeaks { get; set; }
+            public int ActualPeaks { get; set; }
+            public double Accuracy { get; set; }
+            public List<DateTime> CorrectPredictions { get; set; }
+            public List<DateTime> MissedPredictions { get; set; }
+        }
+
+        public class HistoricalPrediction
+        {
+            public DateTime PredictionDate { get; set; }
+            public DateTime TargetDate { get; set; }
+            public double PredictedValue { get; set; }
+            public double ActualValue { get; set; }
+            public double Error { get; set; }
+            public bool WithinConfidenceInterval { get; set; }
         }
 
         // Perform Fast Fourier Transform on price data

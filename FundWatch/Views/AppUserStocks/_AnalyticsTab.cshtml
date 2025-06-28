@@ -86,6 +86,81 @@
         </div>
     </div>
 
+    <!-- Historical Pattern Validation -->
+    @if (fourier.HistoricalValidation != null && fourier.HistoricalValidation.ValidatedCycles?.Any() == true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-gradient-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Historical Pattern Accuracy
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-4 text-center">
+                                <h6>Overall Pattern Accuracy</h6>
+                                <div class="display-4 text-info">@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F1"))%</div>
+                                <small class="text-muted">Based on historical backtesting</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h6>Prediction Accuracy</h6>
+                                <div class="display-4 text-success">@((fourier.HistoricalValidation.PredictionAccuracy * 100).ToString("F1"))%</div>
+                                <small class="text-muted">Within confidence intervals</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h6>Validated Cycles</h6>
+                                <div class="display-4 text-primary">@fourier.HistoricalValidation.ValidatedCycles.Count</div>
+                                <small class="text-muted">Confirmed patterns</small>
+                            </div>
+                        </div>
+                        
+                        <h6 class="mt-4 mb-3">Cycle Performance History</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Cycle Name</th>
+                                        <th class="text-center">Predicted Peaks</th>
+                                        <th class="text-center">Actual Peaks</th>
+                                        <th class="text-center">Accuracy</th>
+                                        <th class="text-center">Reliability</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var cycle in fourier.HistoricalValidation.ValidatedCycles.OrderByDescending(c => c.Accuracy))
+                                    {
+                                        var reliability = fourier.HistoricalValidation.CycleReliability?.GetValueOrDefault(cycle.CycleName, 0) ?? 0;
+                                        var reliabilityClass = reliability > 0.8 ? "success" : reliability > 0.6 ? "warning" : "danger";
+                                        
+                                        <tr>
+                                            <td>@cycle.CycleName</td>
+                                            <td class="text-center">@cycle.PredictedPeaks</td>
+                                            <td class="text-center">@cycle.ActualPeaks</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-info">@((cycle.Accuracy * 100).ToString("F0"))%</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-@reliabilityClass">@((reliability * 100).ToString("F0"))%</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        @if (fourier.HistoricalValidation.PastPredictions?.Any() == true)
+                        {
+                            <h6 class="mt-4 mb-3">Recent Prediction Performance</h6>
+                            <div id="predictionAccuracyChart" class="chart-container-300"></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Main Fourier Analysis Visualizations -->
     <div class="row mb-4">
         <!-- Frequency Spectrum & Power Analysis -->
@@ -366,8 +441,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Decomposition:', decomposition);
             console.log('Predictions:', predictions);
             console.log('Market Cycles:', marketCycles);
-        
-        // Light theme configuration for charts
+            
+            // Light theme configuration for charts
         var lightTheme = {
             chart: {
                 backgroundColor: '#ffffff',
@@ -729,6 +804,74 @@ document.addEventListener('DOMContentLoaded', function() {
                         data: waveletLevels.map(l => l.Energy),
                         colorByPoint: true,
                         colors: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1']
+                    }]
+                });
+            }
+            </text>
+        }
+        
+        // 7. Historical Prediction Accuracy Chart
+        @if (fourier.HistoricalValidation?.PastPredictions?.Any() == true)
+        {
+            <text>
+            if (document.getElementById('predictionAccuracyChart')) {
+                var historicalValidation = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.HistoricalValidation));
+                var predictions = historicalValidation.PastPredictions;
+                
+                // Group predictions by date for visualization
+                var accuracyData = predictions.map(p => ({
+                    x: new Date(p.TargetDate).getTime(),
+                    y: Math.abs(p.Error) * 100,
+                    color: p.WithinConfidenceInterval ? '#28a745' : '#dc3545',
+                    predicted: p.PredictedValue,
+                    actual: p.ActualValue
+                }));
+                
+                Highcharts.chart('predictionAccuracyChart', {
+                    chart: {
+                        type: 'scatter',
+                        backgroundColor: '#ffffff',
+                        zoomType: 'xy'
+                    },
+                    title: {
+                        text: 'Prediction Error Over Time'
+                    },
+                    subtitle: {
+                        text: 'Green: Within confidence interval, Red: Outside interval'
+                    },
+                    xAxis: {
+                        type: 'datetime',
+                        title: { text: 'Date' }
+                    },
+                    yAxis: {
+                        title: { text: 'Prediction Error (%)' },
+                        min: 0
+                    },
+                    tooltip: {
+                        formatter: function() {
+                            return '<b>' + new Date(this.x).toLocaleDateString() + '</b><br>' +
+                                   'Error: ' + this.y.toFixed(2) + '%<br>' +
+                                   'Predicted: $' + this.point.predicted.toFixed(2) + '<br>' +
+                                   'Actual: $' + this.point.actual.toFixed(2);
+                        }
+                    },
+                    plotOptions: {
+                        scatter: {
+                            marker: {
+                                radius: 5,
+                                states: {
+                                    hover: {
+                                        enabled: true,
+                                        lineColor: 'rgb(100,100,100)'
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    series: [{
+                        name: 'Prediction Errors',
+                        data: accuracyData,
+                        colorByPoint: true
                     }]
                 });
             }

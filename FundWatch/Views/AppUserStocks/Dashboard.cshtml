@@ -60,7 +60,7 @@
             console.log('Dashboard view loaded - main script');
             
             // Check for specific tab to activate
-            var activeTab = '@ViewData["ActiveTab"]';
+            var activeTab = '@(ViewData["ActiveTab"] ?? "")';
             
             setTimeout(function() {
                 // Determine which tab to show

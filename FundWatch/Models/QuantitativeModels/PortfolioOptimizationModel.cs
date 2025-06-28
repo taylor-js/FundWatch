@@ -17,6 +17,9 @@ namespace FundWatch.Models.QuantitativeModels
             public double MinVarianceReturn { get; set; }
             public List<MonteCarloResult> MonteCarloSimulations { get; set; }
             public RiskMetrics RiskAnalysis { get; set; }
+            
+            // Historical backtesting results
+            public HistoricalBacktest HistoricalPerformance { get; set; }
         }
 
         public class PortfolioPoint
@@ -46,6 +49,27 @@ namespace FundWatch.Models.QuantitativeModels
             public double Beta { get; set; }
             public double TreynorRatio { get; set; }
             public double InformationRatio { get; set; }
+        }
+
+        public class HistoricalBacktest
+        {
+            public DateTime StartDate { get; set; }
+            public DateTime EndDate { get; set; }
+            public double ActualReturn { get; set; }
+            public double OptimalReturn { get; set; }
+            public double MissedGains { get; set; }
+            public List<HistoricalDataPoint> ActualPerformance { get; set; }
+            public List<HistoricalDataPoint> OptimalPerformance { get; set; }
+            public List<HistoricalDataPoint> EfficientFrontierPerformance { get; set; }
+            public Dictionary<string, double> WhatIfReturns { get; set; } // What if scenarios
+        }
+
+        public class HistoricalDataPoint
+        {
+            public DateTime Date { get; set; }
+            public double Value { get; set; }
+            public double CumulativeReturn { get; set; }
+            public double Drawdown { get; set; }
         }
 
         public class AssetData

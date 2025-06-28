@@ -188,15 +188,29 @@ namespace FundWatch.Controllers
                 viewModel.OptionsAnalysis = await _quantAnalysisService.AnalyzePortfolioOptions(userId);
                 
                 // Add portfolio optimization
-                viewModel.PortfolioOptimization = await _quantAnalysisService.OptimizePortfolio(userId);
-                _logger.LogInformation($"Portfolio optimization result: {viewModel.PortfolioOptimization != null}, " +
-                    $"Efficient Frontier points: {viewModel.PortfolioOptimization?.EfficientFrontier?.Count ?? 0}");
+                try
+                {
+                    viewModel.PortfolioOptimization = await _quantAnalysisService.OptimizePortfolio(userId);
+                    _logger.LogInformation($"Portfolio optimization result: {viewModel.PortfolioOptimization != null}, " +
+                        $"Efficient Frontier points: {viewModel.PortfolioOptimization?.EfficientFrontier?.Count ?? 0}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in portfolio optimization");
+                }
                 
                 // Add Fourier analysis for market cycles
-                viewModel.FourierAnalysis = await _quantAnalysisService.AnalyzeMarketCycles(userId);
-                _logger.LogInformation($"Fourier analysis result: {viewModel.FourierAnalysis != null}, " +
-                    $"Market Cycles: {viewModel.FourierAnalysis?.MarketCycles?.Count ?? 0}, " +
-                    $"Dominant Frequencies: {viewModel.FourierAnalysis?.DominantFrequencies?.Count ?? 0}");
+                try
+                {
+                    viewModel.FourierAnalysis = await _quantAnalysisService.AnalyzeMarketCycles(userId);
+                    _logger.LogInformation($"Fourier analysis result: {viewModel.FourierAnalysis != null}, " +
+                        $"Market Cycles: {viewModel.FourierAnalysis?.MarketCycles?.Count ?? 0}, " +
+                        $"Dominant Frequencies: {viewModel.FourierAnalysis?.DominantFrequencies?.Count ?? 0}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in Fourier analysis");
+                }
                 
                 // Log all chart data metrics with extra detail for drawdown data
                 _logger.LogInformation(

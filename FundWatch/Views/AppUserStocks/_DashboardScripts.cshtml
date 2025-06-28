@@ -204,8 +204,8 @@
 
         // Prevent negative width/height on SVG elements
         // This fixes the "<svg> attribute width: A negative value is not valid" error
-        const originalCreateSVG = ej.base.createSvg;
-        if (originalCreateSVG) {
+        if (typeof ej !== 'undefined' && ej.base && ej.base.createSvg) {
+            const originalCreateSVG = ej.base.createSvg;
             ej.base.createSvg = function() {
                 const svg = originalCreateSVG.apply(this, arguments);
 

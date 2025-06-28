@@ -130,7 +130,7 @@
                             if (hasFourier && Model.FourierAnalysis.MarketCycles.Any())
                             {
                                 var primaryCycle = Model.FourierAnalysis.MarketCycles.FirstOrDefault();
-                                if (primaryCycle != null)
+                                if (primaryCycle != null && !string.IsNullOrEmpty(primaryCycle.PhaseDescription))
                                 {
                                     cyclePhase = primaryCycle.PhaseDescription.Contains("Rising") ? "↑" : "↓";
                                     cycleColor = primaryCycle.PhaseDescription.Contains("Rising") ? "success" : "danger";
@@ -336,13 +336,24 @@
                                     </h6>
                                     @foreach (var cycle in Model.FourierAnalysis.MarketCycles.Take(2))
                                     {
-                                        <div class="insight-item mb-2 p-2 rounded" style="background-color: #f8f9fa;">
-                                            <strong>@cycle.CycleName:</strong>
-                                            <span class="text-secondary">
-                                                Next @(cycle.PhaseDescription.Contains("Rising") ? "peak" : "trough") in 
-                                                @((cycle.PhaseDescription.Contains("Rising") ? cycle.NextPeak : cycle.NextTrough).Subtract(DateTime.Now).Days) days
-                                            </span>
-                                        </div>
+                                        if (!string.IsNullOrEmpty(cycle.PhaseDescription))
+                                        {
+                                            var nextDate = cycle.PhaseDescription.Contains("Rising") ? cycle.NextPeak : cycle.NextTrough;
+                                            var daysUntil = (int)nextDate.Subtract(DateTime.Now).TotalDays;
+                                            <div class="insight-item mb-2 p-2 rounded" style="background-color: #f8f9fa;">
+                                                <strong>@cycle.CycleName:</strong>
+                                                <span class="text-secondary">
+                                                    @if (daysUntil > 0)
+                                                    {
+                                                        <text>Next @(cycle.PhaseDescription.Contains("Rising") ? "peak" : "trough") in @daysUntil days</text>
+                                                    }
+                                                    else
+                                                    {
+                                                        <text>Cycle analysis in progress</text>
+                                                    }
+                                                </span>
+                                            </div>
+                                        }
                                     }
                                 </div>
                             }
@@ -363,7 +374,7 @@
         });
         
         // Save preference
-        const isShowing = advancedColumns[0].classList.contains('show');
+        const isShowing = advancedColumns.length > 0 && advancedColumns[0].classList.contains('show');
         localStorage.setItem('showAdvancedColumns', isShowing);
     }
     
