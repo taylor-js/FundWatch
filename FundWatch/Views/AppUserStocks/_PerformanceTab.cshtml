@@ -30,7 +30,7 @@
     </div>
 </div>
 
-@if (hasOptimization && optimization.EfficientFrontier?.Any() == true)
+@if (hasOptimization)
 {
     <!-- Key Metrics Comparison -->
     <div class="row mb-4">
@@ -309,6 +309,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <text>
         console.log('Efficient Frontier points: @(optimization.EfficientFrontier?.Count ?? 0)');
         console.log('Monte Carlo simulations: @(optimization.MonteCarloSimulations?.Count ?? 0)');
+        console.log('Current Portfolio: @(optimization.CurrentPortfolio != null ? "Available" : "Not available")');
+        console.log('Optimal Portfolio: @(optimization.OptimalPortfolio != null ? "Available" : "Not available")');
         </text>
     }
     
@@ -320,10 +322,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing Performance tab charts...');
             
             // Prepare optimization data
-            var efficientFrontier = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier ?? new List<object>()));
+            var efficientFrontier = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier ?? new List<PortfolioOptimizationModel.PortfolioPoint>()));
             var currentPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio));
             var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio));
-            var monteCarloResults = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations?.Take(100) ?? new List<object>())); // Sample for performance
+            var monteCarloResults = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations?.Take(100) ?? new List<PortfolioOptimizationModel.MonteCarloResult>())); // Sample for performance
             
             console.log('Efficient Frontier data:', efficientFrontier);
             console.log('Current Portfolio:', currentPortfolio);

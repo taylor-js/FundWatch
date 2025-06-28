@@ -189,9 +189,14 @@ namespace FundWatch.Controllers
                 
                 // Add portfolio optimization
                 viewModel.PortfolioOptimization = await _quantAnalysisService.OptimizePortfolio(userId);
+                _logger.LogInformation($"Portfolio optimization result: {viewModel.PortfolioOptimization != null}, " +
+                    $"Efficient Frontier points: {viewModel.PortfolioOptimization?.EfficientFrontier?.Count ?? 0}");
                 
                 // Add Fourier analysis for market cycles
                 viewModel.FourierAnalysis = await _quantAnalysisService.AnalyzeMarketCycles(userId);
+                _logger.LogInformation($"Fourier analysis result: {viewModel.FourierAnalysis != null}, " +
+                    $"Market Cycles: {viewModel.FourierAnalysis?.MarketCycles?.Count ?? 0}, " +
+                    $"Dominant Frequencies: {viewModel.FourierAnalysis?.DominantFrequencies?.Count ?? 0}");
                 
                 // Log all chart data metrics with extra detail for drawdown data
                 _logger.LogInformation(

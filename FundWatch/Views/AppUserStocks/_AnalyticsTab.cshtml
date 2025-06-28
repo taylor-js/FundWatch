@@ -30,7 +30,7 @@
     </div>
 </div>
 
-@if (hasFourierAnalysis && fourier.DominantFrequencies?.Any() == true)
+@if (hasFourierAnalysis)
 {
     <!-- Market Cycles Discovery -->
     <div class="row mb-4">
@@ -339,6 +339,15 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Analytics tab DOM loaded');
     console.log('Has Fourier analysis: @hasFourierAnalysis');
     console.log('Fourier analysis: @(Model.FourierAnalysis != null ? "Available" : "Not available")');
+    @if (Model.FourierAnalysis != null)
+    {
+        <text>
+        console.log('Market Cycles: @(fourier.MarketCycles?.Count ?? 0)');
+        console.log('Dominant Frequencies: @(fourier.DominantFrequencies?.Count ?? 0)');
+        console.log('Power Spectrum: @(fourier.PowerSpectrum != null ? "Available" : "Not available")');
+        console.log('Decomposition: @(fourier.Decomposition != null ? "Available" : "Not available")');
+        </text>
+    }
     
     // Add tab visibility check and delay chart initialization
     function initializeAnalyticsCharts() {
@@ -348,10 +357,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing Analytics tab charts...');
             
             // Prepare Fourier analysis data
-            var powerSpectrum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.PowerSpectrum ?? new { }));
-            var decomposition = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.Decomposition ?? new { }));
-            var predictions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.FourierPrediction ?? new List<object>()));
-            var marketCycles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.MarketCycles ?? new List<object>()));
+            var powerSpectrum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.PowerSpectrum ?? new FourierAnalysisModel.SpectralAnalysis()));
+            var decomposition = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.Decomposition ?? new FourierAnalysisModel.PriceDecomposition()));
+            var predictions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.FourierPrediction ?? new List<FourierAnalysisModel.PredictionPoint>()));
+            var marketCycles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.MarketCycles ?? new List<FourierAnalysisModel.CycleAnalysis>()));
             
             console.log('Power Spectrum:', powerSpectrum);
             console.log('Decomposition:', decomposition);
@@ -427,7 +436,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         // 1. Power Spectrum Chart
-        if (document.getElementById('powerSpectrumChart') && powerSpectrum) {
+        if (document.getElementById('powerSpectrumChart') && powerSpectrum && powerSpectrum.PowerSpectralDensity && powerSpectrum.PowerSpectralDensity.length > 0) {
             var spectrumData = [];
             for (var i = 0; i &lt; powerSpectrum.PowerSpectralDensity.length; i++) {
                 if (powerSpectrum.SignificantPeaks.includes(i)) {
@@ -480,7 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 2. Decomposition Chart
-        if (document.getElementById('decompositionChart') && decomposition) {
+        if (document.getElementById('decompositionChart') && decomposition && decomposition.Dates && decomposition.Dates.length > 0) {
             var dates = decomposition.Dates.map(d => new Date(d).getTime());
             
             Highcharts.chart('decompositionChart', {
@@ -527,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 3. Fourier Prediction Chart
-        if (document.getElementById('fourierPredictionChart') && predictions) {
+        if (document.getElementById('fourierPredictionChart') && predictions && predictions.length > 0) {
             var predictionData = predictions.map(p => ({
                 x: new Date(p.Date).getTime(),
                 y: p.PredictedPrice,
