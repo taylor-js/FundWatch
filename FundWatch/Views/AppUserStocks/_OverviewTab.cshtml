@@ -274,7 +274,7 @@ else
                         Once you add stocks to your portfolio, we'll show you advanced options pricing analysis 
                         using the Black-Scholes model and market sentiment indicators.
                     </p>
-                    <button id="addStockButton" class="btn btn-primary">
+                    <button class="btn btn-primary" onclick="window.location.href='/AppUserStocks/CreateOrEdit'">
                         <i class="fas fa-plus me-2"></i>Add Your First Stock
                     </button>
                 </div>
@@ -296,9 +296,16 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Processing options data for @featuredOptions.Symbol');
         
         // Use pre-calculated chart data from server
-        var payoffData = @Html.Raw(featuredOptions.ChartData.PayoffDataJson);
-        var greeksData = @Html.Raw(featuredOptions.ChartData.GreeksDataJson);
-        var smileData = @Html.Raw(featuredOptions.ChartData.SmileDataJson);
+        var payoffData = @Html.Raw(featuredOptions.ChartData?.PayoffDataJson ?? "null");
+        var greeksData = @Html.Raw(featuredOptions.ChartData?.GreeksDataJson ?? "null");
+        var smileData = @Html.Raw(featuredOptions.ChartData?.SmileDataJson ?? "null");
+        
+        // Log the data for debugging
+        console.log('Chart data received:', {
+            payoffData: payoffData,
+            greeksData: greeksData,
+            smileData: smileData
+        });
         
         // Light theme configuration for Highcharts (better visibility in dark app)
         var lightTheme = {
@@ -376,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         // 1. Options Payoff Diagram
-        if (document.getElementById('optionsPayoffChart')) {
+        if (document.getElementById('optionsPayoffChart') && payoffData) {
             Highcharts.chart('optionsPayoffChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'line'
@@ -458,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 2. Greeks Radar Chart
-        if (document.getElementById('greeksRadarChart')) {
+        if (document.getElementById('greeksRadarChart') && greeksData) {
             Highcharts.chart('greeksRadarChart', Highcharts.merge(lightTheme, {
                 chart: {
                     polar: true,
@@ -524,7 +531,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 3. Volatility Smile Chart
-        if (document.getElementById('volatilitySmileChart')) {
+        if (document.getElementById('volatilitySmileChart') && smileData) {
             Highcharts.chart('volatilitySmileChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'line'
