@@ -415,6 +415,10 @@ namespace FundWatch.Services
             }
             
             _logger.LogInformation($"Found {userStocks.Count} stocks for user {userId} in portfolio optimization");
+            foreach (var stock in userStocks)
+            {
+                _logger.LogInformation($"Stock: {stock.StockSymbol}, Purchased: {stock.DatePurchased:yyyy-MM-dd}, Purchase Price: ${stock.PurchasePrice}, Current Price: ${stock.CurrentPrice}");
+            }
                 
             // If we have only 1 stock, create a synthetic second asset (cash position)
             if (userStocks.Count == 1)
@@ -524,6 +528,7 @@ namespace FundWatch.Services
                 // Try to get historical data
                 if (daysSincePurchase > 1)
                 {
+                    _logger.LogInformation($"Fetching historical data for {stock.StockSymbol}, days since purchase: {daysSincePurchase}");
                     var historicalData = await _stockService.GetRealTimeDataAsync(
                         new List<string> { stock.StockSymbol }, 
                         Math.Min(daysSincePurchase, 730) // Use available data up to 2 years
@@ -532,13 +537,20 @@ namespace FundWatch.Services
                     if (historicalData.TryGetValue(stock.StockSymbol, out var points) && points != null)
                     {
                         dataPoints = points.ToList();
+                        _logger.LogInformation($"Retrieved {dataPoints.Count} historical data points for {stock.StockSymbol}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"No historical data returned for {stock.StockSymbol}");
                     }
                 }
 
                 // If we don't have enough historical data, generate synthetic data based on purchase
                 if (dataPoints.Count < 20)
                 {
+                    _logger.LogInformation($"Stock {stock.StockSymbol} has only {dataPoints.Count} data points, generating synthetic data");
                     dataPoints = GenerateSyntheticDataFromPurchase(stock);
+                    _logger.LogInformation($"Generated {dataPoints.Count} synthetic data points for {stock.StockSymbol}");
                 }
 
                 if (dataPoints.Count > 10) // Need minimum data points
@@ -564,7 +576,10 @@ namespace FundWatch.Services
             }
 
             if (assets.Count < 2) // Need at least 2 assets for optimization
+            {
+                _logger.LogWarning($"Only {assets.Count} assets with sufficient data. Portfolio optimization requires at least 2 assets.");
                 return null;
+            }
 
             // Run optimization
             var result = PortfolioOptimizationModel.OptimizePortfolio(assets, currentWeights);
