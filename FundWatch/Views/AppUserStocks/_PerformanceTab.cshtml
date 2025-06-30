@@ -98,7 +98,7 @@
                     </div>
                     <h6 class="text-muted">Current Sharpe Ratio</h6>
                     <h3 class="mb-0">@optimization.CurrentPortfolio.SharpeRatio.ToString("F2")</h3>
-                    <small class="text-secondary">Risk-adjusted return</small>
+                    <p class="text-muted small mb-0">(Risk-adjusted return)</p>
                 </div>
             </div>
         </div>
@@ -107,14 +107,11 @@
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-body text-center">
                     <div class="icon-wrapper mb-3">
-                        <i class="fas fa-rocket fa-2x text-success"></i>
+                        <i class="fas fa-chart-line fa-2x text-success"></i>
                     </div>
                     <h6 class="text-muted">Optimal Sharpe Ratio</h6>
-                    <h3 class="mb-0 text-success">@optimization.MaxSharpeRatio.ToString("F2")</h3>
-                    <small class="text-secondary">
-                        <i class="fas fa-arrow-up"></i> 
-                        @((optimization.MaxSharpeRatio - optimization.CurrentPortfolio.SharpeRatio).ToString("F2")) improvement
-                    </small>
+                    <h3 class="mb-0 text-success">@optimization.OptimalPortfolio.SharpeRatio.ToString("F2")</h3>
+                    <p class="text-muted small mb-0">(Achievable with rebalancing)</p>
                 </div>
             </div>
         </div>
@@ -123,11 +120,11 @@
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-body text-center">
                     <div class="icon-wrapper mb-3">
-                        <i class="fas fa-shield-alt fa-2x text-danger"></i>
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
                     </div>
                     <h6 class="text-muted">Value at Risk (95%)</h6>
-                    <h3 class="mb-0 text-danger">@((optimization.RiskAnalysis.ValueAtRisk95 * 100).ToString("F1"))%</h3>
-                    <small class="text-secondary">Max loss in 95% of cases</small>
+                    <h3 class="mb-0 text-warning">@((optimization.RiskAnalysis.ValueAtRisk95 * 100).ToString("F1"))%</h3>
+                    <p class="text-muted small mb-0">(5% chance of exceeding)</p>
                 </div>
             </div>
         </div>
@@ -136,186 +133,194 @@
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-body text-center">
                     <div class="icon-wrapper mb-3">
-                        <i class="fas fa-chart-line fa-2x text-info"></i>
+                        <i class="fas fa-shield-alt fa-2x text-info"></i>
                     </div>
-                    <h6 class="text-muted">Expected Return</h6>
-                    <h3 class="mb-0">@((optimization.OptimalPortfolio.Return * 100).ToString("F1"))%</h3>
-                    <small class="text-secondary">Annualized</small>
+                    <h6 class="text-muted">Max Drawdown</h6>
+                    <h3 class="mb-0 text-info">@((optimization.RiskAnalysis.MaxDrawdown * 100).ToString("F1"))%</h3>
+                    <p class="text-muted small mb-0">(Worst historical decline)</p>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Main Visualization Area -->
+    
+    <!-- Charts Row 1: Efficient Frontier & Monte Carlo -->
     <div class="row mb-4">
-        <!-- Efficient Frontier -->
-        <div class="col-lg-8 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header bg-dark text-white">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-scatter me-2"></i>Efficient Frontier Analysis
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="frontier-explanation mb-3 p-3 bg-light rounded">
-                        <p class="mb-0 small">
-                            <strong>The Efficient Frontier:</strong> Each point represents a portfolio with the best possible return 
-                            for a given level of risk. Your current portfolio (●) can be optimized to the green star (★) for better 
-                            risk-adjusted returns.
-                        </p>
+                    <div id="efficientFrontierChart" class="chart-container-400"></div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            The efficient frontier shows all optimal portfolios. Your current allocation 
+                            can be improved to achieve better returns for the same risk level.
+                        </small>
                     </div>
-                    <div id="efficientFrontierChart" class="chart-container-450"></div>
                 </div>
             </div>
         </div>
         
-        <!-- Portfolio Weights Recommendation -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow h-100">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-weight me-2"></i>Optimal Allocation
+                        <i class="fas fa-chart-area me-2"></i>Monte Carlo Projections
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="allocation-comparison">
-                        <h6 class="mb-3">Recommended Changes:</h6>
-                        @foreach (var symbol in optimization.OptimalWeights.Keys.OrderByDescending(k => optimization.OptimalWeights[k]))
-                        {
-                            var currentWeight = optimization.CurrentWeights.ContainsKey(symbol) ? optimization.CurrentWeights[symbol] : 0;
-                            var optimalWeight = optimization.OptimalWeights[symbol];
-                            var change = optimalWeight - currentWeight;
-                            
-                            <div class="allocation-item mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <strong>@symbol</strong>
-                                    <span class="badge @(change > 0 ? "bg-success" : change < 0 ? "bg-danger" : "bg-secondary")">
-                                        @(change > 0 ? "+" : "")@((change * 100).ToString("F1"))%
-                                    </span>
-                                </div>
-                                <div class="progress progress-height-25">
-                                    <div class="progress-bar bg-secondary" 
-                                         style="width: @((currentWeight * 100).ToString("F1"))%">
-                                        Current: @((currentWeight * 100).ToString("F1"))%
-                                    </div>
-                                    <div class="progress-bar bg-success" 
-                                         style="width: @(((optimalWeight - currentWeight) * 100).ToString("F1"))%">
-                                        Optimal: @((optimalWeight * 100).ToString("F1"))%
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                    
-                    <div class="mt-4 p-3 bg-light rounded">
-                        <h6 class="mb-2">Rebalancing Impact:</h6>
-                        <ul class="mb-0 small">
-                            <li>Sharpe Ratio: @optimization.CurrentPortfolio.SharpeRatio.ToString("F2") → @optimization.MaxSharpeRatio.ToString("F2")</li>
-                            <li>Risk: @((optimization.CurrentPortfolio.Risk * 100).ToString("F1"))% → @((optimization.OptimalPortfolio.Risk * 100).ToString("F1"))%</li>
-                            <li>Return: @((optimization.CurrentPortfolio.Return * 100).ToString("F1"))% → @((optimization.OptimalPortfolio.Return * 100).ToString("F1"))%</li>
-                        </ul>
+                    <div id="monteCarloChart" class="chart-container-400"></div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            Based on 1,000 simulations, showing confidence intervals for future portfolio values. 
+                            The shaded areas represent different probability ranges.
+                        </small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Monte Carlo Simulation Results -->
+    
+    <!-- Charts Row 2: Outcome Distribution & Risk Gauge -->
     <div class="row mb-4">
-        <div class="col-12">
+        <div class="col-lg-6 mb-4">
             <div class="card shadow">
                 <div class="card-header bg-info text-white">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h5 class="mb-0">
-                                <i class="fas fa-dice me-2"></i>Monte Carlo Simulation - 1,000 Scenarios
-                            </h5>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <small>5-Year Projection with Optimal Allocation</small>
-                        </div>
-                    </div>
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Potential Outcome Distribution
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <!-- Simulation Fan Chart -->
-                        <div class="col-lg-8">
-                            <div id="monteCarloChart" class="chart-container-400"></div>
-                        </div>
-                        
-                        <!-- Probability Distribution -->
-                        <div class="col-lg-4">
-                            <h6 class="mb-3">Outcome Probabilities</h6>
-                            <div id="outcomeDistribution" class="chart-container-350"></div>
-                            
-                            <div class="mt-3">
-                                <h6>Key Statistics:</h6>
-                                <ul class="list-unstyled small">
-                                    <li><strong>Best Case (95th percentile):</strong> 
-                                        $@optimization.MonteCarloSimulations.FirstOrDefault(s => s.Percentile >= 95)?.FinalValue.ToString("F2")</li>
-                                    <li><strong>Median Case:</strong> 
-                                        $@optimization.MonteCarloSimulations.FirstOrDefault(s => s.Percentile >= 50)?.FinalValue.ToString("F2")</li>
-                                    <li><strong>Worst Case (5th percentile):</strong> 
-                                        $@optimization.MonteCarloSimulations.FirstOrDefault(s => s.Percentile >= 5)?.FinalValue.ToString("F2")</li>
-                                    <li><strong>Max Drawdown:</strong> 
-                                        @((optimization.RiskAnalysis.MaxDrawdown * 100).ToString("F1"))%</li>
-                                </ul>
-                            </div>
-                        </div>
+                    <div id="outcomeDistribution" class="chart-container-400"></div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            Distribution of possible portfolio values after 5 years. Most likely outcomes 
+                            cluster around the median, with tails showing extreme scenarios.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>Portfolio Risk Assessment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="riskGaugeChart" class="chart-container-400"></div>
+                    <div class="mt-3 text-center">
+                        <h6>Risk Level: 
+                            @if (optimization.RiskAnalysis.ValueAtRisk95 < 0.1)
+                            {
+                                <span class="badge bg-success">Low</span>
+                            }
+                            else if (optimization.RiskAnalysis.ValueAtRisk95 < 0.2)
+                            {
+                                <span class="badge bg-warning">Moderate</span>
+                            }
+                            else if (optimization.RiskAnalysis.ValueAtRisk95 < 0.3)
+                            {
+                                <span class="badge bg-orange">High</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Very High</span>
+                            }
+                        </h6>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Advanced Risk Metrics -->
+    
+    <!-- Optimal Allocation Recommendations -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow">
-                <div class="card-header bg-secondary text-white">
+                <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-tachometer-alt me-2"></i>Advanced Risk Metrics
+                        <i class="fas fa-balance-scale me-2"></i>Recommended Portfolio Allocation
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4">
-                            <div id="riskGaugeChart" class="chart-container-300"></div>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="risk-metrics-grid">
-                                <div class="row g-3">
-                                    <div class="col-sm-6">
-                                        <div class="metric-box p-3 border rounded">
-                                            <h6 class="text-muted mb-1">Sortino Ratio</h6>
-                                            <h4 class="mb-0">@optimization.RiskAnalysis.SortinoRatio.ToString("F2")</h4>
-                                            <small>Downside risk-adjusted return</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6">
-                                        <div class="metric-box p-3 border rounded">
-                                            <h6 class="text-muted mb-1">Information Ratio</h6>
-                                            <h4 class="mb-0">@optimization.RiskAnalysis.InformationRatio.ToString("F2")</h4>
-                                            <small>Active return vs tracking error</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6">
-                                        <div class="metric-box p-3 border rounded">
-                                            <h6 class="text-muted mb-1">Conditional VaR</h6>
-                                            <h4 class="mb-0 text-danger">@((optimization.RiskAnalysis.ConditionalValueAtRisk * 100).ToString("F1"))%</h4>
-                                            <small>Expected loss beyond VaR</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6">
-                                        <div class="metric-box p-3 border rounded">
-                                            <h6 class="text-muted mb-1">Treynor Ratio</h6>
-                                            <h4 class="mb-0">@optimization.RiskAnalysis.TreynorRatio.ToString("F2")</h4>
-                                            <small>Return per unit of market risk</small>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Your Current Allocation</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Stock</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var kvp in optimization.CurrentPortfolio.Weights.OrderByDescending(h => h.Value))
+                                        {
+                                            var stock = Model.UserStocks.FirstOrDefault(s => s.StockSymbol == kvp.Key);
+                                            var value = stock != null ? (stock.TotalValue * (decimal)kvp.Value) : 0;
+                                            <tr>
+                                                <td>@kvp.Key</td>
+                                                <td class="text-end">@((kvp.Value * 100).ToString("F1"))%</td>
+                                                <td class="text-end">$@value.ToString("N0")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Optimal Allocation <span class="badge bg-success">Recommended</span></h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Stock</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var kvp in optimization.OptimalPortfolio.Weights.OrderByDescending(h => h.Value))
+                                        {
+                                            var currentWeight = optimization.CurrentPortfolio.Weights.ContainsKey(kvp.Key) ? optimization.CurrentPortfolio.Weights[kvp.Key] : 0;
+                                            var difference = kvp.Value - currentWeight;
+                                            <tr>
+                                                <td>@kvp.Key</td>
+                                                <td class="text-end">@((kvp.Value * 100).ToString("F1"))%</td>
+                                                <td class="text-end">
+                                                    @if (Math.Abs(difference) < 0.01)
+                                                    {
+                                                        <span class="text-muted">No change</span>
+                                                    }
+                                                    else if (difference > 0)
+                                                    {
+                                                        <span class="text-success">+@((difference * 100).ToString("F1"))%</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-danger">@((difference * 100).ToString("F1"))%</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Rebalancing Benefits:</strong> Moving to the optimal allocation could improve your 
+                        Sharpe ratio from @optimization.CurrentPortfolio.SharpeRatio.ToString("F2") to 
+                        @optimization.OptimalPortfolio.SharpeRatio.ToString("F2"), providing better risk-adjusted returns.
                     </div>
                 </div>
             </div>
@@ -324,8 +329,8 @@
 }
 else
 {
-    <!-- No Optimization Data -->
-    <div class="row mb-4">
+    <!-- No Optimization Available -->
+    <div class="row">
         <div class="col-12">
             <div class="card shadow">
                 <div class="card-body text-center py-5">
@@ -355,509 +360,33 @@ else
     </div>
 }
 
-
-@if (hasOptimization)
-{
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Add tab visibility check and delay chart initialization
-    function initializePerformanceCharts() {
+    function initializePerformanceChartsForTab() {
+        @if (hasOptimization)
+        {
             <text>
             console.log('Initializing Performance tab charts...');
             
-            // Prepare optimization data
-            var efficientFrontier = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier) ?? "[]");
-            var currentPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio) ?? "null");
-            var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio) ?? "null");
-            var monteCarloResults = @Html.Raw(optimization.MonteCarloSimulations != null ? Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations.Take(100)) : "[]"); // Sample for performance
-            var historicalPerformance = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.HistoricalPerformance) ?? "null");
+            // Prepare optimization data for the module
+            var chartData = {
+                hasOptimization: true,
+                efficientFrontier: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier) ?? "[]"),
+                currentPortfolio: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio) ?? "null"),
+                optimalPortfolio: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio) ?? "null"),
+                monteCarloResults: @Html.Raw(optimization.MonteCarloSimulations != null ? Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations.Take(100)) : "[]"),
+                historicalPerformance: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.HistoricalPerformance) ?? "null"),
+                optimization: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization) ?? "null")
+            };
             
-            console.log('Efficient Frontier data:', efficientFrontier);
-            console.log('Current Portfolio:', currentPortfolio);
-            console.log('Optimal Portfolio:', optimalPortfolio);
-            console.log('Monte Carlo Results:', monteCarloResults);
-            console.log('Historical Performance:', historicalPerformance);
-        
-        // Light theme configuration for charts
-        var lightTheme = {
-            chart: {
-                backgroundColor: '#ffffff',
-                borderRadius: 8,
-                style: {
-                    fontFamily: 'Roboto, sans-serif'
-                }
-            },
-            title: {
-                style: {
-                    color: '#333333',
-                    fontSize: '18px',
-                    fontWeight: '600'
-                }
-            },
-            subtitle: {
-                style: {
-                    color: '#666666'
-                }
-            },
-            xAxis: {
-                gridLineColor: '#e0e0e0',
-                labels: {
-                    style: {
-                        color: '#333333'
-                    }
-                },
-                title: {
-                    style: {
-                        color: '#333333',
-                        fontSize: '14px'
-                    }
-                },
-                lineColor: '#cccccc'
-            },
-            yAxis: {
-                gridLineColor: '#e0e0e0',
-                labels: {
-                    style: {
-                        color: '#333333'
-                    }
-                },
-                title: {
-                    style: {
-                        color: '#333333',
-                        fontSize: '14px'
-                    }
-                }
-            },
-            tooltip: {
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                borderColor: '#cccccc',
-                style: {
-                    color: '#333333'
-                }
-            },
-            legend: {
-                backgroundColor: '#ffffff',
-                itemStyle: {
-                    color: '#333333'
-                },
-                itemHoverStyle: {
-                    color: '#000000'
-                }
+            // Call the performance charts module
+            if (typeof PerformanceCharts !== 'undefined' && PerformanceCharts.initializeCharts) {
+                PerformanceCharts.initializeCharts(chartData);
+            } else {
+                console.error('PerformanceCharts module not loaded');
             }
-        };
-        
-        // 1. Efficient Frontier Chart
-        if (document.getElementById('efficientFrontierChart') && efficientFrontier && efficientFrontier.length > 0) {
-            var frontierData = efficientFrontier.map(p => ({
-                x: p.Risk * 100,
-                y: p.Return * 100,
-                sharpe: p.SharpeRatio
-            }));
-            
-            Highcharts.chart('efficientFrontierChart', Highcharts.merge(lightTheme, {
-                chart: {
-                    type: 'scatter'
-                },
-                title: {
-                    text: 'Risk vs Return Analysis'
-                },
-                xAxis: {
-                    title: { text: 'Risk (Volatility %)' },
-                    min: 0
-                },
-                yAxis: {
-                    title: { text: 'Expected Return (%)' }
-                },
-                tooltip: {
-                    formatter: function() {
-                        if (this.series.name === 'Efficient Frontier') {
-                            return '<b>Efficient Portfolio</b><br>' +
-                                   'Risk: ' + this.x.toFixed(2) + '%<br>' +
-                                   'Return: ' + this.y.toFixed(2) + '%<br>' +
-                                   'Sharpe: ' + this.point.sharpe.toFixed(2);
-                        }
-                        return '<b>' + this.series.name + '</b><br>' +
-                               'Risk: ' + this.x.toFixed(2) + '%<br>' +
-                               'Return: ' + this.y.toFixed(2) + '%';
-                    }
-                },
-                plotOptions: {
-                    scatter: {
-                        marker: {
-                            radius: 5,
-                            states: {
-                                hover: {
-                                    enabled: true,
-                                    lineColor: 'rgb(100,100,100)'
-                                }
-                            }
-                        }
-                    }
-                },
-                series: [{
-                    name: 'Efficient Frontier',
-                    data: frontierData,
-                    color: '#007bff',
-                    lineWidth: 2,
-                    marker: { radius: 3 },
-                    type: 'line'
-                }, {
-                    name: 'Current Portfolio',
-                    data: currentPortfolio && currentPortfolio.Risk !== undefined && currentPortfolio.Return !== undefined ? [{
-                        x: currentPortfolio.Risk * 100,
-                        y: currentPortfolio.Return * 100
-                    }] : [],
-                    color: '#dc3545',
-                    marker: {
-                        symbol: 'circle',
-                        radius: 10
-                    }
-                }, {
-                    name: 'Optimal Portfolio',
-                    data: optimalPortfolio && optimalPortfolio.Risk !== undefined && optimalPortfolio.Return !== undefined ? [{
-                        x: optimalPortfolio.Risk * 100,
-                        y: optimalPortfolio.Return * 100
-                    }] : [],
-                    color: '#28a745',
-                    marker: {
-                        symbol: 'diamond',
-                        radius: 12
-                    }
-                }],
-                annotations: currentPortfolio && optimalPortfolio ? [{
-                    labels: [{
-                        point: {
-                            x: currentPortfolio.Risk * 100,
-                            y: currentPortfolio.Return * 100
-                        },
-                        text: 'Current'
-                    }, {
-                        point: {
-                            x: optimalPortfolio.Risk * 100,
-                            y: optimalPortfolio.Return * 100
-                        },
-                        text: 'Optimal'
-                    }]
-                }] : []
-            }));
-        }
-        
-        // 2. Monte Carlo Fan Chart
-        if (document.getElementById('monteCarloChart') && monteCarloResults && monteCarloResults.length > 0) {
-            // Extract percentile paths
-            var p5 = monteCarloResults.find(r => r.Percentile >= 5);
-            var p25 = monteCarloResults.find(r => r.Percentile >= 25);
-            var p50 = monteCarloResults.find(r => r.Percentile >= 50);
-            var p75 = monteCarloResults.find(r => r.Percentile >= 75);
-            var p95 = monteCarloResults.find(r => r.Percentile >= 95);
-            
-            // Create time series data
-            var categories = [];
-            if (p50 && p50.Path && p50.Path.length > 0) {
-                for (var i = 0; i <= p50.Path.length; i += 63) { // Quarterly points
-                    categories.push('Q' + Math.floor(i / 63));
-                }
-            }
-            
-            Highcharts.chart('monteCarloChart', Highcharts.merge(lightTheme, {
-                chart: {
-                    type: 'arearange'
-                },
-                title: {
-                    text: 'Portfolio Value Projections'
-                },
-                xAxis: {
-                    categories: categories,
-                    title: { text: 'Time (Quarters)' }
-                },
-                yAxis: {
-                    title: { text: 'Portfolio Value ($)' }
-                },
-                tooltip: {
-                    crosshairs: true,
-                    shared: true,
-                    valuePrefix: '$'
-                },
-                series: [{
-                    name: '90% Confidence Interval',
-                    data: categories.map((_, i) => {
-                        var idx = i * 63;
-                        if (p5 && p5.Path && p95 && p95.Path) {
-                            return [p5.Path[idx] || p5.Path[p5.Path.length - 1], 
-                                    p95.Path[idx] || p95.Path[p95.Path.length - 1]];
-                        }
-                        return [0, 0];
-                    }),
-                    type: 'arearange',
-                    lineWidth: 0,
-                    color: '#28a745',
-                    fillOpacity: 0.2
-                }, {
-                    name: '50% Confidence Interval',
-                    data: categories.map((_, i) => {
-                        var idx = i * 63;
-                        if (p25 && p25.Path && p75 && p75.Path) {
-                            return [p25.Path[idx] || p25.Path[p25.Path.length - 1], 
-                                    p75.Path[idx] || p75.Path[p75.Path.length - 1]];
-                        }
-                        return [0, 0];
-                    }),
-                    type: 'arearange',
-                    lineWidth: 0,
-                    color: '#28a745',
-                    fillOpacity: 0.4
-                }, {
-                    name: 'Median Path',
-                    data: categories.map((_, i) => {
-                        var idx = i * 63;
-                        if (p50 && p50.Path) {
-                            return p50.Path[idx] || p50.Path[p50.Path.length - 1];
-                        }
-                        return 0;
-                    }),
-                    type: 'line',
-                    lineWidth: 3,
-                    color: '#212529',
-                    marker: { enabled: false }
-                }]
-            }));
-        }
-        
-        // 3. Outcome Distribution
-        if (document.getElementById('outcomeDistribution')) {
-            var finalValues = monteCarloResults.map(r => r.FinalValue);
-            var histogram = [];
-            var bins = 20;
-            var min = Math.min(...finalValues);
-            var max = Math.max(...finalValues);
-            var binWidth = (max - min) / bins;
-            
-            for (var i = 0; i < bins; i++) {
-                var binMin = min + i * binWidth;
-                var binMax = binMin + binWidth;
-                var count = finalValues.filter(v => v >= binMin && v < binMax).length;
-                histogram.push({
-                    x: (binMin + binMax) / 2,
-                    y: count
-                });
-            }
-            
-            Highcharts.chart('outcomeDistribution', Highcharts.merge(lightTheme, {
-                chart: {
-                    type: 'column'
-                },
-                title: {
-                    text: 'Final Value Distribution'
-                },
-                xAxis: {
-                    title: { text: 'Portfolio Value ($)' }
-                },
-                yAxis: {
-                    title: { text: 'Frequency' }
-                },
-                series: [{
-                    name: 'Outcomes',
-                    data: histogram,
-                    color: '#17a2b8'
-                }],
-                legend: { enabled: false }
-            });
-        }
-        
-        // 4. Risk Gauge Chart
-        if (document.getElementById('riskGaugeChart') && optimization.RiskAnalysis && optimization.RiskAnalysis.ValueAtRisk95 !== undefined) {
-            var riskScore = optimization.RiskAnalysis.ValueAtRisk95 * 100;
-            
-            Highcharts.chart('riskGaugeChart', {
-                chart: {
-                    type: 'gauge',
-                    backgroundColor: '#ffffff'
-                },
-                title: {
-                    text: 'Portfolio Risk Level'
-                },
-                pane: {
-                    startAngle: -150,
-                    endAngle: 150,
-                    background: [{
-                        backgroundColor: {
-                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                            stops: [
-                                [0, '#FFF'],
-                                [1, '#333']
-                            ]
-                        },
-                        borderWidth: 0,
-                        outerRadius: '109%'
-                    }, {
-                        backgroundColor: {
-                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                            stops: [
-                                [0, '#333'],
-                                [1, '#FFF']
-                            ]
-                        },
-                        borderWidth: 1,
-                        outerRadius: '107%'
-                    }, {
-                        backgroundColor: '#DDD',
-                        borderWidth: 0,
-                        outerRadius: '105%',
-                        innerRadius: '103%'
-                    }]
-                },
-                yAxis: {
-                    min: 0,
-                    max: 50,
-                    minorTickInterval: 'auto',
-                    minorTickWidth: 1,
-                    minorTickLength: 10,
-                    minorTickPosition: 'inside',
-                    minorTickColor: '#666',
-                    tickPixelInterval: 30,
-                    tickWidth: 2,
-                    tickPosition: 'inside',
-                    tickLength: 10,
-                    tickColor: '#666',
-                    labels: {
-                        step: 2,
-                        rotation: 'auto'
-                    },
-                    title: {
-                        text: 'VaR %'
-                    },
-                    plotBands: [{
-                        from: 0,
-                        to: 10,
-                        color: '#55BF3B' // green
-                    }, {
-                        from: 10,
-                        to: 20,
-                        color: '#DDDF0D' // yellow
-                    }, {
-                        from: 20,
-                        to: 30,
-                        color: '#FFA500' // orange
-                    }, {
-                        from: 30,
-                        to: 50,
-                        color: '#DF5353' // red
-                    }]
-                },
-                series: [{
-                    name: 'Risk',
-                    data: [Math.abs(riskScore)],
-                    tooltip: {
-                        valueSuffix: '%'
-                    }
-                }]
-            }));
-        }
-        
-        // 5. Historical Performance Chart
-        if (document.getElementById('historicalPerformanceChart') && historicalPerformance && historicalPerformance.ActualPerformance) {
-            // Prepare data series
-            var actualData = historicalPerformance.ActualPerformance.map(p => ({
-                x: new Date(p.Date).getTime(),
-                y: p.Value
-            }));
-            
-            var optimalData = historicalPerformance.OptimalPerformance.map(p => ({
-                x: new Date(p.Date).getTime(),
-                y: p.Value
-            }));
-            
-            Highcharts.chart('historicalPerformanceChart', Highcharts.merge(lightTheme, {
-                chart: {
-                    type: 'line',
-                    zoomType: 'x'
-                },
-                title: {
-                    text: 'Portfolio Performance: Actual vs Optimal Strategy'
-                },
-                subtitle: {
-                    text: 'What could have been earned with optimal allocation from ' + 
-                          new Date(historicalPerformance.StartDate).toLocaleDateString()
-                },
-                xAxis: {
-                    type: 'datetime',
-                    title: { text: 'Date' }
-                },
-                yAxis: {
-                    title: { text: 'Portfolio Value ($)' }
-                },
-                tooltip: {
-                    shared: true,
-                    crosshairs: true,
-                    formatter: function() {
-                        var date = new Date(this.x).toLocaleDateString();
-                        var s = '<b>' + date + '</b>';
-                        
-                        this.points.forEach(function(point) {
-                            var value = point.y.toFixed(2);
-                            var actualPoint = historicalPerformance.ActualPerformance.find(p => 
-                                new Date(p.Date).getTime() === point.x);
-                            var optimalPoint = historicalPerformance.OptimalPerformance.find(p => 
-                                new Date(p.Date).getTime() === point.x);
-                            
-                            if (point.series.name === 'Your Actual Strategy' && actualPoint) {
-                                s += '<br/>' + point.series.name + ': $' + value + 
-                                     ' (' + (actualPoint.CumulativeReturn * 100).toFixed(2) + '% return)';
-                            } else if (point.series.name === 'Optimal Strategy' && optimalPoint) {
-                                s += '<br/>' + point.series.name + ': $' + value + 
-                                     ' (' + (optimalPoint.CumulativeReturn * 100).toFixed(2) + '% return)';
-                            }
-                        });
-                        
-                        return s;
-                    }
-                },
-                plotOptions: {
-                    line: {
-                        marker: {
-                            enabled: false
-                        }
-                    }
-                },
-                series: [{
-                    name: 'Your Actual Strategy',
-                    data: actualData,
-                    color: '#dc3545',
-                    lineWidth: 2
-                }, {
-                    name: 'Optimal Strategy',
-                    data: optimalData,
-                    color: '#28a745',
-                    lineWidth: 2,
-                    dashStyle: 'shortdash'
-                }],
-                annotations: [{
-                    labelOptions: {
-                        backgroundColor: 'rgba(255,255,255,0.8)',
-                        borderColor: '#666',
-                        borderRadius: 5
-                    },
-                    labels: [{
-                        point: {
-                            xAxis: 0,
-                            yAxis: 0,
-                            x: actualData[actualData.length - 1].x,
-                            y: actualData[actualData.length - 1].y
-                        },
-                        text: 'Actual: $' + actualData[actualData.length - 1].y.toFixed(2)
-                    }, {
-                        point: {
-                            xAxis: 0,
-                            yAxis: 0,
-                            x: optimalData[optimalData.length - 1].x,
-                            y: optimalData[optimalData.length - 1].y
-                        },
-                        text: 'Optimal: $' + optimalData[optimalData.length - 1].y.toFixed(2)
-                    }]
-                }]
-            }));
-        }
-        </text>
+            </text>
         }
         else
         {
@@ -869,16 +398,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize charts when tab becomes visible
     setTimeout(function() {
-        initializePerformanceCharts();
+        initializePerformanceChartsForTab();
     }, 100);
     
     // Also initialize when tab is shown
     var performanceTab = document.querySelector('#performance-tab');
     if (performanceTab) {
         performanceTab.addEventListener('shown.bs.tab', function() {
-            setTimeout(initializePerformanceCharts, 100);
+            setTimeout(initializePerformanceChartsForTab, 100);
         });
     }
 });
 </script>
-}

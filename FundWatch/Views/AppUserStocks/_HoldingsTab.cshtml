@@ -367,38 +367,8 @@
 </div>
 
 <script>
-    function toggleAdvancedColumns() {
-        const advancedColumns = document.querySelectorAll('.advanced-column');
-        advancedColumns.forEach(col => {
-            col.classList.toggle('show');
-        });
-        
-        // Save preference
-        const isShowing = advancedColumns.length > 0 && advancedColumns[0].classList.contains('show');
-        localStorage.setItem('showAdvancedColumns', isShowing);
-    }
-    
-    // Delete confirmation
-    document.addEventListener('click', function (e) {
-        if (e.target.closest('.delete-btn')) {
-            e.preventDefault();
-            if (confirm('Are you sure you want to delete this stock from your portfolio?')) {
-                e.target.closest('form').submit();
-            }
-        }
-    });
-    
-    // Load saved preference
-    document.addEventListener('DOMContentLoaded', function() {
-        const showAdvanced = localStorage.getItem('showAdvancedColumns') === 'true';
-        if (showAdvanced) {
-            toggleAdvancedColumns();
-        }
-        
-        // Enable tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    // Holdings tab utilities are auto-initialized by the module
+    console.log('Holdings tab initialized');
+});
 </script>
