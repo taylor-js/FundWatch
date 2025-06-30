@@ -411,18 +411,6 @@ else
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Analytics tab DOM loaded');
-    console.log('Has Fourier analysis: @hasFourierAnalysis');
-    console.log('Fourier analysis: @(Model.FourierAnalysis != null ? "Available" : "Not available")');
-    @if (Model.FourierAnalysis != null)
-    {
-        <text>
-        console.log('Market Cycles: @(fourier.MarketCycles?.Count ?? 0)');
-        console.log('Dominant Frequencies: @(fourier.DominantFrequencies?.Count ?? 0)');
-        console.log('Power Spectrum: @(fourier.PowerSpectrum != null ? "Available" : "Not available")');
-        console.log('Decomposition: @(fourier.Decomposition != null ? "Available" : "Not available")');
-        </text>
-    }
     
     // Add tab visibility check and delay chart initialization
     function initializeAnalyticsCharts() {
@@ -432,10 +420,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing Analytics tab charts...');
             
             // Prepare Fourier analysis data
-            var powerSpectrum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.PowerSpectrum ?? new FourierAnalysisModel.SpectralAnalysis()));
-            var decomposition = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.Decomposition ?? new FourierAnalysisModel.PriceDecomposition()));
-            var predictions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.FourierPrediction ?? new List<FourierAnalysisModel.PredictionPoint>()));
-            var marketCycles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.MarketCycles ?? new List<FourierAnalysisModel.CycleAnalysis>()));
+            var powerSpectrum = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.PowerSpectrum) ?? "null");
+            var decomposition = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.Decomposition) ?? "null");
+            var predictions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.FourierPrediction) ?? "[]");
+            var marketCycles = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.MarketCycles) ?? "[]");
             
             console.log('Power Spectrum:', powerSpectrum);
             console.log('Decomposition:', decomposition);
@@ -513,21 +501,21 @@ document.addEventListener('DOMContentLoaded', function() {
         // 1. Power Spectrum Chart
         if (document.getElementById('powerSpectrumChart') && powerSpectrum && powerSpectrum.PowerSpectralDensity && powerSpectrum.PowerSpectralDensity.length > 0) {
             var spectrumData = [];
-            for (var i = 0; i &lt; powerSpectrum.PowerSpectralDensity.length; i++) {
-                if (powerSpectrum.SignificantPeaks.includes(i)) {
-                    spectrumData.push({
+            for (var i = 0; i < powerSpectrum.PowerSpectralDensity.length; i++) {
+                if (powerSpectrum.Frequencies && powerSpectrum.Frequencies[i] && powerSpectrum.Frequencies[i] !== 0) {
+                    var dataPoint = {
                         x: 1 / powerSpectrum.Frequencies[i], // Convert to period
-                        y: powerSpectrum.PowerSpectralDensity[i],
-                        marker: {
+                        y: powerSpectrum.PowerSpectralDensity[i]
+                    };
+                    
+                    if (powerSpectrum.SignificantPeaks && powerSpectrum.SignificantPeaks.includes(i)) {
+                        dataPoint.marker = {
                             radius: 8,
                             fillColor: '#dc3545'
-                        }
-                    });
-                } else {
-                    spectrumData.push({
-                        x: 1 / powerSpectrum.Frequencies[i],
-                        y: powerSpectrum.PowerSpectralDensity[i]
-                    });
+                        };
+                    }
+                    
+                    spectrumData.push(dataPoint);
                 }
             }
             
@@ -587,22 +575,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 series: [{
                     name: 'Trend',
-                    data: dates.map((d, i) => [d, decomposition.Trend[i]]),
+                    data: dates.map((d, i) => [d, decomposition.Trend && decomposition.Trend[i] ? decomposition.Trend[i] : 0]),
                     color: '#28a745',
                     lineWidth: 3
                 }, {
                     name: 'Seasonal',
-                    data: dates.map((d, i) => [d, decomposition.Seasonal[i]]),
+                    data: dates.map((d, i) => [d, decomposition.Seasonal && decomposition.Seasonal[i] ? decomposition.Seasonal[i] : 0]),
                     color: '#17a2b8',
                     lineWidth: 2
                 }, {
                     name: 'Cyclical',
-                    data: dates.map((d, i) => [d, decomposition.Cyclical[i]]),
+                    data: dates.map((d, i) => [d, decomposition.Cyclical && decomposition.Cyclical[i] ? decomposition.Cyclical[i] : 0]),
                     color: '#ffc107',
                     lineWidth: 2
                 }, {
                     name: 'Residual',
-                    data: dates.map((d, i) => [d, decomposition.Residual[i]]),
+                    data: dates.map((d, i) => [d, decomposition.Residual && decomposition.Residual[i] ? decomposition.Residual[i] : 0]),
                     color: '#6c757d',
                     lineWidth: 1,
                     opacity: 0.5
@@ -707,10 +695,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 var correlations = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(fourier.CrossCorrelations));
                 var heatmapData = [];
                 
-                for (var i = 0; i &lt; correlations.Symbols.length; i++) {
-                    for (var j = 0; j &lt; correlations.Symbols.length; j++) {
-                        heatmapData.push([i, j, correlations.Matrix[i][j]]);
-                    }
+                if (correlations.Symbols && correlations.Matrix) {
+                    correlations.Symbols.forEach(function(sym1, i) {
+                        correlations.Symbols.forEach(function(sym2, j) {
+                            if (correlations.Matrix[i] && correlations.Matrix[i][j] !== undefined) {
+                                heatmapData.push([i, j, correlations.Matrix[i][j]]);
+                            }
+                        });
+                    });
                 }
                 
                 Highcharts.chart('correlationHeatmap', {

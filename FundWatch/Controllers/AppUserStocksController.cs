@@ -24,6 +24,7 @@ namespace FundWatch.Controllers
         private readonly StockService _stockService;
         private readonly ChartDataService _chartDataService;
         private readonly QuantitativeAnalysisService _quantAnalysisService;
+        private readonly SimplifiedQuantService _simplifiedQuantService;
         private readonly IMemoryCache _cache;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private const int CACHE_DURATION_MINUTES = 15;
@@ -35,6 +36,7 @@ namespace FundWatch.Controllers
         StockService stockService,
         ChartDataService chartDataService,
         QuantitativeAnalysisService quantAnalysisService,
+        SimplifiedQuantService simplifiedQuantService,
         IMemoryCache cache)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -43,6 +45,7 @@ namespace FundWatch.Controllers
             _stockService = stockService ?? throw new ArgumentNullException(nameof(stockService));
             _chartDataService = chartDataService ?? throw new ArgumentNullException(nameof(chartDataService));
             _quantAnalysisService = quantAnalysisService ?? throw new ArgumentNullException(nameof(quantAnalysisService));
+            _simplifiedQuantService = simplifiedQuantService ?? throw new ArgumentNullException(nameof(simplifiedQuantService));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
@@ -187,22 +190,24 @@ namespace FundWatch.Controllers
                 // Add quantitative options analysis
                 viewModel.OptionsAnalysis = await _quantAnalysisService.AnalyzePortfolioOptions(userId);
                 
-                // Add portfolio optimization
+                // Add portfolio optimization - use simplified service that always returns data
                 try
                 {
-                    viewModel.PortfolioOptimization = await _quantAnalysisService.OptimizePortfolio(userId);
+                    viewModel.PortfolioOptimization = await _simplifiedQuantService.GetPortfolioOptimizationAsync(userId);
                     _logger.LogInformation($"Portfolio optimization result: {viewModel.PortfolioOptimization != null}, " +
                         $"Efficient Frontier points: {viewModel.PortfolioOptimization?.EfficientFrontier?.Count ?? 0}");
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error in portfolio optimization");
+                    // Even on error, provide basic data
+                    viewModel.PortfolioOptimization = await _simplifiedQuantService.GetPortfolioOptimizationAsync(userId);
                 }
                 
-                // Add Fourier analysis for market cycles
+                // Add Fourier analysis for market cycles - use simplified service that always returns data
                 try
                 {
-                    viewModel.FourierAnalysis = await _quantAnalysisService.AnalyzeMarketCycles(userId);
+                    viewModel.FourierAnalysis = await _simplifiedQuantService.GetMarketCyclesAsync(userId);
                     _logger.LogInformation($"Fourier analysis result: {viewModel.FourierAnalysis != null}, " +
                         $"Market Cycles: {viewModel.FourierAnalysis?.MarketCycles?.Count ?? 0}, " +
                         $"Dominant Frequencies: {viewModel.FourierAnalysis?.DominantFrequencies?.Count ?? 0}");
@@ -210,6 +215,8 @@ namespace FundWatch.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error in Fourier analysis");
+                    // Even on error, provide basic data
+                    viewModel.FourierAnalysis = await _simplifiedQuantService.GetMarketCyclesAsync(userId);
                 }
                 
                 // Log all chart data metrics with extra detail for drawdown data
@@ -1554,13 +1561,6 @@ namespace FundWatch.Controllers
                     };
                 }
             }
-        }
-        
-        // GET: AppUserStocks/ChartTest
-        [AllowAnonymous]
-        public IActionResult ChartTest()
-        {
-            return View();
         }
 
         // GET: AppUserStocks/GetPortfolioSummary

@@ -355,34 +355,22 @@ else
     </div>
 }
 
+
+@if (hasOptimization)
+{
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Performance tab DOM loaded');
-    console.log('Has optimization data: @hasOptimization');
-    console.log('Portfolio optimization: @(Model.PortfolioOptimization != null ? "Available" : "Not available")');
-    @if (Model.PortfolioOptimization != null)
-    {
-        <text>
-        console.log('Efficient Frontier points: @(optimization.EfficientFrontier?.Count ?? 0)');
-        console.log('Monte Carlo simulations: @(optimization.MonteCarloSimulations?.Count ?? 0)');
-        console.log('Current Portfolio: @(optimization.CurrentPortfolio != null ? "Available" : "Not available")');
-        console.log('Optimal Portfolio: @(optimization.OptimalPortfolio != null ? "Available" : "Not available")');
-        </text>
-    }
-    
     // Add tab visibility check and delay chart initialization
     function initializePerformanceCharts() {
-        @if (hasOptimization)
-        {
             <text>
             console.log('Initializing Performance tab charts...');
             
             // Prepare optimization data
-            var efficientFrontier = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier ?? new List<PortfolioOptimizationModel.PortfolioPoint>()));
-            var currentPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio));
-            var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio));
-            var monteCarloResults = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations?.Take(100) ?? new List<PortfolioOptimizationModel.MonteCarloResult>())); // Sample for performance
-            var historicalPerformance = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.HistoricalPerformance));
+            var efficientFrontier = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.EfficientFrontier) ?? "[]");
+            var currentPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.CurrentPortfolio) ?? "null");
+            var optimalPortfolio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.OptimalPortfolio) ?? "null");
+            var monteCarloResults = @Html.Raw(optimization.MonteCarloSimulations != null ? Newtonsoft.Json.JsonConvert.SerializeObject(optimization.MonteCarloSimulations.Take(100)) : "[]"); // Sample for performance
+            var historicalPerformance = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization.HistoricalPerformance) ?? "null");
             
             console.log('Efficient Frontier data:', efficientFrontier);
             console.log('Current Portfolio:', currentPortfolio);
@@ -459,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         // 1. Efficient Frontier Chart
-        if (document.getElementById('efficientFrontierChart')) {
+        if (document.getElementById('efficientFrontierChart') && efficientFrontier && efficientFrontier.length > 0) {
             var frontierData = efficientFrontier.map(p => ({
                 x: p.Risk * 100,
                 y: p.Return * 100,
@@ -515,10 +503,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     type: 'line'
                 }, {
                     name: 'Current Portfolio',
-                    data: [{
+                    data: currentPortfolio && currentPortfolio.Risk !== undefined && currentPortfolio.Return !== undefined ? [{
                         x: currentPortfolio.Risk * 100,
                         y: currentPortfolio.Return * 100
-                    }],
+                    }] : [],
                     color: '#dc3545',
                     marker: {
                         symbol: 'circle',
@@ -526,17 +514,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }, {
                     name: 'Optimal Portfolio',
-                    data: [{
+                    data: optimalPortfolio && optimalPortfolio.Risk !== undefined && optimalPortfolio.Return !== undefined ? [{
                         x: optimalPortfolio.Risk * 100,
                         y: optimalPortfolio.Return * 100
-                    }],
+                    }] : [],
                     color: '#28a745',
                     marker: {
                         symbol: 'diamond',
                         radius: 12
                     }
                 }],
-                annotations: [{
+                annotations: currentPortfolio && optimalPortfolio ? [{
                     labels: [{
                         point: {
                             x: currentPortfolio.Risk * 100,
@@ -550,12 +538,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         },
                         text: 'Optimal'
                     }]
-                }]
+                }] : []
             }));
         }
         
         // 2. Monte Carlo Fan Chart
-        if (document.getElementById('monteCarloChart')) {
+        if (document.getElementById('monteCarloChart') && monteCarloResults && monteCarloResults.length > 0) {
             // Extract percentile paths
             var p5 = monteCarloResults.find(r => r.Percentile >= 5);
             var p25 = monteCarloResults.find(r => r.Percentile >= 25);
@@ -565,8 +553,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Create time series data
             var categories = [];
-            for (var i = 0; i &lt;= p50.Path.length; i += 63) { // Quarterly points
-                categories.push('Q' + Math.floor(i / 63));
+            if (p50 && p50.Path && p50.Path.length > 0) {
+                for (var i = 0; i <= p50.Path.length; i += 63) { // Quarterly points
+                    categories.push('Q' + Math.floor(i / 63));
+                }
             }
             
             Highcharts.chart('monteCarloChart', Highcharts.merge(lightTheme, {
@@ -592,8 +582,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: '90% Confidence Interval',
                     data: categories.map((_, i) => {
                         var idx = i * 63;
-                        return [p5.Path[idx] || p5.Path[p5.Path.length - 1], 
-                                p95.Path[idx] || p95.Path[p95.Path.length - 1]];
+                        if (p5 && p5.Path && p95 && p95.Path) {
+                            return [p5.Path[idx] || p5.Path[p5.Path.length - 1], 
+                                    p95.Path[idx] || p95.Path[p95.Path.length - 1]];
+                        }
+                        return [0, 0];
                     }),
                     type: 'arearange',
                     lineWidth: 0,
@@ -603,8 +596,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: '50% Confidence Interval',
                     data: categories.map((_, i) => {
                         var idx = i * 63;
-                        return [p25.Path[idx] || p25.Path[p25.Path.length - 1], 
-                                p75.Path[idx] || p75.Path[p75.Path.length - 1]];
+                        if (p25 && p25.Path && p75 && p75.Path) {
+                            return [p25.Path[idx] || p25.Path[p25.Path.length - 1], 
+                                    p75.Path[idx] || p75.Path[p75.Path.length - 1]];
+                        }
+                        return [0, 0];
                     }),
                     type: 'arearange',
                     lineWidth: 0,
@@ -614,7 +610,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: 'Median Path',
                     data: categories.map((_, i) => {
                         var idx = i * 63;
-                        return p50.Path[idx] || p50.Path[p50.Path.length - 1];
+                        if (p50 && p50.Path) {
+                            return p50.Path[idx] || p50.Path[p50.Path.length - 1];
+                        }
+                        return 0;
                     }),
                     type: 'line',
                     lineWidth: 3,
@@ -633,10 +632,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var max = Math.max(...finalValues);
             var binWidth = (max - min) / bins;
             
-            for (var i = 0; i &lt; bins; i++) {
+            for (var i = 0; i < bins; i++) {
                 var binMin = min + i * binWidth;
                 var binMax = binMin + binWidth;
-                var count = finalValues.filter(v => v >= binMin && v &lt; binMax).length;
+                var count = finalValues.filter(v => v >= binMin && v < binMax).length;
                 histogram.push({
                     x: (binMin + binMax) / 2,
                     y: count
@@ -666,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 4. Risk Gauge Chart
-        if (document.getElementById('riskGaugeChart')) {
+        if (document.getElementById('riskGaugeChart') && optimization.RiskAnalysis && optimization.RiskAnalysis.ValueAtRisk95 !== undefined) {
             var riskScore = optimization.RiskAnalysis.ValueAtRisk95 * 100;
             
             Highcharts.chart('riskGaugeChart', {
@@ -882,3 +881,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+}

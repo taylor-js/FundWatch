@@ -103,6 +103,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     services.AddScoped<StockService>();
     services.AddScoped<ChartDataService>();
     services.AddScoped<QuantitativeAnalysisService>();
+    services.AddScoped<SimplifiedQuantService>();
     services.AddHostedService<StockDataBackgroundService>();
 
     // Email Service (Mock for development)

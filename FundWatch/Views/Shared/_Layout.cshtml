@@ -35,6 +35,12 @@
 
     <!-- Syncfusion JS -->
     <script type="text/javascript" asp-append-version="true" src="https://cdn.syncfusion.com/ej2/25.2.3/dist/ej2.min.js"></script>
+    <script type="text/javascript">
+        // Initialize Syncfusion license key
+        if (typeof ej !== 'undefined' && ej.base) {
+            ej.base.registerLicense('ORg4AjUWIQA/Gnt2U1hhQlJBfV5AQmBIYVp/TGpJfl96cVxMZVVBJAtUQF1hTX5Qd0JiW3tfcXNWT2db');
+        }
+    </script>
     
     <!-- Highcharts - Load Highstock and required modules -->
     <script src="https://code.highcharts.com/stock/highstock.js"></script>
@@ -42,10 +48,11 @@
     <script src="https://code.highcharts.com/highcharts-more.js"></script>
     <script src="https://code.highcharts.com/stock/modules/data.js"></script>
     <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    <!-- Add required modules for Performance and Analytics tabs -->
+    <script src="https://code.highcharts.com/modules/heatmap.js"></script>
+    <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
+    <script src="https://code.highcharts.com/modules/annotations.js"></script>
     <script src="https://code.highcharts.com/stock/modules/accessibility.js"></script>
-    <!-- Also make sure treemap and heatmap are from stock folder -->
-    <script src="https://code.highcharts.com/stock/modules/treemap.js"></script>
-    <script src="https://code.highcharts.com/stock/modules/heatmap.js"></script>
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NYNBFN0R23"></script>
@@ -53,7 +60,6 @@
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-
         gtag('config', 'G-NYNBFN0R23');
     </script>
 </head>

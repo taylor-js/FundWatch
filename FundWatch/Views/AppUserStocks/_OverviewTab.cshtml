@@ -274,9 +274,9 @@ else
                         Once you add stocks to your portfolio, we'll show you advanced options pricing analysis 
                         using the Black-Scholes model and market sentiment indicators.
                     </p>
-                    <button class="btn btn-primary" onclick="window.location.href='/AppUserStocks/CreateOrEdit'">
+                    <a href="/AppUserStocks/CreateOrEdit" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>Add Your First Stock
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -293,12 +293,33 @@ document.addEventListener('DOMContentLoaded', function() {
     @if (hasOptionsData)
     {
         <text>
-        console.log('Processing options data for @featuredOptions.Symbol');
+        console.log('Processing options data for @Html.Raw(featuredOptions?.Symbol != null ? Json.Serialize(featuredOptions.Symbol) : "\"Unknown\"")');
         
         // Use pre-calculated chart data from server
-        var payoffData = @Html.Raw(featuredOptions.ChartData?.PayoffDataJson ?? "null");
-        var greeksData = @Html.Raw(featuredOptions.ChartData?.GreeksDataJson ?? "null");
-        var smileData = @Html.Raw(featuredOptions.ChartData?.SmileDataJson ?? "null");
+        var payoffData = null;
+        var greeksData = null;
+        var smileData = null;
+        
+        try {
+            payoffData = @Html.Raw(string.IsNullOrWhiteSpace(featuredOptions.ChartData?.PayoffDataJson) ? "null" : featuredOptions.ChartData.PayoffDataJson);
+        } catch (e) {
+            console.error('Error parsing payoffData:', e);
+            payoffData = null;
+        }
+        
+        try {
+            greeksData = @Html.Raw(string.IsNullOrWhiteSpace(featuredOptions.ChartData?.GreeksDataJson) ? "null" : featuredOptions.ChartData.GreeksDataJson);
+        } catch (e) {
+            console.error('Error parsing greeksData:', e);
+            greeksData = null;
+        }
+        
+        try {
+            smileData = @Html.Raw(string.IsNullOrWhiteSpace(featuredOptions.ChartData?.SmileDataJson) ? "null" : featuredOptions.ChartData.SmileDataJson);
+        } catch (e) {
+            console.error('Error parsing smileData:', e);
+            smileData = null;
+        }
         
         // Log the data for debugging
         console.log('Chart data received:', {
