@@ -112,7 +112,7 @@ var AnalyticsCharts = (function() {
                 }
             }
             
-            Highcharts.chart('powerSpectrumChart', {
+            Highcharts.chart('powerSpectrumChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'area',
                     backgroundColor: '#ffffff'
@@ -141,14 +141,14 @@ var AnalyticsCharts = (function() {
                     color: '#007bff',
                     fillOpacity: 0.3
                 }]
-            });
+            }));
         }
         
         // 2. Decomposition Chart
         if (document.getElementById('decompositionChart') && decomposition && decomposition.Dates && decomposition.Dates.length > 0) {
             var dates = decomposition.Dates.map(function(d) { return new Date(d).getTime(); });
             
-            Highcharts.chart('decompositionChart', {
+            Highcharts.chart('decompositionChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'line',
                     backgroundColor: '#ffffff'
@@ -188,7 +188,7 @@ var AnalyticsCharts = (function() {
                     lineWidth: 1,
                     opacity: 0.5
                 }]
-            });
+            }));
         }
         
         // 3. Fourier Prediction Chart
@@ -203,7 +203,7 @@ var AnalyticsCharts = (function() {
                 };
             });
             
-            Highcharts.chart('fourierPredictionChart', {
+            Highcharts.chart('fourierPredictionChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'arearange',
                     backgroundColor: '#ffffff'
@@ -238,7 +238,7 @@ var AnalyticsCharts = (function() {
                         enabled: false
                     }
                 }]
-            });
+            }));
         }
         
         // 4. Phase Indicators for Cycles
@@ -250,7 +250,11 @@ var AnalyticsCharts = (function() {
                     var ctx = canvas.getContext('2d');
                     var centerX = canvas.width / 2;
                     var centerY = canvas.height / 2;
-                    var radius = 35;
+                    var radius = 30;
+                    
+                    // Clear canvas and set white background
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                     
                     // Draw circle
                     ctx.beginPath();
@@ -298,7 +302,7 @@ var AnalyticsCharts = (function() {
                 });
             }
             
-            Highcharts.chart('correlationHeatmap', {
+            Highcharts.chart('correlationHeatmap', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'heatmap',
                     backgroundColor: '#ffffff'
@@ -350,12 +354,12 @@ var AnalyticsCharts = (function() {
                         }
                     }
                 }]
-            });
+            }));
         }
         
         // 6. Wavelet Energy Chart
         if (document.getElementById('waveletEnergyChart') && waveletLevels && waveletLevels.length > 0) {
-            Highcharts.chart('waveletEnergyChart', {
+            Highcharts.chart('waveletEnergyChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'column',
                     backgroundColor: '#ffffff'
@@ -383,7 +387,7 @@ var AnalyticsCharts = (function() {
                     colorByPoint: true,
                     colors: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1']
                 }]
-            });
+            }));
         }
         
         // 7. Historical Prediction Accuracy Chart
@@ -401,7 +405,7 @@ var AnalyticsCharts = (function() {
                 };
             });
             
-            Highcharts.chart('predictionAccuracyChart', {
+            Highcharts.chart('predictionAccuracyChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'scatter',
                     backgroundColor: '#ffffff',
@@ -447,7 +451,7 @@ var AnalyticsCharts = (function() {
                     data: accuracyData,
                     colorByPoint: true
                 }]
-            });
+            }));
         }
     }
     
@@ -457,7 +461,10 @@ var AnalyticsCharts = (function() {
     };
 })();
 
-// Make it available globally for backward compatibility
+// Make it available globally
+window.AnalyticsCharts = AnalyticsCharts;
+
+// Also expose the function for backward compatibility
 window.initializeAnalyticsCharts = function(data) {
     AnalyticsCharts.initializeCharts(data);
 };

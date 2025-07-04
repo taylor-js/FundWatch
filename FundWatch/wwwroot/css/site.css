@@ -226,17 +226,34 @@ body.has-hero .main-content {
 
 .cycles-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
     margin-top: 20px;
+}
+
+/* Responsive adjustments for cycles grid */
+@media (max-width: 1199.98px) {
+    .cycles-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .cycles-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .cycle-card {
     background: #f8f9fa;
     border-radius: 12px;
-    padding: 20px;
+    padding: 15px;
     border: 1px solid #dee2e6;
     transition: all 0.3s ease;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    color: #212529;
 }
 
 .cycle-card:hover {
@@ -248,14 +265,70 @@ body.has-hero .main-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.cycle-header h6 {
+    font-size: 0.95rem;
+    margin: 0;
+    color: #212529;
+}
+
+.cycle-header .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.cycle-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.cycle-metric {
+    margin-bottom: 10px;
+}
+
+.cycle-metric .label {
+    display: block;
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 5px;
 }
 
 .cycle-dates {
     display: flex;
-    justify-content: space-around;
-    margin: 15px 0;
-    font-size: 0.9rem;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0;
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+.cycle-dates .date-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #495057;
+}
+
+.cycle-dates .date-item span {
+    color: #495057;
+}
+
+.phase-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.phase-indicator canvas {
+    width: 80px !important;
+    height: 80px !important;
 }
 
 .date-item {
@@ -2622,6 +2695,69 @@ canvas.chart-container-400,
 canvas.chart-container-450 {
     max-width: 100%;
     max-height: 100%;
+}
+
+/* Compact card styles for Performance tab */
+.compact-header-card .card-body {
+    padding: 1.5rem !important;
+}
+
+.compact-header-card h4 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem !important;
+}
+
+.compact-header-card h5 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem !important;
+}
+
+.compact-header-card p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.compact-header-card .display-6 {
+    font-size: 2rem !important;
+}
+
+/* Compact metric cards */
+.compact-metric-card .card-body {
+    padding: 1rem !important;
+}
+
+.compact-metric-card .icon-wrapper {
+    margin-bottom: 0.5rem !important;
+}
+
+.compact-metric-card h6 {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem !important;
+}
+
+.compact-metric-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem !important;
+}
+
+.compact-metric-card p {
+    font-size: 0.7rem;
+    margin-bottom: 0 !important;
+}
+
+.compact-metric-card .fa-2x {
+    font-size: 1.5em !important;
+}
+
+/* Remove h-100 height constraint for auto-fit */
+.compact-metric-card.card {
+    height: auto !important;
+}
+
+/* Phase indicator canvas styling */
+.phase-indicator canvas {
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 /* Button styles */

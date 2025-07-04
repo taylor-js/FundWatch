@@ -8,8 +8,8 @@
 <!-- Modern Portfolio Theory Introduction -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card shadow-lg border-0 bg-gradient-success text-white">
-            <div class="card-body py-4">
+        <div class="card shadow-lg border-0 bg-gradient-success text-white compact-header-card">
+            <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h4 class="mb-2">Portfolio Optimization & Efficient Frontier</h4>
@@ -37,33 +37,33 @@
     {
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card shadow-lg border-0 bg-gradient-info text-white">
+                <div class="card shadow-lg border-0 bg-gradient-info text-white compact-header-card">
                     <div class="card-body">
-                        <h5 class="mb-3">
+                        <h5>
                             <i class="fas fa-history me-2"></i>Historical Performance Analysis
                         </h5>
-                        <div class="row">
+                        <div class="row mt-2">
                             <div class="col-md-3">
-                                <h6>Your Actual Return</h6>
-                                <h3>@((optimization.HistoricalPerformance.ActualReturn * 100).ToString("F2"))%</h3>
-                                <small>Since @optimization.HistoricalPerformance.StartDate.ToString("MMM yyyy")</small>
+                                <h6 class="mb-1" style="font-size: 0.85rem;">Your Actual Return</h6>
+                                <h3 class="mb-0" style="font-size: 1.75rem;">@((optimization.HistoricalPerformance.ActualReturn * 100).ToString("F2"))%</h3>
+                                <small style="font-size: 0.75rem;">Since @optimization.HistoricalPerformance.StartDate.ToString("MMM yyyy")</small>
                             </div>
                             <div class="col-md-3">
-                                <h6>Optimal Strategy Return</h6>
-                                <h3 class="text-warning">@((optimization.HistoricalPerformance.OptimalReturn * 100).ToString("F2"))%</h3>
-                                <small>What you could have earned</small>
+                                <h6 class="mb-1" style="font-size: 0.85rem;">Optimal Strategy Return</h6>
+                                <h3 class="text-warning mb-0" style="font-size: 1.75rem;">@((optimization.HistoricalPerformance.OptimalReturn * 100).ToString("F2"))%</h3>
+                                <small style="font-size: 0.75rem;">What you could have earned</small>
                             </div>
                             <div class="col-md-3">
-                                <h6>Missed Gains</h6>
-                                <h3 class="@(optimization.HistoricalPerformance.MissedGains > 0 ? "text-danger" : "text-success")">
+                                <h6 class="mb-1" style="font-size: 0.85rem;">Missed Gains</h6>
+                                <h3 class="mb-0 @(optimization.HistoricalPerformance.MissedGains > 0 ? "text-danger" : "text-success")" style="font-size: 1.75rem;">
                                     @((optimization.HistoricalPerformance.MissedGains * 100).ToString("F2"))%
                                 </h3>
-                                <small>Opportunity cost</small>
+                                <small style="font-size: 0.75rem;">Opportunity cost</small>
                             </div>
                             <div class="col-md-3">
-                                <h6>Days Analyzed</h6>
-                                <h3>@((optimization.HistoricalPerformance.EndDate - optimization.HistoricalPerformance.StartDate).Days)</h3>
-                                <small>Historical data points</small>
+                                <h6 class="mb-1" style="font-size: 0.85rem;">Days Analyzed</h6>
+                                <h3 class="mb-0" style="font-size: 1.75rem;">@((optimization.HistoricalPerformance.EndDate - optimization.HistoricalPerformance.StartDate).Days)</h3>
+                                <small style="font-size: 0.75rem;">Historical data points</small>
                             </div>
                         </div>
                     </div>
@@ -93,53 +93,53 @@
     <!-- Key Metrics Comparison -->
     <div class="row mb-4">
         <div class="col-md-6 col-lg-3 mb-3">
-            <div class="card h-100 border-0 shadow-sm">
+            <div class="card border-0 shadow-sm compact-metric-card">
                 <div class="card-body text-center">
-                    <div class="icon-wrapper mb-3">
+                    <div class="icon-wrapper">
                         <i class="fas fa-bullseye fa-2x text-primary"></i>
                     </div>
                     <h6 class="text-muted">Current Sharpe Ratio</h6>
-                    <h3 class="mb-0">@optimization.CurrentPortfolio.SharpeRatio.ToString("F2")</h3>
-                    <p class="text-muted small mb-0">(Risk-adjusted return)</p>
+                    <h3>@optimization.CurrentPortfolio.SharpeRatio.ToString("F2")</h3>
+                    <p class="text-muted small">(Risk-adjusted return)</p>
                 </div>
             </div>
         </div>
         
         <div class="col-md-6 col-lg-3 mb-3">
-            <div class="card h-100 border-0 shadow-sm">
+            <div class="card border-0 shadow-sm compact-metric-card">
                 <div class="card-body text-center">
-                    <div class="icon-wrapper mb-3">
+                    <div class="icon-wrapper">
                         <i class="fas fa-chart-line fa-2x text-success"></i>
                     </div>
                     <h6 class="text-muted">Optimal Sharpe Ratio</h6>
-                    <h3 class="mb-0 text-success">@optimization.OptimalPortfolio.SharpeRatio.ToString("F2")</h3>
-                    <p class="text-muted small mb-0">(Achievable with rebalancing)</p>
+                    <h3 class="text-success">@optimization.OptimalPortfolio.SharpeRatio.ToString("F2")</h3>
+                    <p class="text-muted small">(Achievable with rebalancing)</p>
                 </div>
             </div>
         </div>
         
         <div class="col-md-6 col-lg-3 mb-3">
-            <div class="card h-100 border-0 shadow-sm">
+            <div class="card border-0 shadow-sm compact-metric-card">
                 <div class="card-body text-center">
-                    <div class="icon-wrapper mb-3">
+                    <div class="icon-wrapper">
                         <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
                     </div>
                     <h6 class="text-muted">Value at Risk (95%)</h6>
-                    <h3 class="mb-0 text-warning">@((optimization.RiskAnalysis.ValueAtRisk95 * 100).ToString("F1"))%</h3>
-                    <p class="text-muted small mb-0">(5% chance of exceeding)</p>
+                    <h3 class="text-warning">@((optimization.RiskAnalysis.ValueAtRisk95 * 100).ToString("F1"))%</h3>
+                    <p class="text-muted small">(5% chance of exceeding)</p>
                 </div>
             </div>
         </div>
         
         <div class="col-md-6 col-lg-3 mb-3">
-            <div class="card h-100 border-0 shadow-sm">
+            <div class="card border-0 shadow-sm compact-metric-card">
                 <div class="card-body text-center">
-                    <div class="icon-wrapper mb-3">
+                    <div class="icon-wrapper">
                         <i class="fas fa-shield-alt fa-2x text-info"></i>
                     </div>
                     <h6 class="text-muted">Max Drawdown</h6>
-                    <h3 class="mb-0 text-info">@((optimization.RiskAnalysis.MaxDrawdown * 100).ToString("F1"))%</h3>
-                    <p class="text-muted small mb-0">(Worst historical decline)</p>
+                    <h3 class="text-info">@((optimization.RiskAnalysis.MaxDrawdown * 100).ToString("F1"))%</h3>
+                    <p class="text-muted small">(Worst historical decline)</p>
                 </div>
             </div>
         </div>
