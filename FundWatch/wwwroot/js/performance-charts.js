@@ -2,6 +2,9 @@
 var PerformanceCharts = (function() {
     'use strict';
     
+    // Store chart instances for later reflow
+    var chartInstances = {};
+    
     // Light theme configuration for charts
     var lightTheme = {
         chart: {
@@ -102,6 +105,20 @@ var PerformanceCharts = (function() {
         // 1. Efficient Frontier Chart
         var efficientFrontierContainer = document.getElementById('efficientFrontierChart');
         if (efficientFrontierContainer && efficientFrontier && efficientFrontier.length > 0) {
+            // Log container dimensions
+            console.log('Efficient Frontier container dimensions:', {
+                width: efficientFrontierContainer.offsetWidth,
+                height: efficientFrontierContainer.offsetHeight,
+                clientWidth: efficientFrontierContainer.clientWidth,
+                clientHeight: efficientFrontierContainer.clientHeight
+            });
+            
+            // Skip creation if container has no dimensions
+            if (efficientFrontierContainer.offsetWidth === 0 || efficientFrontierContainer.offsetHeight === 0) {
+                console.warn('Efficient Frontier container has no dimensions, skipping chart creation');
+                return;
+            }
+            
             // Ensure container has height
             if (!efficientFrontierContainer.style.height) {
                 efficientFrontierContainer.style.height = '400px';
@@ -201,6 +218,7 @@ var PerformanceCharts = (function() {
                     }]
                 }] : []
             }));
+                chartInstances.efficientFrontierChart = efficientFrontierChartInstance;
                 console.log('Efficient Frontier chart created successfully');
             } catch (error) {
                 console.error('Error creating Efficient Frontier chart:', error);
@@ -558,6 +576,7 @@ var PerformanceCharts = (function() {
                     }]
                 }]
             }));
+                    chartInstances.historicalPerformanceChart = historicalChartInstance;
                     console.log('Historical Performance chart created successfully');
                 } catch (error) {
                     console.error('Error creating Historical Performance chart:', error);
@@ -582,9 +601,21 @@ var PerformanceCharts = (function() {
         }, 250);
     }
     
+    // Function to reflow all performance charts
+    function reflowCharts() {
+        console.log('Reflowing performance charts...');
+        Object.keys(chartInstances).forEach(function(key) {
+            if (chartInstances[key] && chartInstances[key].reflow) {
+                chartInstances[key].reflow();
+                console.log('Reflowed chart: ' + key);
+            }
+        });
+    }
+    
     // Public API
     return {
-        initializeCharts: initializeCharts
+        initializeCharts: initializeCharts,
+        reflowCharts: reflowCharts
     };
 })();
 

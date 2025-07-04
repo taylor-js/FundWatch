@@ -2597,6 +2597,17 @@ button[type="submit"] {
     height: 350px;
 }
 
+/* Chart container styles */
+.chart-container-400 {
+    height: 400px;
+    min-height: 400px;
+}
+
+.chart-container-450 {
+    height: 450px;
+    min-height: 450px;
+}
+
 /* Button styles */
 .btn-purple {
     background-color: #6f42c1;

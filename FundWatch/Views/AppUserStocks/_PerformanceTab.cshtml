@@ -380,6 +380,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 optimization: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(optimization) ?? "null")
             };
             
+            console.log('Chart data prepared:', chartData);
+            console.log('EfficientFrontier chart container exists:', document.getElementById('efficientFrontierChart') !== null);
+            console.log('HistoricalPerformance chart container exists:', document.getElementById('historicalPerformanceChart') !== null);
+            
             // Call the performance charts module
             if (typeof PerformanceCharts !== 'undefined' && PerformanceCharts.initializeCharts) {
                 PerformanceCharts.initializeCharts(chartData);
@@ -398,31 +402,64 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize charts when tab becomes visible
     setTimeout(function() {
+        console.log('Attempting to initialize performance charts...');
+        console.log('Highcharts available:', typeof Highcharts !== 'undefined');
+        console.log('PerformanceCharts module available:', typeof PerformanceCharts !== 'undefined');
+        
+        if (typeof Highcharts === 'undefined') {
+            console.error('Highcharts is not loaded!');
+            return;
+        }
+        
+        if (typeof PerformanceCharts === 'undefined') {
+            console.error('PerformanceCharts module is not loaded!');
+            return;
+        }
+        
         initializePerformanceChartsForTab();
+    }, 500);
+    
+    // Check if Performance tab is already active (e.g., when loading with ?tab=performance)
+    setTimeout(function() {
+        var performanceTabPane = document.getElementById('performanceTab');
+        var performanceTabLink = document.getElementById('performance-tab');
+        
+        if (performanceTabPane && performanceTabPane.classList.contains('active')) {
+            console.log('Performance tab is already active, triggering reflow...');
+            
+            // Call reflow after a delay to ensure charts are created
+            setTimeout(function() {
+                if (window.PerformanceCharts && window.PerformanceCharts.reflowCharts) {
+                    window.PerformanceCharts.reflowCharts();
+                }
+            }, 1000);
+        }
     }, 100);
     
     // Also initialize when tab is shown
     var performanceTab = document.querySelector('#performance-tab');
     if (performanceTab) {
+        // Handle Bootstrap tab shown event
         performanceTab.addEventListener('shown.bs.tab', function() {
+            console.log('Performance tab shown event triggered');
             setTimeout(function() {
-                initializePerformanceChartsForTab();
+                // Call reflow method from PerformanceCharts module
+                if (window.PerformanceCharts && window.PerformanceCharts.reflowCharts) {
+                    window.PerformanceCharts.reflowCharts();
+                }
                 
-                // Force reflow of specific performance charts
+                // Also try generic Highcharts reflow as backup
                 if (window.Highcharts && window.Highcharts.charts) {
                     window.Highcharts.charts.forEach(function(chart) {
                         if (chart && chart.container && 
                             (chart.container.id === 'efficientFrontierChart' || 
-                             chart.container.id === 'historicalPerformanceChart' ||
-                             chart.container.id === 'monteCarloChart' ||
-                             chart.container.id === 'outcomeDistribution' ||
-                             chart.container.id === 'riskGaugeChart')) {
+                             chart.container.id === 'historicalPerformanceChart')) {
                             chart.reflow();
-                            console.log('Reflowed performance chart on tab show: ' + chart.container.id);
+                            console.log('Reflowed chart via Highcharts.charts: ' + chart.container.id);
                         }
                     });
                 }
-            }, 100);
+            }, 200);
         });
     }
 });
