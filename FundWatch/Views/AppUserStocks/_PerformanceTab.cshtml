@@ -81,7 +81,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div id="historicalPerformanceChart" class="chart-container-450"></div>
+                        <canvas id="historicalPerformanceChart" class="chart-container-450"></canvas>
                     </div>
                 </div>
             </div>
@@ -153,7 +153,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div id="efficientFrontierChart" class="chart-container-400"></div>
+                    <canvas id="efficientFrontierChart" class="chart-container-400"></canvas>
                     <div class="mt-3">
                         <small class="text-muted">
                             The efficient frontier shows all optimal portfolios. Your current allocation 
@@ -384,11 +384,17 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('EfficientFrontier chart container exists:', document.getElementById('efficientFrontierChart') !== null);
             console.log('HistoricalPerformance chart container exists:', document.getElementById('historicalPerformanceChart') !== null);
             
-            // Call the performance charts module
-            if (typeof PerformanceCharts !== 'undefined' && PerformanceCharts.initializeCharts) {
-                PerformanceCharts.initializeCharts(chartData);
+            // Use simple Chart.js implementation for these problematic charts
+            if (typeof SimplePerformanceCharts !== 'undefined' && SimplePerformanceCharts.initializeCharts) {
+                SimplePerformanceCharts.initializeCharts(chartData);
             } else {
-                console.error('PerformanceCharts module not loaded');
+                console.error('SimplePerformanceCharts module not loaded');
+            }
+            
+            // Still initialize other charts with Highcharts
+            if (typeof PerformanceCharts !== 'undefined' && PerformanceCharts.initializeCharts) {
+                // This will handle the other charts (Monte Carlo, etc.)
+                PerformanceCharts.initializeCharts(chartData);
             }
             </text>
         }
@@ -427,11 +433,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (performanceTabPane && performanceTabPane.classList.contains('active')) {
             console.log('Performance tab is already active, triggering reflow...');
             
-            // Call reflow after a delay to ensure charts are created
+            // Reinitialize charts after a delay
             setTimeout(function() {
-                if (window.PerformanceCharts && window.PerformanceCharts.reflowCharts) {
-                    window.PerformanceCharts.reflowCharts();
-                }
+                initializePerformanceChartsForTab();
             }, 1000);
         }
     }, 100);
@@ -442,24 +446,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Handle Bootstrap tab shown event
         performanceTab.addEventListener('shown.bs.tab', function() {
             console.log('Performance tab shown event triggered');
+            
+            // Reinitialize all charts when tab is shown
             setTimeout(function() {
-                // Call reflow method from PerformanceCharts module
-                if (window.PerformanceCharts && window.PerformanceCharts.reflowCharts) {
-                    window.PerformanceCharts.reflowCharts();
-                }
-                
-                // Also try generic Highcharts reflow as backup
-                if (window.Highcharts && window.Highcharts.charts) {
-                    window.Highcharts.charts.forEach(function(chart) {
-                        if (chart && chart.container && 
-                            (chart.container.id === 'efficientFrontierChart' || 
-                             chart.container.id === 'historicalPerformanceChart')) {
-                            chart.reflow();
-                            console.log('Reflowed chart via Highcharts.charts: ' + chart.container.id);
-                        }
-                    });
-                }
-            }, 200);
+                initializePerformanceChartsForTab();
+            }, 100);
         });
     }
 });

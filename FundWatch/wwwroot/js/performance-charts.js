@@ -5,6 +5,10 @@ var PerformanceCharts = (function() {
     // Store chart instances for later reflow
     var chartInstances = {};
     
+    // Store data for deferred rendering
+    var chartData = null;
+    var chartsInitialized = false;
+    
     // Light theme configuration for charts
     var lightTheme = {
         chart: {
@@ -81,10 +85,29 @@ var PerformanceCharts = (function() {
             return;
         }
         
-        // Ensure charts are initialized when container is visible
-        setTimeout(function() {
-            initializeChartsInternal(data);
-        }, 100);
+        // Store data for later use
+        chartData = data;
+        
+        // Check if tab is visible
+        var performanceTabPane = document.getElementById('performanceTab');
+        if (performanceTabPane && performanceTabPane.classList.contains('active')) {
+            // Tab is visible, create charts immediately
+            createChartsIfNeeded();
+        } else {
+            // Tab is not visible, defer chart creation
+            console.log('Performance tab is not visible, deferring chart creation');
+        }
+    }
+    
+    function createChartsIfNeeded() {
+        if (chartsInitialized || !chartData) {
+            console.log('Charts already initialized or no data available');
+            return;
+        }
+        
+        console.log('Creating performance charts...');
+        initializeChartsInternal(chartData);
+        chartsInitialized = true;
     }
     
     function initializeChartsInternal(data) {
@@ -103,26 +126,7 @@ var PerformanceCharts = (function() {
         console.log('Historical Performance:', historicalPerformance);
         
         // 1. Efficient Frontier Chart
-        var efficientFrontierContainer = document.getElementById('efficientFrontierChart');
-        if (efficientFrontierContainer && efficientFrontier && efficientFrontier.length > 0) {
-            // Log container dimensions
-            console.log('Efficient Frontier container dimensions:', {
-                width: efficientFrontierContainer.offsetWidth,
-                height: efficientFrontierContainer.offsetHeight,
-                clientWidth: efficientFrontierContainer.clientWidth,
-                clientHeight: efficientFrontierContainer.clientHeight
-            });
-            
-            // Skip creation if container has no dimensions
-            if (efficientFrontierContainer.offsetWidth === 0 || efficientFrontierContainer.offsetHeight === 0) {
-                console.warn('Efficient Frontier container has no dimensions, skipping chart creation');
-                return;
-            }
-            
-            // Ensure container has height
-            if (!efficientFrontierContainer.style.height) {
-                efficientFrontierContainer.style.height = '400px';
-            }
+        if (document.getElementById('efficientFrontierChart') && efficientFrontier && efficientFrontier.length > 0) {
             var frontierData = efficientFrontier.map(function(p) {
                 return {
                     x: p.Risk * 100,
@@ -444,12 +448,7 @@ var PerformanceCharts = (function() {
         }
         
         // 5. Historical Performance Chart
-        var historicalPerformanceContainer = document.getElementById('historicalPerformanceChart');
-        if (historicalPerformanceContainer && historicalPerformance && historicalPerformance.ActualPerformance && historicalPerformance.ActualPerformance.length > 0) {
-            // Ensure container has height
-            if (!historicalPerformanceContainer.style.height) {
-                historicalPerformanceContainer.style.height = '450px';
-            }
+        if (document.getElementById('historicalPerformanceChart') && historicalPerformance && historicalPerformance.ActualPerformance && historicalPerformance.ActualPerformance.length > 0) {
             // Prepare data series with proper date parsing and validation
             var actualData = [];
             var optimalData = [];
@@ -615,7 +614,8 @@ var PerformanceCharts = (function() {
     // Public API
     return {
         initializeCharts: initializeCharts,
-        reflowCharts: reflowCharts
+        reflowCharts: reflowCharts,
+        createChartsIfNeeded: createChartsIfNeeded
     };
 })();
 
