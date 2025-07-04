@@ -2599,13 +2599,29 @@ button[type="submit"] {
 
 /* Chart container styles */
 .chart-container-400 {
+    position: relative;
     height: 400px;
-    min-height: 400px;
+    width: 100%;
 }
 
 .chart-container-450 {
+    position: relative;
     height: 450px;
-    min-height: 450px;
+    width: 100%;
+}
+
+/* Chart container with extra space for legend */
+.chart-container-legend {
+    position: relative;
+    height: 480px;
+    width: 100%;
+}
+
+/* Canvas specific styles to prevent resize issues */
+canvas.chart-container-400,
+canvas.chart-container-450 {
+    max-width: 100%;
+    max-height: 100%;
 }
 
 /* Button styles */

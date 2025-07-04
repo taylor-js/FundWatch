@@ -81,7 +81,9 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="historicalPerformanceChart" class="chart-container-450"></canvas>
+                        <div class="chart-container-legend">
+                            <canvas id="historicalPerformanceChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -153,7 +155,9 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="efficientFrontierChart" class="chart-container-400"></canvas>
+                    <div class="chart-container-legend">
+                        <canvas id="efficientFrontierChart"></canvas>
+                    </div>
                     <div class="mt-3">
                         <small class="text-muted">
                             The efficient frontier shows all optimal portfolios. Your current allocation 
@@ -172,7 +176,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div id="monteCarloChart" class="chart-container-400"></div>
+                    <div id="monteCarloChart" class="chart-container-legend"></div>
                     <div class="mt-3">
                         <small class="text-muted">
                             Based on 1,000 simulations, showing confidence intervals for future portfolio values. 
