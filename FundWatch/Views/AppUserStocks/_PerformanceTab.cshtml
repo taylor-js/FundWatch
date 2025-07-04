@@ -405,7 +405,24 @@ document.addEventListener('DOMContentLoaded', function() {
     var performanceTab = document.querySelector('#performance-tab');
     if (performanceTab) {
         performanceTab.addEventListener('shown.bs.tab', function() {
-            setTimeout(initializePerformanceChartsForTab, 100);
+            setTimeout(function() {
+                initializePerformanceChartsForTab();
+                
+                // Force reflow of specific performance charts
+                if (window.Highcharts && window.Highcharts.charts) {
+                    window.Highcharts.charts.forEach(function(chart) {
+                        if (chart && chart.container && 
+                            (chart.container.id === 'efficientFrontierChart' || 
+                             chart.container.id === 'historicalPerformanceChart' ||
+                             chart.container.id === 'monteCarloChart' ||
+                             chart.container.id === 'outcomeDistribution' ||
+                             chart.container.id === 'riskGaugeChart')) {
+                            chart.reflow();
+                            console.log('Reflowed performance chart on tab show: ' + chart.container.id);
+                        }
+                    });
+                }
+            }, 100);
         });
     }
 });

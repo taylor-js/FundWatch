@@ -78,6 +78,14 @@ var PerformanceCharts = (function() {
             return;
         }
         
+        // Ensure charts are initialized when container is visible
+        setTimeout(function() {
+            initializeChartsInternal(data);
+        }, 100);
+    }
+    
+    function initializeChartsInternal(data) {
+        
         var efficientFrontier = data.efficientFrontier;
         var currentPortfolio = data.currentPortfolio;
         var optimalPortfolio = data.optimalPortfolio;
@@ -92,7 +100,12 @@ var PerformanceCharts = (function() {
         console.log('Historical Performance:', historicalPerformance);
         
         // 1. Efficient Frontier Chart
-        if (document.getElementById('efficientFrontierChart') && efficientFrontier && efficientFrontier.length > 0) {
+        var efficientFrontierContainer = document.getElementById('efficientFrontierChart');
+        if (efficientFrontierContainer && efficientFrontier && efficientFrontier.length > 0) {
+            // Ensure container has height
+            if (!efficientFrontierContainer.style.height) {
+                efficientFrontierContainer.style.height = '400px';
+            }
             var frontierData = efficientFrontier.map(function(p) {
                 return {
                     x: p.Risk * 100,
@@ -101,7 +114,8 @@ var PerformanceCharts = (function() {
                 };
             });
             
-            Highcharts.chart('efficientFrontierChart', Highcharts.merge(lightTheme, {
+            try {
+                var efficientFrontierChartInstance = Highcharts.chart('efficientFrontierChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'scatter'
                 },
@@ -187,6 +201,10 @@ var PerformanceCharts = (function() {
                     }]
                 }] : []
             }));
+                console.log('Efficient Frontier chart created successfully');
+            } catch (error) {
+                console.error('Error creating Efficient Frontier chart:', error);
+            }
         }
         
         // 2. Monte Carlo Fan Chart
@@ -408,23 +426,48 @@ var PerformanceCharts = (function() {
         }
         
         // 5. Historical Performance Chart
-        if (document.getElementById('historicalPerformanceChart') && historicalPerformance && historicalPerformance.ActualPerformance) {
-            // Prepare data series
-            var actualData = historicalPerformance.ActualPerformance.map(function(p) {
-                return {
-                    x: new Date(p.Date).getTime(),
-                    y: p.Value
-                };
+        var historicalPerformanceContainer = document.getElementById('historicalPerformanceChart');
+        if (historicalPerformanceContainer && historicalPerformance && historicalPerformance.ActualPerformance && historicalPerformance.ActualPerformance.length > 0) {
+            // Ensure container has height
+            if (!historicalPerformanceContainer.style.height) {
+                historicalPerformanceContainer.style.height = '450px';
+            }
+            // Prepare data series with proper date parsing and validation
+            var actualData = [];
+            var optimalData = [];
+            
+            // Process actual performance data
+            historicalPerformance.ActualPerformance.forEach(function(p) {
+                var timestamp = new Date(p.Date).getTime();
+                if (!isNaN(timestamp) && !isNaN(p.Value)) {
+                    actualData.push({
+                        x: timestamp,
+                        y: p.Value
+                    });
+                }
             });
             
-            var optimalData = historicalPerformance.OptimalPerformance.map(function(p) {
-                return {
-                    x: new Date(p.Date).getTime(),
-                    y: p.Value
-                };
-            });
+            // Process optimal performance data
+            if (historicalPerformance.OptimalPerformance && historicalPerformance.OptimalPerformance.length > 0) {
+                historicalPerformance.OptimalPerformance.forEach(function(p) {
+                    var timestamp = new Date(p.Date).getTime();
+                    if (!isNaN(timestamp) && !isNaN(p.Value)) {
+                        optimalData.push({
+                            x: timestamp,
+                            y: p.Value
+                        });
+                    }
+                });
+            }
             
-            Highcharts.chart('historicalPerformanceChart', Highcharts.merge(lightTheme, {
+            // Sort data by date
+            actualData.sort(function(a, b) { return a.x - b.x; });
+            optimalData.sort(function(a, b) { return a.x - b.x; });
+            
+            // Only create chart if we have valid data
+            if (actualData.length > 0 && optimalData.length > 0) {
+                try {
+                    var historicalChartInstance = Highcharts.chart('historicalPerformanceChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'line',
                     zoomType: 'x'
@@ -515,7 +558,28 @@ var PerformanceCharts = (function() {
                     }]
                 }]
             }));
+                    console.log('Historical Performance chart created successfully');
+                } catch (error) {
+                    console.error('Error creating Historical Performance chart:', error);
+                }
+            } else {
+                console.warn('Historical Performance chart has no valid data to display');
+            }
         }
+        
+        // Force reflow of all charts after initialization
+        setTimeout(function() {
+            if (window.Highcharts && window.Highcharts.charts) {
+                window.Highcharts.charts.forEach(function(chart) {
+                    if (chart && chart.container && 
+                        (chart.container.id === 'efficientFrontierChart' || 
+                         chart.container.id === 'historicalPerformanceChart')) {
+                        chart.reflow();
+                        console.log('Reflowed chart: ' + chart.container.id);
+                    }
+                });
+            }
+        }, 250);
     }
     
     // Public API
@@ -523,6 +587,9 @@ var PerformanceCharts = (function() {
         initializeCharts: initializeCharts
     };
 })();
+
+// Make it available globally 
+window.PerformanceCharts = PerformanceCharts;
 
 // Make it available globally for backward compatibility
 window.initializePerformanceCharts = function(data) {
