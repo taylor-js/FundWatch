@@ -629,6 +629,25 @@
             // Configure event handlers for Syncfusion dropdown if available
             if (stockSymbolDropdown) {
                 console.log("Setting up handlers for Syncfusion dropdown");
+                
+                // Handle focus to prevent input from sliding up
+                stockSymbolDropdown.focus = function(args) {
+                    if (window.innerWidth <= 768) {
+                        // Prevent default scrolling behavior
+                        setTimeout(function() {
+                            var inputElement = document.getElementById("StockSymbol");
+                            if (inputElement) {
+                                // Ensure input is visible but don't scroll unnecessarily
+                                var rect = inputElement.getBoundingClientRect();
+                                // Only scroll if input is above viewport or below visible area
+                                if (rect.top < 100 || rect.bottom > window.innerHeight - 100) {
+                                    inputElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+                                }
+                            }
+                        }, 100);
+                    }
+                };
+                
                 // Configure filtering behavior
                 stockSymbolDropdown.filtering = function(e) {
                     e.preventDefaultAction = true;

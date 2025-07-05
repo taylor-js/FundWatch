@@ -797,6 +797,25 @@ section {
         max-height: calc(100vh - 100px) !important; /* Account for navbar height */
         overflow-y: auto !important;
     }
+    
+    /* Prevent input field from sliding up when typing */
+    #StockSymbol.e-input-focus,
+    #StockSymbol_wrapper {
+        position: relative !important;
+        z-index: 1 !important;
+    }
+    
+    /* Keep the dropdown input visible when keyboard appears */
+    .e-ddl.e-input-focus {
+        transform: translateY(0) !important;
+        transition: none !important;
+    }
+    
+    /* Prevent viewport from shifting when virtual keyboard appears */
+    #StockSymbol:focus {
+        position: relative !important;
+        top: 0 !important;
+    }
 }
 
 /* ============================
