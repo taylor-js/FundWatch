@@ -2588,7 +2588,6 @@ button[type="submit"] {
 
 #performanceTab .card {
     height: auto !important;
-    min-height: 550px !important;
     margin-bottom: 0px !important;
 }
 
