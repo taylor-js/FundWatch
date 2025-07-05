@@ -785,6 +785,17 @@ section {
         position: fixed !important;
     }
     
+    /* Specific fix for StockSymbol dropdown on mobile */
+    #StockSymbol_popup {
+        position: fixed !important;
+        z-index: 1000 !important;
+    }
+    
+    /* Ensure dropdown doesn't cover the input field */
+    .e-ddl.e-input-group.e-control-wrapper .e-ddl-popup {
+        margin-top: 2px !important;
+    }
+    
     /* When dropdown is open, prevent body scroll */
     body.e-ddl-popup-open {
         overflow: hidden;
