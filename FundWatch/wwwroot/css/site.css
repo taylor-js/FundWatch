@@ -327,8 +327,8 @@ body.has-hero .main-content {
 }
 
 .phase-indicator canvas {
-    width: 80px !important;
-    height: 80px !important;
+    width: 120px !important;
+    height: 120px !important;
 }
 
 .date-item {

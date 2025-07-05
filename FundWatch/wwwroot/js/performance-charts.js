@@ -68,6 +68,7 @@ var PerformanceCharts = (function() {
         },
         legend: {
             backgroundColor: '#ffffff',
+            borderWidth: 0,
             itemStyle: {
                 color: '#333333'
             },
@@ -361,7 +362,7 @@ var PerformanceCharts = (function() {
         if (document.getElementById('riskGaugeChart') && optimization && optimization.RiskAnalysis && optimization.RiskAnalysis.ValueAtRisk95 !== undefined) {
             var riskScore = optimization.RiskAnalysis.ValueAtRisk95 * 100;
             
-            Highcharts.chart('riskGaugeChart', {
+            Highcharts.chart('riskGaugeChart', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'gauge',
                     backgroundColor: '#ffffff'
@@ -414,10 +415,16 @@ var PerformanceCharts = (function() {
                     tickColor: '#666',
                     labels: {
                         step: 2,
-                        rotation: 'auto'
+                        rotation: 'auto',
+                        style: {
+                            color: '#333333'
+                        }
                     },
                     title: {
-                        text: 'VaR %'
+                        text: 'VaR %',
+                        style: {
+                            color: '#333333'
+                        }
                     },
                     plotBands: [{
                         from: 0,
@@ -444,7 +451,7 @@ var PerformanceCharts = (function() {
                         valueSuffix: '%'
                     }
                 }]
-            });
+            }));
         }
         
         // 5. Historical Performance Chart

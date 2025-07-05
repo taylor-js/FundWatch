@@ -61,6 +61,7 @@ var AnalyticsCharts = (function() {
         },
         legend: {
             backgroundColor: '#ffffff',
+            borderWidth: 0,
             itemStyle: {
                 color: '#333333'
             },
@@ -250,7 +251,7 @@ var AnalyticsCharts = (function() {
                     var ctx = canvas.getContext('2d');
                     var centerX = canvas.width / 2;
                     var centerY = canvas.height / 2;
-                    var radius = 30;
+                    var radius = 35;
                     
                     // Clear canvas and set white background
                     ctx.fillStyle = '#ffffff';
@@ -260,10 +261,63 @@ var AnalyticsCharts = (function() {
                     ctx.beginPath();
                     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
                     ctx.strokeStyle = '#dee2e6';
-                    ctx.lineWidth = 3;
+                    ctx.lineWidth = 2;
                     ctx.stroke();
                     
-                    // Draw phase indicator
+                    // Add phase labels
+                    ctx.font = '11px Arial';
+                    ctx.fillStyle = '#495057';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    // Top - Peak (0°)
+                    ctx.fillText('Peak', centerX, centerY - radius - 12);
+                    
+                    // Right - Declining (90°)
+                    ctx.save();
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Decline', centerX + radius + 8, centerY);
+                    ctx.restore();
+                    
+                    // Bottom - Trough (180°)
+                    ctx.fillText('Trough', centerX, centerY + radius + 12);
+                    
+                    // Left - Rising (270°)
+                    ctx.save();
+                    ctx.textAlign = 'right';
+                    ctx.fillText('Rise', centerX - radius - 8, centerY);
+                    ctx.restore();
+                    
+                    // Add tick marks at quarters
+                    ctx.strokeStyle = '#dee2e6';
+                    ctx.lineWidth = 1;
+                    var tickLength = 5;
+                    
+                    // Top tick
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY - radius);
+                    ctx.lineTo(centerX, centerY - radius + tickLength);
+                    ctx.stroke();
+                    
+                    // Right tick
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + radius, centerY);
+                    ctx.lineTo(centerX + radius - tickLength, centerY);
+                    ctx.stroke();
+                    
+                    // Bottom tick
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY + radius);
+                    ctx.lineTo(centerX, centerY + radius - tickLength);
+                    ctx.stroke();
+                    
+                    // Left tick
+                    ctx.beginPath();
+                    ctx.moveTo(centerX - radius, centerY);
+                    ctx.lineTo(centerX - radius + tickLength, centerY);
+                    ctx.stroke();
+                    
+                    // Draw phase indicator arrow
                     var phaseRad = cycle.CurrentPhase * Math.PI / 180;
                     ctx.beginPath();
                     ctx.moveTo(centerX, centerY);
@@ -272,15 +326,21 @@ var AnalyticsCharts = (function() {
                         centerY + radius * Math.sin(phaseRad - Math.PI / 2)
                     );
                     ctx.strokeStyle = cycle.PhaseDescription.includes('Rising') ? '#28a745' : '#dc3545';
-                    ctx.lineWidth = 4;
+                    ctx.lineWidth = 3;
                     ctx.stroke();
                     
-                    // Draw phase dot
+                    // Draw center dot
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#495057';
+                    ctx.fill();
+                    
+                    // Draw phase dot at end of arrow
                     ctx.beginPath();
                     ctx.arc(
                         centerX + radius * Math.cos(phaseRad - Math.PI / 2),
                         centerY + radius * Math.sin(phaseRad - Math.PI / 2),
-                        5, 0, 2 * Math.PI
+                        4, 0, 2 * Math.PI
                     );
                     ctx.fillStyle = cycle.PhaseDescription.includes('Rising') ? '#28a745' : '#dc3545';
                     ctx.fill();
@@ -325,7 +385,12 @@ var AnalyticsCharts = (function() {
                         [0, '#dc3545'],
                         [0.5, '#ffffff'],
                         [1, '#28a745']
-                    ]
+                    ],
+                    labels: {
+                        style: {
+                            color: '#333333'
+                        }
+                    }
                 },
                 legend: {
                     align: 'right',
@@ -333,7 +398,12 @@ var AnalyticsCharts = (function() {
                     margin: 0,
                     verticalAlign: 'top',
                     y: 25,
-                    symbolHeight: 280
+                    symbolHeight: 280,
+                    borderWidth: 0,
+                    backgroundColor: 'transparent',
+                    itemStyle: {
+                        color: '#333333'
+                    }
                 },
                 tooltip: {
                     formatter: function() {

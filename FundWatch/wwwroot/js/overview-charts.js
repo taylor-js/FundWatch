@@ -61,6 +61,7 @@ var OverviewCharts = (function() {
         },
         legend: {
             backgroundColor: '#ffffff',
+            borderWidth: 0,
             itemStyle: {
                 color: '#333333'
             },
