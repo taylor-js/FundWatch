@@ -93,47 +93,100 @@
             <div class="col-12">
                 <div class="card shadow border-0">
                     <div class="card-header bg-gradient-info text-white compact-header-card">
-                        <h5 class="mb-0">
-                            <i class="fas fa-check-circle me-2"></i>Pattern Accuracy Score
-                        </h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-check-circle me-2"></i>Pattern Accuracy Score
+                            </h5>
+                            <small>
+                                <i class="fas fa-question-circle" data-bs-toggle="tooltip" data-bs-placement="left" 
+                                   title="This score shows how well our Fourier analysis predicted past market movements. We validate our patterns by backtesting against historical data."></i>
+                            </small>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <!-- Simplified accuracy overview -->
-                        <div class="row align-items-center mb-3">
+                        <!-- Enhanced accuracy overview with insights -->
+                        <div class="row align-items-center mb-4">
                             <div class="col-md-8">
                                 <div class="d-flex align-items-center">
-                                    <div class="me-4">
-                                        <h2 class="mb-0 text-success">@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F0"))%</h2>
+                                    <div class="me-4 text-center">
+                                        <h1 class="mb-0 text-success display-4">@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F0"))%</h1>
                                         <small class="text-muted">Overall Accuracy</small>
                                     </div>
-                                    <div class="vr mx-3"></div>
-                                    <div>
-                                        <p class="mb-0">
-                                            <i class="fas fa-info-circle text-info me-2"></i>
-                                            Our pattern detection correctly predicted market movements 
-                                            <strong>@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F0"))%</strong> of the time
-                                            when tested against historical data.
+                                    <div class="vr mx-3" style="height: 80px;"></div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-2">Pattern Recognition Confidence</h6>
+                                        <p class="mb-2 small">
+                                            Our Fourier transform analysis correctly predicted 
+                                            <strong>@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F0"))%</strong> of market movements
+                                            when backtested against your portfolio's historical data.
                                         </p>
+                                        <div class="progress mb-2" style="height: 20px;">
+                                            <div class="progress-bar @(fourier.HistoricalValidation.PatternAccuracy > 0.7 ? "bg-success" : fourier.HistoricalValidation.PatternAccuracy > 0.5 ? "bg-warning" : "bg-danger")" 
+                                                 role="progressbar" 
+                                                 style="width: @((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F0"))%"
+                                                 aria-valuenow="@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F0"))" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-lightbulb text-warning me-1"></i>
+                                            @if (fourier.HistoricalValidation.PatternAccuracy > 0.7)
+                                            {
+                                                <text>High confidence - These patterns have strong predictive power</text>
+                                            }
+                                            else if (fourier.HistoricalValidation.PatternAccuracy > 0.5)
+                                            {
+                                                <text>Moderate confidence - Use these patterns with additional analysis</text>
+                                            }
+                                            else
+                                            {
+                                                <text>Low confidence - Consider these patterns as supplementary indicators only</text>
+                                            }
+                                        </small>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 text-end">
-                                <div class="badge-group">
-                                    <span class="badge bg-primary me-2">
-                                        <i class="fas fa-sync me-1"></i>@fourier.HistoricalValidation.ValidatedCycles.Count Cycles Validated
-                                    </span>
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-bullseye me-1"></i>@((fourier.HistoricalValidation.PredictionAccuracy * 100).ToString("F0"))% Hit Rate
-                                    </span>
+                            <div class="col-md-4">
+                                <div class="validation-metrics p-3 bg-light rounded">
+                                    <h6 class="mb-3">Validation Metrics</h6>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">
+                                            <i class="fas fa-sync me-1" data-bs-toggle="tooltip" title="Number of different cyclical patterns we tested"></i>
+                                            Cycles Tested:
+                                        </span>
+                                        <strong>@fourier.HistoricalValidation.ValidatedCycles.Count</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">
+                                            <i class="fas fa-bullseye me-1" data-bs-toggle="tooltip" title="Percentage of predictions that were within 5% of actual values"></i>
+                                            Hit Rate:
+                                        </span>
+                                        <strong class="text-success">@((fourier.HistoricalValidation.PredictionAccuracy * 100).ToString("F0"))%</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">
+                                            <i class="fas fa-calendar-check me-1" data-bs-toggle="tooltip" title="Total number of prediction tests performed"></i>
+                                            Tests Run:
+                                        </span>
+                                        <strong>@(fourier.HistoricalValidation.PastPredictions?.Count ?? 0)</strong>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Compact cycle reliability cards -->
-                        <h6 class="mb-2 text-muted">
-                            <i class="fas fa-chart-line me-2"></i>Top Performing Cycles
-                        </h6>
-                        <div class="row g-2">
+                        <!-- Enhanced cycle performance cards -->
+                        <div class="mb-3">
+                            <h6 class="text-muted d-flex align-items-center">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Top Performing Cycles
+                                <small class="ms-2">
+                                    <i class="fas fa-info-circle" data-bs-toggle="tooltip" 
+                                       title="These are the most accurate cyclical patterns we discovered in your portfolio's price movements"></i>
+                                </small>
+                            </h6>
+                        </div>
+                        <div class="row g-3">
                             @foreach (var cycle in fourier.HistoricalValidation.ValidatedCycles.OrderByDescending(c => c.Accuracy).Take(3))
                             {
                                 var reliability = fourier.HistoricalValidation.CycleReliability?.GetValueOrDefault(cycle.CycleName, 0) ?? 0;
@@ -141,22 +194,69 @@
                                 var accuracyClass = cycle.Accuracy > 0.8 ? "success" : cycle.Accuracy > 0.6 ? "info" : "warning";
                                 
                                 <div class="col-md-4">
-                                    <div class="card border-0 bg-light h-100">
+                                    <div class="card border-0 bg-dark text-white h-100 hover-shadow">
                                         <div class="card-body p-3">
-                                            <h6 class="card-title mb-2">@cycle.CycleName</h6>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <small class="text-muted d-block">Accuracy</small>
-                                                    <span class="badge bg-@accuracyClass">@((cycle.Accuracy * 100).ToString("F0"))%</span>
+                                            <h6 class="card-title mb-3 d-flex align-items-center text-white">
+                                                @cycle.CycleName
+                                                <i class="fas fa-question-circle ms-2 small text-white-50" 
+                                                   data-bs-toggle="tooltip" 
+                                                   title="This cyclical pattern was detected in your portfolio's price movements"></i>
+                                            </h6>
+                                            <div class="cycle-metrics">
+                                                <div class="metric-item mb-3">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <small class="text-white-50"
+                                                               data-bs-toggle="tooltip" 
+                                                               title="How often this cycle correctly predicted price peaks and troughs">
+                                                            Accuracy
+                                                        </small>
+                                                        <small class="fw-bold text-white">@((cycle.Accuracy * 100).ToString("F0"))%</small>
+                                                    </div>
+                                                    <div class="progress" style="height: 10px;">
+                                                        <div class="progress-bar bg-@accuracyClass" 
+                                                             role="progressbar" 
+                                                             style="width: @((cycle.Accuracy * 100).ToString("F0"))%"
+                                                             aria-valuenow="@((cycle.Accuracy * 100).ToString("F0"))" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div class="text-center">
-                                                    <small class="text-muted d-block">Reliability</small>
-                                                    <span class="badge bg-@reliabilityClass">@((reliability * 100).ToString("F0"))%</span>
+                                                <div class="metric-item mb-3">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <small class="text-white-50"
+                                                               data-bs-toggle="tooltip" 
+                                                               title="How consistently this pattern appears over time">
+                                                            Reliability
+                                                        </small>
+                                                        <small class="fw-bold text-white">@((reliability * 100).ToString("F0"))%</small>
+                                                    </div>
+                                                    <div class="progress" style="height: 10px;">
+                                                        <div class="progress-bar bg-@reliabilityClass" 
+                                                             role="progressbar" 
+                                                             style="width: @((reliability * 100).ToString("F0"))%"
+                                                             aria-valuenow="@((reliability * 100).ToString("F0"))" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div class="text-end">
-                                                    <small class="text-muted d-block">Hits</small>
-                                                    <span class="fw-bold">@cycle.ActualPeaks/@cycle.PredictedPeaks</span>
+                                                <div class="metric-item">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <small class="text-white-50"
+                                                               data-bs-toggle="tooltip" 
+                                                               title="Successful predictions vs total predictions made">
+                                                            Hit Rate
+                                                        </small>
+                                                        <small class="fw-bold text-white">@cycle.ActualPeaks/@cycle.PredictedPeaks</small>
+                                                    </div>
                                                 </div>
+                                            </div>
+                                            <div class="mt-3 pt-2 border-top border-secondary">
+                                                <small class="text-white-50">
+                                                    <i class="fas fa-check-double me-1"></i>
+                                                    @cycle.CorrectPredictions?.Count correct predictions
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -429,6 +529,11 @@ else
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
     
     // Add tab visibility check and delay chart initialization
     function initializeAnalyticsChartsForTab() {

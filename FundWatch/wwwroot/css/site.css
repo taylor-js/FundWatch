@@ -2995,3 +2995,14 @@ canvas.chart-container-450 {
     height: 400px;
     padding-bottom: 1.5rem;
 }
+
+
+/* Hover shadow effect for cards */
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+
+.hover-shadow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15) !important;
+}
