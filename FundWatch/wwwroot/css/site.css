@@ -791,6 +791,12 @@ section {
         position: fixed;
         width: 100%;
     }
+    
+    /* Ensure dropdown popup doesn't go under navbar */
+    #StockSymbol_popup {
+        max-height: calc(100vh - 100px) !important; /* Account for navbar height */
+        overflow-y: auto !important;
+    }
 }
 
 /* ============================
