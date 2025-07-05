@@ -359,100 +359,113 @@ var PerformanceCharts = (function() {
             }));
         }
         
-        // 4. Risk Gauge Chart
+        // 4. Risk Gauge Chart - Modern Design
         if (document.getElementById('riskGaugeChart') && optimization && optimization.RiskAnalysis && optimization.RiskAnalysis.ValueAtRisk95 !== undefined) {
             var riskScore = optimization.RiskAnalysis.ValueAtRisk95 * 100;
             
-            Highcharts.chart('riskGaugeChart', Highcharts.merge(lightTheme, {
+            Highcharts.chart('riskGaugeChart', {
                 chart: {
                     type: 'gauge',
-                    backgroundColor: '#ffffff'
+                    backgroundColor: '#ffffff',
+                    plotBackgroundColor: null,
+                    plotBackgroundImage: null,
+                    plotBorderWidth: 0,
+                    plotShadow: false,
+                    height: '80%'
                 },
                 title: {
-                    text: 'Portfolio Risk Level'
+                    text: 'Portfolio Risk Score',
+                    style: {
+                        color: '#212529',
+                        fontSize: '20px',
+                        fontWeight: '600'
+                    }
                 },
                 pane: {
-                    startAngle: -150,
-                    endAngle: 150,
-                    background: [{
-                        backgroundColor: {
-                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                            stops: [
-                                [0, '#FFF'],
-                                [1, '#333']
-                            ]
-                        },
-                        borderWidth: 0,
-                        outerRadius: '109%'
-                    }, {
-                        backgroundColor: {
-                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                            stops: [
-                                [0, '#333'],
-                                [1, '#FFF']
-                            ]
-                        },
-                        borderWidth: 1,
-                        outerRadius: '107%'
-                    }, {
-                        backgroundColor: '#DDD',
-                        borderWidth: 0,
-                        outerRadius: '105%',
-                        innerRadius: '103%'
-                    }]
+                    startAngle: -90,
+                    endAngle: 90,
+                    background: null,
+                    center: ['50%', '75%'],
+                    size: '100%'
                 },
                 yAxis: {
                     min: 0,
                     max: 50,
-                    minorTickInterval: 'auto',
-                    minorTickWidth: 1,
-                    minorTickLength: 10,
-                    minorTickPosition: 'inside',
-                    minorTickColor: '#666',
-                    tickPixelInterval: 30,
-                    tickWidth: 2,
-                    tickPosition: 'inside',
-                    tickLength: 10,
-                    tickColor: '#666',
+                    minorTickInterval: null,
+                    tickPixelInterval: 50,
+                    tickWidth: 0,
+                    gridLineWidth: 0,
                     labels: {
-                        step: 2,
-                        rotation: 'auto',
+                        distance: 20,
                         style: {
-                            color: '#333333'
+                            fontSize: '14px',
+                            color: '#6c757d'
                         }
                     },
-                    title: {
-                        text: 'VaR %',
-                        style: {
-                            color: '#333333'
-                        }
-                    },
+                    lineWidth: 0,
                     plotBands: [{
                         from: 0,
                         to: 10,
-                        color: '#55BF3B' // green
+                        color: '#28a745',
+                        thickness: 20,
+                        borderRadius: '50%'
                     }, {
                         from: 10,
                         to: 20,
-                        color: '#DDDF0D' // yellow
+                        color: '#ffc107',
+                        thickness: 20
                     }, {
                         from: 20,
                         to: 30,
-                        color: '#FFA500' // orange
+                        color: '#fd7e14',
+                        thickness: 20
                     }, {
                         from: 30,
                         to: 50,
-                        color: '#DF5353' // red
+                        color: '#dc3545',
+                        thickness: 20
                     }]
                 },
+                plotOptions: {
+                    gauge: {
+                        dataLabels: {
+                            enabled: true,
+                            format: '{y:.1f}%',
+                            borderWidth: 0,
+                            style: {
+                                fontSize: '24px',
+                                color: '#212529',
+                                fontWeight: 'bold'
+                            },
+                            y: -40
+                        },
+                        dial: {
+                            radius: '80%',
+                            backgroundColor: '#212529',
+                            baseWidth: 12,
+                            baseLength: '0%',
+                            rearLength: '0%'
+                        },
+                        pivot: {
+                            backgroundColor: '#212529',
+                            radius: 6
+                        }
+                    }
+                },
                 series: [{
-                    name: 'Risk',
+                    name: 'Risk Level',
                     data: [Math.abs(riskScore)],
                     tooltip: {
-                        valueSuffix: '%'
+                        valueSuffix: '% Value at Risk'
                     }
-                }]
-            }));
+                }],
+                credits: {
+                    enabled: false
+                },
+                exporting: {
+                    enabled: false
+                }
+            });
         }
         
         // 5. Historical Performance Chart
