@@ -194,15 +194,37 @@ var AnalyticsCharts = (function() {
         
         // 3. Fourier Prediction Chart
         if (document.getElementById('fourierPredictionChart') && predictions && predictions.length > 0) {
-            var predictionData = predictions.map(function(p) {
-                return {
-                    x: new Date(p.Date).getTime(),
-                    y: p.PredictedPrice,
-                    high: p.UpperBound,
-                    low: p.LowerBound,
-                    confidence: p.Confidence
-                };
+            var predictionData = [];
+            
+            // Validate and parse prediction data
+            predictions.forEach(function(p) {
+                var timestamp = new Date(p.Date).getTime();
+                // Check if date is valid and reasonable (after year 2000)
+                if (!isNaN(timestamp) && timestamp > 946684800000) { // Jan 1, 2000
+                    predictionData.push({
+                        x: timestamp,
+                        y: p.PredictedPrice,
+                        high: p.UpperBound,
+                        low: p.LowerBound,
+                        confidence: p.Confidence
+                    });
+                }
             });
+            
+            // Only proceed if we have valid data
+            if (predictionData.length === 0) {
+                console.error('No valid prediction data found');
+                return;
+            }
+            
+            // Sort data by date and get min/max dates
+            predictionData.sort(function(a, b) { return a.x - b.x; });
+            var minDate = predictionData[0].x;
+            var maxDate = predictionData[predictionData.length - 1].x;
+            
+            // Add 10% padding to the date range
+            var dateRange = maxDate - minDate;
+            var padding = dateRange * 0.1;
             
             Highcharts.chart('fourierPredictionChart', Highcharts.merge(lightTheme, {
                 chart: {
@@ -213,7 +235,14 @@ var AnalyticsCharts = (function() {
                     text: 'Price Forecast Based on Cycles'
                 },
                 xAxis: {
-                    type: 'datetime'
+                    type: 'datetime',
+                    min: minDate - padding,
+                    max: maxDate + padding,
+                    dateTimeLabelFormats: {
+                        day: '%b %e',
+                        week: '%b %e',
+                        month: '%b %Y'
+                    }
                 },
                 yAxis: {
                     title: { text: 'Predicted Price ($)' }
