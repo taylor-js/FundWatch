@@ -780,41 +780,29 @@ section {
         padding-top: 1rem;
     }
     
-    /* Fix Syncfusion dropdown positioning on mobile */
-    .e-ddl-popup {
-        position: fixed !important;
+    /* Select2 mobile optimization */
+    .select2-container {
+        width: 100% !important;
     }
     
-    /* When dropdown is open, prevent body scroll */
-    body.e-ddl-popup-open {
-        overflow: hidden;
-        position: fixed;
-        width: 100%;
-    }
-    
-    /* Ensure dropdown popup doesn't go under navbar */
-    #StockSymbol_popup {
-        max-height: calc(100vh - 100px) !important; /* Account for navbar height */
+    .select2-dropdown {
+        width: 100% !important;
+        max-height: 40vh !important;
         overflow-y: auto !important;
     }
     
-    /* Prevent input field from sliding up when typing */
-    #StockSymbol.e-input-focus,
-    #StockSymbol_wrapper {
-        position: relative !important;
-        z-index: 1 !important;
+    /* Prevent page jump when Select2 opens on mobile */
+    .select2-container--open .select2-dropdown {
+        position: fixed !important;
+        z-index: 9999 !important;
     }
     
-    /* Keep the dropdown input visible when keyboard appears */
-    .e-ddl.e-input-focus {
-        transform: translateY(0) !important;
-        transition: none !important;
-    }
-    
-    /* Prevent viewport from shifting when virtual keyboard appears */
-    #StockSymbol:focus {
-        position: relative !important;
+    /* Ensure Select2 search box stays visible */
+    .select2-search--dropdown {
+        position: sticky !important;
         top: 0 !important;
+        background: white !important;
+        z-index: 1 !important;
     }
 }
 

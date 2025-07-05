@@ -410,10 +410,25 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('HistoricalPerformance chart container exists:', document.getElementById('historicalPerformanceChart') !== null);
             
             // Use simple Chart.js implementation for these problematic charts
-            if (typeof SimplePerformanceCharts !== 'undefined' && SimplePerformanceCharts.initializeCharts) {
-                SimplePerformanceCharts.initializeCharts(chartData);
+            if (typeof Chart !== 'undefined') {
+                if (typeof SimplePerformanceCharts !== 'undefined' && SimplePerformanceCharts.initializeCharts) {
+                    SimplePerformanceCharts.initializeCharts(chartData);
+                } else {
+                    console.error('SimplePerformanceCharts module not loaded');
+                    // Try to load it again
+                    setTimeout(function() {
+                        if (typeof SimplePerformanceCharts !== 'undefined' && SimplePerformanceCharts.initializeCharts) {
+                            console.log('SimplePerformanceCharts loaded on retry');
+                            SimplePerformanceCharts.initializeCharts(chartData);
+                        }
+                    }, 1000);
+                }
             } else {
-                console.error('SimplePerformanceCharts module not loaded');
+                console.error('Chart.js not loaded - falling back to Highcharts');
+                // Fallback to using Highcharts for these charts
+                if (typeof PerformanceCharts !== 'undefined' && PerformanceCharts.initializeCharts) {
+                    PerformanceCharts.initializeCharts(chartData);
+                }
             }
             
             // Still initialize other charts with Highcharts
@@ -432,23 +447,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Initialize charts when tab becomes visible
-    setTimeout(function() {
+    function tryInitializeCharts() {
         console.log('Attempting to initialize performance charts...');
+        console.log('Chart.js available:', typeof Chart !== 'undefined');
         console.log('Highcharts available:', typeof Highcharts !== 'undefined');
+        console.log('SimplePerformanceCharts available:', typeof SimplePerformanceCharts !== 'undefined');
         console.log('PerformanceCharts module available:', typeof PerformanceCharts !== 'undefined');
         
-        if (typeof Highcharts === 'undefined') {
-            console.error('Highcharts is not loaded!');
-            return;
-        }
-        
-        if (typeof PerformanceCharts === 'undefined') {
-            console.error('PerformanceCharts module is not loaded!');
+        // Check if all required libraries are loaded
+        if (typeof Chart === 'undefined' || typeof SimplePerformanceCharts === 'undefined') {
+            console.warn('Required libraries not yet loaded, retrying in 500ms...');
+            setTimeout(tryInitializeCharts, 500);
             return;
         }
         
         initializePerformanceChartsForTab();
-    }, 500);
+    }
+    
+    // Start trying to initialize charts
+    setTimeout(tryInitializeCharts, 100);
     
     // Check if Performance tab is already active (e.g., when loading with ?tab=performance)
     setTimeout(function() {
