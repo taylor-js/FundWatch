@@ -392,10 +392,25 @@ var AnalyticsCharts = (function() {
                 });
             }
             
+            // Calculate height based on correlation-insights section
+            var insightsElement = document.querySelector('.correlation-insights');
+            var chartHeight = 400; // Default height
+            
+            if (insightsElement) {
+                // Get the height of the insights section
+                var insightsHeight = insightsElement.offsetHeight;
+                // Set chart height to match, with min/max constraints
+                chartHeight = Math.max(300, Math.min(600, insightsHeight));
+            }
+            
+            // Set the container height before creating the chart
+            document.getElementById('correlationHeatmap').style.height = chartHeight + 'px';
+            
             Highcharts.chart('correlationHeatmap', Highcharts.merge(lightTheme, {
                 chart: {
                     type: 'heatmap',
-                    backgroundColor: '#ffffff'
+                    backgroundColor: '#ffffff',
+                    height: chartHeight
                 },
                 title: {
                     text: 'Stock Correlation Matrix'
@@ -455,6 +470,22 @@ var AnalyticsCharts = (function() {
                     }
                 }]
             }));
+            
+            // Add a resize observer to adjust chart when insights section changes
+            if (window.ResizeObserver && insightsElement) {
+                var resizeObserver = new ResizeObserver(function(entries) {
+                    for (var entry of entries) {
+                        var newHeight = Math.max(300, Math.min(600, entry.contentRect.height));
+                        var chart = Highcharts.charts.find(function(c) { 
+                            return c && c.renderTo && c.renderTo.id === 'correlationHeatmap'; 
+                        });
+                        if (chart) {
+                            chart.setSize(null, newHeight, false);
+                        }
+                    }
+                });
+                resizeObserver.observe(insightsElement);
+            }
         }
         
         // 6. Wavelet Energy Chart
