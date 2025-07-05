@@ -221,6 +221,7 @@ var AnalyticsCharts = (function() {
                 tooltip: {
                     crosshairs: true,
                     shared: true,
+                    valueDecimals: 2,
                     valuePrefix: '$'
                 },
                 series: [{

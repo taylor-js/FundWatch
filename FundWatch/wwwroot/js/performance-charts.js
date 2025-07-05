@@ -265,7 +265,8 @@ var PerformanceCharts = (function() {
                 tooltip: {
                     crosshairs: true,
                     shared: true,
-                    valuePrefix: '$'
+                    valuePrefix: '$',
+                    valueDecimals: 2
                 },
                 series: [{
                     name: '90% Confidence Interval',
