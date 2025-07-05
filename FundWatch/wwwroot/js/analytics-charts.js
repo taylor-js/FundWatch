@@ -251,7 +251,7 @@ var AnalyticsCharts = (function() {
                     var ctx = canvas.getContext('2d');
                     var centerX = canvas.width / 2;
                     var centerY = canvas.height / 2;
-                    var radius = 35;
+                    var radius = Math.min(canvas.height / 2 - 25, 45); // Use height for radius calculation, max 45px
                     
                     // Clear canvas and set white background
                     ctx.fillStyle = '#ffffff';
@@ -271,21 +271,21 @@ var AnalyticsCharts = (function() {
                     ctx.textBaseline = 'middle';
                     
                     // Top - Peak (0°)
-                    ctx.fillText('Peak', centerX, centerY - radius - 12);
+                    ctx.fillText('Peak', centerX, centerY - radius - 15);
                     
                     // Right - Declining (90°)
                     ctx.save();
                     ctx.textAlign = 'left';
-                    ctx.fillText('Decline', centerX + radius + 8, centerY);
+                    ctx.fillText('Decline', centerX + radius + 12, centerY);
                     ctx.restore();
                     
                     // Bottom - Trough (180°)
-                    ctx.fillText('Trough', centerX, centerY + radius + 12);
+                    ctx.fillText('Trough', centerX, centerY + radius + 15);
                     
                     // Left - Rising (270°)
                     ctx.save();
                     ctx.textAlign = 'right';
-                    ctx.fillText('Rise', centerX - radius - 8, centerY);
+                    ctx.fillText('Rise', centerX - radius - 12, centerY);
                     ctx.restore();
                     
                     // Add tick marks at quarters

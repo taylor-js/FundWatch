@@ -75,7 +75,7 @@
                                         </div>
                                     </div>
                                     <div class="phase-indicator">
-                                        <canvas id="phase-@cycle.CycleName.Replace(" ", "")" width="120" height="120"></canvas>
+                                        <canvas id="phase-@cycle.CycleName.Replace(" ", "")" width="200" height="140"></canvas>
                                     </div>
                                 </div>
                             </div>
@@ -92,68 +92,86 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card shadow border-0">
-                    <div class="card-header bg-gradient-info text-white">
+                    <div class="card-header bg-gradient-info text-white compact-header-card">
                         <h5 class="mb-0">
-                            <i class="fas fa-history me-2"></i>Historical Pattern Accuracy
+                            <i class="fas fa-check-circle me-2"></i>Pattern Accuracy Score
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-4 text-center">
-                                <h6>Overall Pattern Accuracy</h6>
-                                <div class="display-4 text-info">@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F1"))%</div>
-                                <small class="text-muted">Based on historical backtesting</small>
+                        <!-- Simplified accuracy overview -->
+                        <div class="row align-items-center mb-3">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-4">
+                                        <h2 class="mb-0 text-success">@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F0"))%</h2>
+                                        <small class="text-muted">Overall Accuracy</small>
+                                    </div>
+                                    <div class="vr mx-3"></div>
+                                    <div>
+                                        <p class="mb-0">
+                                            <i class="fas fa-info-circle text-info me-2"></i>
+                                            Our pattern detection correctly predicted market movements 
+                                            <strong>@((fourier.HistoricalValidation.PatternAccuracy * 100).ToString("F0"))%</strong> of the time
+                                            when tested against historical data.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-4 text-center">
-                                <h6>Prediction Accuracy</h6>
-                                <div class="display-4 text-success">@((fourier.HistoricalValidation.PredictionAccuracy * 100).ToString("F1"))%</div>
-                                <small class="text-muted">Within confidence intervals</small>
-                            </div>
-                            <div class="col-md-4 text-center">
-                                <h6>Validated Cycles</h6>
-                                <div class="display-4 text-primary">@fourier.HistoricalValidation.ValidatedCycles.Count</div>
-                                <small class="text-muted">Confirmed patterns</small>
+                            <div class="col-md-4 text-end">
+                                <div class="badge-group">
+                                    <span class="badge bg-primary me-2">
+                                        <i class="fas fa-sync me-1"></i>@fourier.HistoricalValidation.ValidatedCycles.Count Cycles Validated
+                                    </span>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-bullseye me-1"></i>@((fourier.HistoricalValidation.PredictionAccuracy * 100).ToString("F0"))% Hit Rate
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         
-                        <h6 class="mt-4 mb-3">Cycle Performance History</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Cycle Name</th>
-                                        <th class="text-center">Predicted Peaks</th>
-                                        <th class="text-center">Actual Peaks</th>
-                                        <th class="text-center">Accuracy</th>
-                                        <th class="text-center">Reliability</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var cycle in fourier.HistoricalValidation.ValidatedCycles.OrderByDescending(c => c.Accuracy))
-                                    {
-                                        var reliability = fourier.HistoricalValidation.CycleReliability?.GetValueOrDefault(cycle.CycleName, 0) ?? 0;
-                                        var reliabilityClass = reliability > 0.8 ? "success" : reliability > 0.6 ? "warning" : "danger";
-                                        
-                                        <tr>
-                                            <td>@cycle.CycleName</td>
-                                            <td class="text-center">@cycle.PredictedPeaks</td>
-                                            <td class="text-center">@cycle.ActualPeaks</td>
-                                            <td class="text-center">
-                                                <span class="badge bg-info">@((cycle.Accuracy * 100).ToString("F0"))%</span>
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="badge bg-@reliabilityClass">@((reliability * 100).ToString("F0"))%</span>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                        <!-- Compact cycle reliability cards -->
+                        <h6 class="mb-2 text-muted">
+                            <i class="fas fa-chart-line me-2"></i>Top Performing Cycles
+                        </h6>
+                        <div class="row g-2">
+                            @foreach (var cycle in fourier.HistoricalValidation.ValidatedCycles.OrderByDescending(c => c.Accuracy).Take(3))
+                            {
+                                var reliability = fourier.HistoricalValidation.CycleReliability?.GetValueOrDefault(cycle.CycleName, 0) ?? 0;
+                                var reliabilityClass = reliability > 0.8 ? "success" : reliability > 0.6 ? "warning" : "danger";
+                                var accuracyClass = cycle.Accuracy > 0.8 ? "success" : cycle.Accuracy > 0.6 ? "info" : "warning";
+                                
+                                <div class="col-md-4">
+                                    <div class="card border-0 bg-light h-100">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title mb-2">@cycle.CycleName</h6>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="text-muted d-block">Accuracy</small>
+                                                    <span class="badge bg-@accuracyClass">@((cycle.Accuracy * 100).ToString("F0"))%</span>
+                                                </div>
+                                                <div class="text-center">
+                                                    <small class="text-muted d-block">Reliability</small>
+                                                    <span class="badge bg-@reliabilityClass">@((reliability * 100).ToString("F0"))%</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <small class="text-muted d-block">Hits</small>
+                                                    <span class="fw-bold">@cycle.ActualPeaks/@cycle.PredictedPeaks</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                         
                         @if (fourier.HistoricalValidation.PastPredictions?.Any() == true)
                         {
-                            <h6 class="mt-4 mb-3">Recent Prediction Performance</h6>
-                            <div id="predictionAccuracyChart" class="chart-container-300"></div>
+                            <div class="mt-3 pt-3 border-top">
+                                <h6 class="mb-2 text-muted">
+                                    <i class="fas fa-chart-bar me-2"></i>Recent Prediction Tracking
+                                </h6>
+                                <div id="predictionAccuracyChart" class="chart-container-200"></div>
+                            </div>
                         }
                     </div>
                 </div>
@@ -232,11 +250,11 @@
                         <i class="fas fa-exclamation-triangle me-2"></i>Detected Turning Points
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                     <div class="turning-points-list">
                         @if (fourier.WaveletTransform?.DetectedTurningPoints?.Any() == true)
                         {
-                            foreach (var point in fourier.WaveletTransform.DetectedTurningPoints.OrderByDescending(p => p.Date).Take(10))
+                            foreach (var point in fourier.WaveletTransform.DetectedTurningPoints.OrderByDescending(p => p.Date).Take(4))
                             {
                                 var iconClass = point.Type == "Peak" ? "fa-mountain text-success" : "fa-valley text-danger";
                                 var confidence = (point.Confidence * 100).ToString("F0");
@@ -283,13 +301,13 @@
                         <div class="row">
                             <!-- Correlation Matrix Heatmap -->
                             <div class="col-lg-6">
-                                <h6 class="mb-3">Correlation Heatmap</h6>
+                                <h6 class="mb-3 text-dark">Correlation Heatmap</h6>
                                 <div id="correlationHeatmap" class="chart-container-400"></div>
                             </div>
                             
                             <!-- Network Visualization & Insights -->
                             <div class="col-lg-6">
-                                <h6 class="mb-3">Key Relationships</h6>
+                                <h6 class="mb-3 text-dark">Key Relationships</h6>
                                 <div class="correlation-insights">
                                     @foreach (var corr in fourier.CrossCorrelations.StrongCorrelations.Take(5))
                                     {
@@ -312,7 +330,7 @@
                                     
                                     @if (fourier.CrossCorrelations.LeadLagRelationships?.Any() == true)
                                     {
-                                        <h6 class="mt-4 mb-3">Lead-Lag Relationships</h6>
+                                        <h6 class="mt-4 mb-3 text-dark">Lead-Lag Relationships</h6>
                                         @foreach (var leadLag in fourier.CrossCorrelations.LeadLagRelationships.Take(3))
                                         {
                                             <div class="lead-lag-item mb-2 p-2 bg-light rounded">
@@ -325,9 +343,9 @@
                                     }
                                 </div>
                                 
-                                <div class="mt-4 p-3 bg-light rounded">
-                                    <h6 class="mb-2">Portfolio Insight</h6>
-                                    <p class="mb-0 small">
+                                <div class="mt-4 p-3 bg-dark rounded">
+                                    <h6 class="mb-2 text-light">Portfolio Insight</h6>
+                                    <p class="mb-0 small text-light">
                                         @if (fourier.CrossCorrelations.StrongCorrelations.Count(c => c.Correlation > 0.7) > 2)
                                         {
                                             <i class="fas fa-exclamation-circle text-warning me-1"></i>
