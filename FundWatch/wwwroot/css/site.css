@@ -1883,7 +1883,6 @@ button[type="submit"] {
     min-height: auto !important;
     max-height: none !important;
     background-color: #212529;
-    padding-bottom: 0 !important;
 }
 
 #performanceTab .chart-description {
@@ -2593,6 +2592,12 @@ button[type="submit"] {
     margin-bottom: 0px !important;
 }
 
+
+/* Override min-height for compact header cards */
+#performanceTab .compact-header-card {
+    min-height: auto !important;
+}
+
 #performanceTab .chart-description {
     padding: 0.5rem;
 }
@@ -2707,7 +2712,10 @@ canvas.chart-container-450 {
 
 /* Compact card styles for Performance tab */
 .compact-header-card .card-body {
-    padding: 1.5rem !important;
+    padding-top: 1.25rem !important;
+    padding-right: 1.25rem !important;
+    padding-bottom: 1.25rem !important;
+    padding-left: 1.25rem !important;
 }
 
 .compact-header-card h4 {
@@ -2727,6 +2735,22 @@ canvas.chart-container-450 {
 
 .compact-header-card .display-6 {
     font-size: 2rem !important;
+}
+
+
+/* Historical Performance card specific styling */
+.compact-header-card h3 {
+    font-size: 1.75rem;
+    margin-bottom: 0 !important;
+}
+
+.compact-header-card h6 {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem !important;
+}
+
+.compact-header-card small {
+    font-size: 0.75rem;
 }
 
 /* Compact metric cards */
@@ -2865,4 +2889,63 @@ canvas.chart-container-450 {
     background-color: #5a32a3;
     border-color: #5a32a3;
     color: white;
+}
+
+
+/* Compact header cards for Performance tab */
+.compact-header-card {
+    margin-bottom: 1.5rem;
+}
+
+.compact-header-card .card-body {
+    padding: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+}
+
+/* Fix the row margin inside compact header cards */
+.compact-header-card .card-body .row {
+    margin-bottom: 0 !important;
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+}
+
+/* Add padding to columns to compensate for negative margin */
+.compact-header-card .card-body .row > div[class*="col-"] {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+/* Remove any bottom margin from elements inside columns */
+.compact-header-card .card-body .row > div[class*="col-"] > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Specific fix for the small tags */
+.compact-header-card .card-body small {
+    display: block;
+    margin-bottom: 0 !important;
+}
+
+/* Compact metric cards */
+.compact-metric-card {
+    margin-bottom: 1rem;
+}
+
+.compact-metric-card .card-body {
+    padding: 1rem !important;
+}
+
+/* Icon wrapper styling */
+.icon-wrapper {
+    margin-bottom: 1rem;
+}
+
+/* Chart containers in Performance tab */
+.chart-container-legend {
+    padding-bottom: 1.5rem;
+}
+
+.chart-container-400 {
+    height: 400px;
+    padding-bottom: 1.5rem;
 }
