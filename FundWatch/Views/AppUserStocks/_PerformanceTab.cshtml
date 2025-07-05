@@ -387,6 +387,11 @@ else
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Log environment info for debugging
+    console.log('Performance Tab: DOMContentLoaded event fired');
+    console.log('Current URL:', window.location.href);
+    console.log('Is HTTPS:', window.location.protocol === 'https:');
+    
     // Add tab visibility check and delay chart initialization
     function initializePerformanceChartsForTab() {
         @if (hasOptimization)
@@ -412,23 +417,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // Use simple Chart.js implementation for these problematic charts
             if (typeof Chart !== 'undefined') {
                 if (typeof SimplePerformanceCharts !== 'undefined' && SimplePerformanceCharts.initializeCharts) {
+                    console.log('Initializing charts with SimplePerformanceCharts module');
                     SimplePerformanceCharts.initializeCharts(chartData);
                 } else {
-                    console.error('SimplePerformanceCharts module not loaded');
-                    // Try to load it again
-                    setTimeout(function() {
+                    console.error('SimplePerformanceCharts module not loaded, waiting for it...');
+                    // Wait for the module to load
+                    var waitForModule = setInterval(function() {
                         if (typeof SimplePerformanceCharts !== 'undefined' && SimplePerformanceCharts.initializeCharts) {
-                            console.log('SimplePerformanceCharts loaded on retry');
+                            console.log('SimplePerformanceCharts loaded, initializing charts');
+                            clearInterval(waitForModule);
                             SimplePerformanceCharts.initializeCharts(chartData);
                         }
-                    }, 1000);
+                    }, 100);
+                    
+                    // Stop waiting after 5 seconds
+                    setTimeout(function() {
+                        clearInterval(waitForModule);
+                        console.error('SimplePerformanceCharts module failed to load after 5 seconds');
+                    }, 5000);
                 }
             } else {
-                console.error('Chart.js not loaded - falling back to Highcharts');
-                // Fallback to using Highcharts for these charts
-                if (typeof PerformanceCharts !== 'undefined' && PerformanceCharts.initializeCharts) {
-                    PerformanceCharts.initializeCharts(chartData);
-                }
+                console.error('Chart.js not loaded - will wait for dynamic loading');
             }
             
             // Still initialize other charts with Highcharts
@@ -447,20 +456,54 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Initialize charts when tab becomes visible
+    var retryCount = 0;
+    var maxRetries = 20; // 10 seconds total
+    
     function tryInitializeCharts() {
-        console.log('Attempting to initialize performance charts...');
+        console.log('Attempting to initialize performance charts... (attempt ' + (retryCount + 1) + ')');
         console.log('Chart.js available:', typeof Chart !== 'undefined');
         console.log('Highcharts available:', typeof Highcharts !== 'undefined');
         console.log('SimplePerformanceCharts available:', typeof SimplePerformanceCharts !== 'undefined');
         console.log('PerformanceCharts module available:', typeof PerformanceCharts !== 'undefined');
         
-        // Check if all required libraries are loaded
-        if (typeof Chart === 'undefined' || typeof SimplePerformanceCharts === 'undefined') {
-            console.warn('Required libraries not yet loaded, retrying in 500ms...');
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            retryCount++;
+            if (retryCount >= maxRetries) {
+                console.error('Chart.js failed to load after ' + maxRetries + ' attempts. Trying dynamic load...');
+                // Try to load Chart.js dynamically
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js';
+                script.crossOrigin = 'anonymous';
+                script.onload = function() {
+                    console.log('Chart.js loaded dynamically!');
+                    retryCount = 0; // Reset retry count
+                    tryInitializeCharts();
+                };
+                script.onerror = function() {
+                    console.error('Failed to load Chart.js dynamically');
+                };
+                document.head.appendChild(script);
+                return;
+            }
+            console.warn('Chart.js not yet loaded, retrying in 500ms...');
             setTimeout(tryInitializeCharts, 500);
             return;
         }
         
+        // Check if SimplePerformanceCharts is loaded
+        if (typeof SimplePerformanceCharts === 'undefined') {
+            retryCount++;
+            if (retryCount >= maxRetries) {
+                console.error('SimplePerformanceCharts failed to load after ' + maxRetries + ' attempts');
+                return;
+            }
+            console.warn('SimplePerformanceCharts not yet loaded, retrying in 500ms...');
+            setTimeout(tryInitializeCharts, 500);
+            return;
+        }
+        
+        // All libraries loaded, initialize charts
         initializePerformanceChartsForTab();
     }
     

@@ -6,6 +6,9 @@
     <title>@ViewData["Title"] - FundWatch</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
+    <!-- Preload critical scripts -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" as="script" crossorigin="anonymous">
+    
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="FundWatch - Smart Portfolio Tracking & Analytics" />
     <meta property="og:description" content="Visualize your investments, track performance, and make data-driven decisions with FundWatch." />
@@ -49,7 +52,7 @@
     <script src="https://code.highcharts.com/stock/modules/data.js"></script>
     
     <!-- Chart.js for simpler charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" crossorigin="anonymous"></script>
     <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
     <!-- Add required modules for Performance and Analytics tabs -->
     <script src="https://code.highcharts.com/modules/heatmap.js"></script>
