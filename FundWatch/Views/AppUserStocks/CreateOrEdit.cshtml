@@ -718,8 +718,8 @@
                 
                 // Add blur event to preserve symbol value
                 dateSoldPicker.blur = function(args) {
-                    if (stockSymbolDropdown && lastValidSymbol) {
-                        stockSymbolDropdown.value = lastValidSymbol;
+                    if (lastValidSymbol) {
+                        $('#StockSymbol').val(lastValidSymbol).trigger('change');
                         if (hiddenStockSymbol) {
                             hiddenStockSymbol.value = lastValidSymbol;
                         }
@@ -904,7 +904,7 @@
                     // Log form values right before submission
                     console.log("Final form values before submission:", {
                         id: idField ? idField.value : "missing",
-                        stockSymbol: stockSymbolDropdown ? stockSymbolDropdown.value : "missing",
+                        stockSymbol: $('#StockSymbol').val() || "missing",
                         purchasePrice: purchasePriceNumeric ? purchasePriceNumeric.value : "missing",
                         currentPrice: currentPriceNumeric ? currentPriceNumeric.value : "missing",
                         datePurchased: datePurchasedPicker ? datePurchasedPicker.value : "missing"
@@ -1002,7 +1002,7 @@
             });
             
             // Initialize price updates if stock is already selected
-            if (stockSymbolDropdown && stockSymbolDropdown.value) {
+            if ($('#StockSymbol').val()) {
                 updatePrices();
             }
         }
