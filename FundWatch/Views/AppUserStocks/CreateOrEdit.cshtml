@@ -166,7 +166,7 @@
             overflow: visible;
         }
         
-        /* Stock symbol container */
+        /* Stock symbol container - full row width */
         #StockSymbol + .select2-container {
             width: 100% !important;
             max-width: 100% !important;
@@ -280,6 +280,13 @@
             width: 100% !important;
         }
         
+        /* Ensure dropdown menu matches the select field width */
+        .select2-dropdown.select2-dropdown--below,
+        .select2-dropdown.select2-dropdown--above {
+            width: 100% !important;
+            min-width: 100% !important;
+        }
+        
         /* Prevent long text from expanding dropdown */
         .select2-results__option {
             overflow: hidden !important;
@@ -289,10 +296,19 @@
         /* Ensure search field doesn't overflow */
         .select2-search--dropdown {
             padding: 4px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        
+        .select2-search.select2-search--dropdown {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
         }
         
         .select2-search--dropdown .select2-search__field {
             width: 100% !important;
+            max-width: 100% !important;
             box-sizing: border-box !important;
         }
     </style>
