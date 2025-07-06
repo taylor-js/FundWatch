@@ -1004,16 +1004,18 @@
                     // Create a hidden input for the stock symbol to ensure it's submitted if it doesn't exist
                     // Note: formElement is already defined in the outer scope
                     var existingSymbolInput = document.querySelector('input[name="StockSymbol"][type="hidden"]');
+                    var hiddenSymbolInput;
                     if (!existingSymbolInput) {
-                        var hiddenSymbolInput = document.createElement('input');
+                        hiddenSymbolInput = document.createElement('input');
                         hiddenSymbolInput.type = 'hidden';
                         hiddenSymbolInput.name = 'StockSymbol';
                         hiddenSymbolInput.value = symbolValue;
+                        this.appendChild(hiddenSymbolInput);
+                        console.log("Added hidden stock symbol field:", hiddenSymbolInput.value);
                     } else {
                         existingSymbolInput.value = symbolValue;
+                        console.log("Updated existing hidden stock symbol field:", existingSymbolInput.value);
                     }
-                    this.appendChild(hiddenSymbolInput); // Using this instead of formElement
-                    console.log("Added hidden stock symbol field:", hiddenSymbolInput.value);
 
                     // Validate that prices are properly loaded
                     if (purchasePriceNumeric && (!purchasePriceNumeric.value || parseFloat(purchasePriceNumeric.value) <= 0)) {
@@ -1037,8 +1039,9 @@
                     }
 
                     // Log form values right before submission
+                    var idFieldValue = document.getElementById("Id");
                     console.log("Final form values before submission:", {
-                        id: idField ? idField.value : "missing",
+                        id: idFieldValue ? idFieldValue.value : "missing",
                         stockSymbol: $('#StockSymbol').val() || "missing",
                         purchasePrice: purchasePriceNumeric ? purchasePriceNumeric.value : "missing",
                         currentPrice: currentPriceNumeric ? currentPriceNumeric.value : "missing",
