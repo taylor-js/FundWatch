@@ -414,36 +414,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('EfficientFrontier chart container exists:', document.getElementById('efficientFrontierChart') !== null);
             console.log('HistoricalPerformance chart container exists:', document.getElementById('historicalPerformanceChart') !== null);
             
-            // Use simple Chart.js implementation for these problematic charts
-            if (typeof Chart !== 'undefined') {
-                if (typeof SimplePerformanceCharts !== 'undefined' && SimplePerformanceCharts.initializeCharts) {
-                    console.log('Initializing charts with SimplePerformanceCharts module');
-                    SimplePerformanceCharts.initializeCharts(chartData);
-                } else {
-                    console.error('SimplePerformanceCharts module not loaded, waiting for it...');
-                    // Wait for the module to load
-                    var waitForModule = setInterval(function() {
-                        if (typeof SimplePerformanceCharts !== 'undefined' && SimplePerformanceCharts.initializeCharts) {
-                            console.log('SimplePerformanceCharts loaded, initializing charts');
-                            clearInterval(waitForModule);
-                            SimplePerformanceCharts.initializeCharts(chartData);
-                        }
-                    }, 100);
-                    
-                    // Stop waiting after 5 seconds
-                    setTimeout(function() {
-                        clearInterval(waitForModule);
-                        console.error('SimplePerformanceCharts module failed to load after 5 seconds');
-                    }, 5000);
-                }
-            } else {
-                console.error('Chart.js not loaded - will wait for dynamic loading');
-            }
-            
-            // Still initialize other charts with Highcharts
+            // Initialize all charts with Highcharts (performance-charts.js handles all charts now)
             if (typeof PerformanceCharts !== 'undefined' && PerformanceCharts.initializeCharts) {
-                // This will handle the other charts (Monte Carlo, etc.)
+                console.log('Initializing all performance charts with Highcharts');
                 PerformanceCharts.initializeCharts(chartData);
+            } else {
+                console.error('PerformanceCharts module not loaded yet');
             }
             </text>
         }
@@ -461,44 +437,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function tryInitializeCharts() {
         console.log('Attempting to initialize performance charts... (attempt ' + (retryCount + 1) + ')');
-        console.log('Chart.js available:', typeof Chart !== 'undefined');
         console.log('Highcharts available:', typeof Highcharts !== 'undefined');
-        console.log('SimplePerformanceCharts available:', typeof SimplePerformanceCharts !== 'undefined');
         console.log('PerformanceCharts module available:', typeof PerformanceCharts !== 'undefined');
         
-        // Check if Chart.js is loaded
-        if (typeof Chart === 'undefined') {
+        // Check if Highcharts is loaded
+        if (typeof Highcharts === 'undefined') {
             retryCount++;
             if (retryCount >= maxRetries) {
-                console.error('Chart.js failed to load after ' + maxRetries + ' attempts. Trying dynamic load...');
-                // Try to load Chart.js dynamically
-                var script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js';
-                script.crossOrigin = 'anonymous';
-                script.onload = function() {
-                    console.log('Chart.js loaded dynamically!');
-                    retryCount = 0; // Reset retry count
-                    tryInitializeCharts();
-                };
-                script.onerror = function() {
-                    console.error('Failed to load Chart.js dynamically');
-                };
-                document.head.appendChild(script);
+                console.error('Highcharts failed to load after ' + maxRetries + ' attempts');
                 return;
             }
-            console.warn('Chart.js not yet loaded, retrying in 500ms...');
+            console.warn('Highcharts not yet loaded, retrying in 500ms...');
             setTimeout(tryInitializeCharts, 500);
             return;
         }
         
-        // Check if SimplePerformanceCharts is loaded
-        if (typeof SimplePerformanceCharts === 'undefined') {
+        // Check if PerformanceCharts module is loaded
+        if (typeof PerformanceCharts === 'undefined') {
             retryCount++;
             if (retryCount >= maxRetries) {
-                console.error('SimplePerformanceCharts failed to load after ' + maxRetries + ' attempts');
+                console.error('PerformanceCharts module failed to load after ' + maxRetries + ' attempts');
                 return;
             }
-            console.warn('SimplePerformanceCharts not yet loaded, retrying in 500ms...');
+            console.warn('PerformanceCharts module not yet loaded, retrying in 500ms...');
             setTimeout(tryInitializeCharts, 500);
             return;
         }
@@ -525,23 +486,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 100);
     
-    // Add global error handler for debugging in production
-    window.addEventListener('error', function(e) {
-        if (e.filename && (e.filename.includes('chart.js') || e.filename.includes('Chart.js'))) {
-            console.error('Chart.js loading error:', e.message);
-            // Try alternative loading approach
-            if (typeof Chart === 'undefined' && !window.chartJsLoadAttempted) {
-                window.chartJsLoadAttempted = true;
-                var script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';
-                script.onload = function() {
-                    console.log('Chart.js loaded from fallback CDN');
-                    tryInitializeCharts();
-                };
-                document.head.appendChild(script);
-            }
-        }
-    });
     
     // Also initialize when tab is shown
     var performanceTab = document.querySelector('#performance-tab');
