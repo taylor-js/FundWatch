@@ -27,8 +27,16 @@
                         </p>
                     </div>
                     <div class="col-md-4 text-end">
-                        <div class="display-6">
-                            <i class="fas fa-chart-line"></i> <i class="fas fa-plus mx-2"></i> <i class="fas fa-calculator"></i>
+                        <div class="btn-group" role="group" aria-label="Quick Actions">
+                            <button type="button" class="btn btn-light btn-lg" onclick="document.getElementById('analytics-tab').click();" title="View Analytics">
+                                <i class="fas fa-chart-line"></i>
+                            </button>
+                            <a href="/AppUserStocks/CreateOrEdit" class="btn btn-light btn-lg mx-2" title="Add Stock">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                            <button type="button" class="btn btn-light btn-lg" onclick="window.scrollTo({ top: document.querySelector('.options-chain-table')?.offsetTop || 0, behavior: 'smooth' });" title="Options Calculator">
+                                <i class="fas fa-calculator"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
