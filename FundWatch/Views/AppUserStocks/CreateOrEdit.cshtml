@@ -37,7 +37,7 @@
                 <input type="hidden" asp-for="Industry" value="@(string.IsNullOrEmpty(Model.Industry) ? "Other" : Model.Industry)" />
 
                 <!-- Stock Symbol with Select2 dropdown -->
-                <div class="mb-3">
+                <div class="row mb-3">
                     <label for="StockSymbol" class="form-label">Stock Symbol</label>
                     <select id="StockSymbol" name="StockSymbol" class="form-control" asp-for="StockSymbol">
                         @if (!string.IsNullOrEmpty(Model.StockSymbol))
