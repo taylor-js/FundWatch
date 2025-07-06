@@ -786,23 +786,8 @@ section {
     }
     
     .select2-dropdown {
-        width: 100% !important;
         max-height: 40vh !important;
         overflow-y: auto !important;
-    }
-    
-    /* Prevent page jump when Select2 opens on mobile */
-    .select2-container--open .select2-dropdown {
-        position: fixed !important;
-        z-index: 9999 !important;
-    }
-    
-    /* Ensure Select2 search box stays visible */
-    .select2-search--dropdown {
-        position: sticky !important;
-        top: 0 !important;
-        background: white !important;
-        z-index: 1 !important;
     }
 }
 
