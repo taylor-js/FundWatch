@@ -37,16 +37,18 @@
                 <input type="hidden" asp-for="Industry" value="@(string.IsNullOrEmpty(Model.Industry) ? "Other" : Model.Industry)" />
 
                 <!-- Stock Symbol with Select2 dropdown -->
-                <div class="row mb-3">
-                    <label for="StockSymbol" class="form-label">Stock Symbol</label>
-                    <select id="StockSymbol" name="StockSymbol" class="form-control" asp-for="StockSymbol">
-                        @if (!string.IsNullOrEmpty(Model.StockSymbol))
-                        {
-                            <option value="@Model.StockSymbol" selected>@Model.StockSymbol</option>
-                        }
-                    </select>
-                    <span asp-validation-for="StockSymbol" class="text-danger"></span>
-                    <input type="hidden" id="hiddenStockSymbol" name="hiddenStockSymbol" value="@Model.StockSymbol" />
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="StockSymbol" class="form-label">Stock Symbol</label>
+                        <select id="StockSymbol" name="StockSymbol" class="form-control" asp-for="StockSymbol">
+                            @if (!string.IsNullOrEmpty(Model.StockSymbol))
+                            {
+                                <option value="@Model.StockSymbol" selected>@Model.StockSymbol</option>
+                            }
+                        </select>
+                        <span asp-validation-for="StockSymbol" class="text-danger"></span>
+                        <input type="hidden" id="hiddenStockSymbol" name="hiddenStockSymbol" value="@Model.StockSymbol" />
+                    </div>
                 </div>
 
                 <div class="row">
@@ -282,41 +284,10 @@
             max-width: 100% !important;
         }
         
-        /* Constrain dropdown to parent width */
-        .select2-container--bootstrap-5 .select2-dropdown {
-            width: 100% !important;
-        }
-        
-        /* Ensure dropdown menu matches the select field width */
-        .select2-dropdown.select2-dropdown--below,
-        .select2-dropdown.select2-dropdown--above {
-            width: 100% !important;
-            min-width: 100% !important;
-        }
-        
         /* Prevent long text from expanding dropdown */
         .select2-results__option {
             overflow: hidden !important;
             text-overflow: ellipsis !important;
-        }
-        
-        /* Ensure search field doesn't overflow */
-        .select2-search--dropdown {
-            padding: 4px !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-        }
-        
-        .select2-search.select2-search--dropdown {
-            width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-        }
-        
-        .select2-search--dropdown .select2-search__field {
-            width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
         }
     </style>
 }
