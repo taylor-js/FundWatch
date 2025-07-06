@@ -82,6 +82,12 @@ var OverviewCharts = (function() {
         console.log('Initializing Overview tab charts...');
         console.log('Has options data:', data.hasOptionsData);
         
+        // Check if Highcharts is loaded
+        if (typeof Highcharts === 'undefined') {
+            console.error('Highcharts is not loaded! Cannot create overview charts.');
+            return;
+        }
+        
         if (!data.hasOptionsData) {
             console.log('No options data available');
             return;

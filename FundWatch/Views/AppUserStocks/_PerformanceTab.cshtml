@@ -525,6 +525,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 100);
     
+    // Add global error handler for debugging in production
+    window.addEventListener('error', function(e) {
+        if (e.filename && (e.filename.includes('chart.js') || e.filename.includes('Chart.js'))) {
+            console.error('Chart.js loading error:', e.message);
+            // Try alternative loading approach
+            if (typeof Chart === 'undefined' && !window.chartJsLoadAttempted) {
+                window.chartJsLoadAttempted = true;
+                var script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';
+                script.onload = function() {
+                    console.log('Chart.js loaded from fallback CDN');
+                    tryInitializeCharts();
+                };
+                document.head.appendChild(script);
+            }
+        }
+    });
+    
     // Also initialize when tab is shown
     var performanceTab = document.querySelector('#performance-tab');
     if (performanceTab) {

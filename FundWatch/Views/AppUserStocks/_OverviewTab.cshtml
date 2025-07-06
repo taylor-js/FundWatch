@@ -301,11 +301,29 @@ document.addEventListener('DOMContentLoaded', function() {
             smileData: @Html.Raw(string.IsNullOrWhiteSpace(featuredOptions.ChartData?.SmileDataJson) ? "null" : featuredOptions.ChartData.SmileDataJson)
         };
         
-        // Call the overview charts module
-        if (typeof OverviewCharts !== 'undefined' && OverviewCharts.initializeCharts) {
-            OverviewCharts.initializeCharts(chartData);
-        } else {
-            console.error('OverviewCharts module not loaded');
+        // Initialize charts with retry logic
+        function initializeOverviewCharts() {
+            if (typeof OverviewCharts !== 'undefined' && OverviewCharts.initializeCharts) {
+                console.log('Initializing overview charts...');
+                OverviewCharts.initializeCharts(chartData);
+            } else {
+                console.warn('OverviewCharts module not yet loaded, retrying...');
+                setTimeout(initializeOverviewCharts, 100);
+            }
+        }
+        
+        // Wait a moment for scripts to load, then initialize
+        setTimeout(initializeOverviewCharts, 100);
+        
+        // Also initialize when tab is shown
+        var overviewTab = document.querySelector('#overview-tab');
+        if (overviewTab) {
+            overviewTab.addEventListener('shown.bs.tab', function() {
+                console.log('Overview tab shown, reinitializing charts...');
+                if (typeof OverviewCharts !== 'undefined' && OverviewCharts.initializeCharts) {
+                    OverviewCharts.initializeCharts(chartData);
+                }
+            });
         }
         </text>
     }
