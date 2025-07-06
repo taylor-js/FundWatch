@@ -8,8 +8,8 @@
 <!-- Fourier Analysis & Market Cycles Introduction -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card shadow-lg border-0 bg-gradient-analytics text-white compact-header-card">
-            <div class="card-body">
+        <div class="card shadow-lg border-0 bg-gradient-analytics text-white">
+            <div class="card-body pt-4" style="padding-bottom: 0px !important;">
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h4 class="mb-2">Fourier Analysis & Hidden Market Cycles</h4>
@@ -20,8 +20,16 @@
                         </p>
                     </div>
                     <div class="col-md-4 text-end">
-                        <div class="display-6">
-                            <i class="fas fa-wave-square"></i> <i class="fas fa-sync mx-2"></i> <i class="fas fa-project-diagram"></i>
+                        <div class="btn-group" role="group" aria-label="Analytics Actions">
+                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('#fourierSpectrumChart')?.closest('.card'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="View Frequency Analysis">
+                                <i class="fas fa-wave-square"></i>
+                            </button>
+                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('.cycles-grid'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="Market Cycles">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('#correlationMatrixChart')?.closest('.card'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="Correlation Analysis">
+                                <i class="fas fa-project-diagram"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
