@@ -21,13 +21,22 @@
                     </div>
                     <div class="col-md-4 text-end">
                         <div class="btn-group" role="group" aria-label="Analytics Actions">
-                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('#fourierSpectrumChart')?.closest('.card'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="View Frequency Analysis">
+                            <button type="button" class="btn btn-light btn-lg" 
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                    title="Discover market cycles and periodicities"
+                                    onclick="scrollToSection('Discovered Market Cycles')">
                                 <i class="fas fa-wave-square"></i>
                             </button>
-                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('.cycles-grid'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="Market Cycles">
+                            <button type="button" class="btn btn-light btn-lg" 
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                    title="Analyze market turning points"
+                                    onclick="scrollToSection('Detected Turning Points')">
                                 <i class="fas fa-sync"></i>
                             </button>
-                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('#correlationMatrixChart')?.closest('.card'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="Correlation Analysis">
+                            <button type="button" class="btn btn-light btn-lg" 
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                    title="View portfolio correlations and relationships"
+                                    onclick="scrollToSection('Portfolio Correlation')">
                                 <i class="fas fa-project-diagram"></i>
                             </button>
                         </div>
@@ -41,7 +50,7 @@
 @if (hasFourierAnalysis)
 {
     <!-- Market Cycles Discovery -->
-    <div class="row mb-4">
+    <div class="row mb-4" id="market-cycles-section">
         <div class="col-12">
             <div class="card shadow border-0">
                 <div class="card-header bg-dark text-white">
@@ -351,7 +360,7 @@
         </div>
 
         <!-- Wavelet Turning Points -->
-        <div class="col-lg-4 mb-4">
+        <div class="col-lg-4 mb-4" id="turning-points-section">
             <div class="card shadow h-100">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="mb-0">
@@ -397,7 +406,7 @@
     <!-- Correlation Analysis -->
     @if (fourier.CrossCorrelations != null && fourier.CrossCorrelations.StrongCorrelations?.Any() == true)
     {
-        <div class="row mb-4">
+        <div class="row mb-4" id="correlation-analysis-section">
             <div class="col-12">
                 <div class="card shadow">
                     <div class="card-header bg-secondary text-white">
@@ -545,6 +554,48 @@ else
 }
 
 <script>
+// Smooth scroll function
+function smoothScrollTo(targetId) {
+    var element = document.getElementById(targetId);
+    if (element) {
+        var offset = element.getBoundingClientRect().top + window.pageYOffset - 80;
+        window.scrollTo({
+            top: offset,
+            behavior: 'smooth'
+        });
+        return true;
+    }
+    return false;
+}
+
+// Scroll to section by finding card header text
+function scrollToSection(headerText) {
+    console.log('Looking for section with header:', headerText);
+    
+    // Find all card headers
+    var headers = document.querySelectorAll('.card-header');
+    var targetCard = null;
+    
+    headers.forEach(function(header) {
+        if (header.textContent.includes(headerText)) {
+            targetCard = header.closest('.card');
+            console.log('Found matching header:', header);
+        }
+    });
+    
+    if (targetCard) {
+        var offset = targetCard.getBoundingClientRect().top + window.pageYOffset - 100;
+        window.scrollTo({
+            top: offset,
+            behavior: 'smooth'
+        });
+        return true;
+    } else {
+        console.log('No section found with header:', headerText);
+        return false;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Bootstrap tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

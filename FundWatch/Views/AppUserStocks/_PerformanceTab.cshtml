@@ -21,13 +21,22 @@
                     </div>
                     <div class="col-md-4 text-end">
                         <div class="btn-group" role="group" aria-label="Performance Actions">
-                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('#performanceChart')?.closest('.card'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="View Performance Chart">
+                            <button type="button" class="btn btn-light btn-lg" 
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                    title="View historical performance vs optimal strategy"
+                                    onclick="scrollToSection('Historical Performance')">
                                 <i class="fas fa-chart-area"></i>
                             </button>
-                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('.optimal-weights-card'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="Portfolio Rebalancing">
+                            <button type="button" class="btn btn-light btn-lg" 
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                    title="Explore optimal portfolio allocation"
+                                    onclick="scrollToSection('Monte Carlo')">
                                 <i class="fas fa-exchange-alt"></i>
                             </button>
-                            <button type="button" class="btn btn-light btn-lg" onclick="var element = document.querySelector('#efficientFrontierChart')?.closest('.card'); if(element) { window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }); }" title="Risk/Return Optimization">
+                            <button type="button" class="btn btn-light btn-lg" 
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                    title="Analyze risk-return trade-offs"
+                                    onclick="scrollToSection('Efficient Frontier')">
                                 <i class="fas fa-balance-scale"></i>
                             </button>
                         </div>
@@ -101,7 +110,7 @@
         </div>
         
         <!-- Historical Performance Chart -->
-        <div class="row mb-4">
+        <div class="row mb-4" id="historical-performance-section">
             <div class="col-12">
                 <div class="card shadow">
                     <div class="card-header bg-dark text-white">
@@ -173,7 +182,7 @@
     </div>
     
     <!-- Charts Row 1: Efficient Frontier & Monte Carlo -->
-    <div class="row mb-4">
+    <div class="row mb-4" id="portfolio-optimization-section">
         <div class="col-lg-6 mb-4">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
@@ -390,11 +399,59 @@ else
 }
 
 <script>
+// Smooth scroll function
+function smoothScrollTo(targetId) {
+    var element = document.getElementById(targetId);
+    if (element) {
+        var offset = element.getBoundingClientRect().top + window.pageYOffset - 80;
+        window.scrollTo({
+            top: offset,
+            behavior: 'smooth'
+        });
+        return true;
+    }
+    return false;
+}
+
+// Scroll to section by finding card header text
+function scrollToSection(headerText) {
+    console.log('Looking for section with header:', headerText);
+    
+    // Find all card headers
+    var headers = document.querySelectorAll('.card-header');
+    var targetCard = null;
+    
+    headers.forEach(function(header) {
+        if (header.textContent.includes(headerText)) {
+            targetCard = header.closest('.card');
+            console.log('Found matching header:', header);
+        }
+    });
+    
+    if (targetCard) {
+        var offset = targetCard.getBoundingClientRect().top + window.pageYOffset - 100;
+        window.scrollTo({
+            top: offset,
+            behavior: 'smooth'
+        });
+        return true;
+    } else {
+        console.log('No section found with header:', headerText);
+        return false;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Log environment info for debugging
     console.log('Performance Tab: DOMContentLoaded event fired');
     console.log('Current URL:', window.location.href);
     console.log('Is HTTPS:', window.location.protocol === 'https:');
+    
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
     
     // Add tab visibility check and delay chart initialization
     function initializePerformanceChartsForTab() {

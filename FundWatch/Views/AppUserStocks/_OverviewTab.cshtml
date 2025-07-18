@@ -28,13 +28,21 @@
                     </div>
                     <div class="col-md-4 text-end">
                         <div class="btn-group" role="group" aria-label="Quick Actions">
-                            <button type="button" class="btn btn-light btn-lg" onclick="document.getElementById('analytics-tab').click();" title="View Analytics">
+                            <button type="button" class="btn btn-light btn-lg" 
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                    title="View Options Analysis & Greeks"
+                                    onclick="scrollToSection('Interactive Options Chain')">
                                 <i class="fas fa-chart-line"></i>
                             </button>
-                            <a href="/AppUserStocks/CreateOrEdit" class="btn btn-light btn-lg" title="Add Stock">
+                            <a href="/AppUserStocks/CreateOrEdit" class="btn btn-light btn-lg" 
+                               data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                               title="Add new stock to your portfolio">
                                 <i class="fas fa-plus"></i>
                             </a>
-                            <button type="button" class="btn btn-light btn-lg" onclick="window.scrollTo({ top: document.querySelector('.options-chain-table')?.offsetTop || 0, behavior: 'smooth' });" title="Options Calculator">
+                            <button type="button" class="btn btn-light btn-lg" 
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                    title="Analyze volatility patterns and market expectations"
+                                    onclick="scrollToSection('Volatility Smile')">
                                 <i class="fas fa-calculator"></i>
                             </button>
                         </div>
@@ -105,7 +113,7 @@
 @if (hasOptionsData)
 {
     <!-- Interactive Options Chain Visualization -->
-    <div class="row mb-4">
+    <div class="row mb-4" id="options-analysis-section">
         <div class="col-12">
             <div class="card shadow">
                 <div class="card-header bg-dark text-white">
@@ -197,7 +205,7 @@
     </div>
 
     <!-- Volatility Smile Visualization -->
-    <div class="row mb-4">
+    <div class="row mb-4" id="volatility-analysis-section">
         <div class="col-md-6">
             <div class="card shadow h-100">
                 <div class="card-header bg-info text-white">
@@ -293,10 +301,63 @@ else
 
 <!-- JavaScript for Interactive Charts -->
 <script>
+// Smooth scroll function
+function smoothScrollTo(targetId) {
+    console.log('Attempting to scroll to:', targetId);
+    var element = document.getElementById(targetId);
+    if (element) {
+        console.log('Element found:', element);
+        var offset = element.getBoundingClientRect().top + window.pageYOffset - 80;
+        console.log('Scrolling to offset:', offset);
+        window.scrollTo({
+            top: offset,
+            behavior: 'smooth'
+        });
+        return true;
+    }
+    console.log('Element not found:', targetId);
+    return false;
+}
+
+// Scroll to section by finding card header text
+function scrollToSection(headerText) {
+    console.log('Looking for section with header:', headerText);
+    
+    // Find all card headers
+    var headers = document.querySelectorAll('.card-header');
+    var targetCard = null;
+    
+    headers.forEach(function(header) {
+        if (header.textContent.includes(headerText)) {
+            targetCard = header.closest('.card');
+            console.log('Found matching header:', header);
+        }
+    });
+    
+    if (targetCard) {
+        var offset = targetCard.getBoundingClientRect().top + window.pageYOffset - 100;
+        window.scrollTo({
+            top: offset,
+            behavior: 'smooth'
+        });
+        return true;
+    } else {
+        console.log('No section found with header:', headerText);
+        alert('Section not available. Please add stocks to your portfolio first.');
+        return false;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Overview tab DOM loaded');
     console.log('Has options data: @hasOptionsData');
     console.log('Options analysis count: @(Model.OptionsAnalysis?.Count ?? 0)');
+    
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
     
     @if (hasOptionsData)
     {
