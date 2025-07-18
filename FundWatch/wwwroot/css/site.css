@@ -3008,6 +3008,14 @@ canvas.chart-container-450 {
 /* ============================
    NADEX TRADING STYLES
    ============================ */
+#marketStatus .card-subtitle {
+    color: #e0e0e0 !important;
+}
+
+#marketStatus .card-title {
+    color: #ffffff !important;
+}
+
 .indicator-card {
     padding: 15px;
     background: #f8f9fa;

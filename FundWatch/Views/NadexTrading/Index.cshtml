@@ -14,33 +14,33 @@
     <!-- Quick Stats Row -->
     <div class="row mb-4" id="marketStatus">
         <div class="col-md-3">
-            <div class="card bg-light">
+            <div class="card">
                 <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Market Status</h6>
+                    <h6 class="card-subtitle mb-2">Market Status</h6>
                     <h4 class="card-title" id="marketStatusText">Checking...</h4>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-light">
+            <div class="card">
                 <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Current Time (ET)</h6>
+                    <h6 class="card-subtitle mb-2">Current Time (ET)</h6>
                     <h4 class="card-title" id="currentTime">--:--:--</h4>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-light">
+            <div class="card">
                 <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Next Market Open</h6>
+                    <h6 class="card-subtitle mb-2">Next Market Open</h6>
                     <h4 class="card-title" id="nextOpen">--:--</h4>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-light">
+            <div class="card">
                 <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Active Signals</h6>
+                    <h6 class="card-subtitle mb-2">Active Signals</h6>
                     <h4 class="card-title" id="activeSignals">0</h4>
                 </div>
             </div>
@@ -50,31 +50,33 @@
     <!-- Symbol Selection and Controls -->
     <div class="row mb-4">
         <div class="col-md-8">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">Select Asset & Timeframe</h5>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
+                <div class="card-body d-flex flex-column">
+                    <div class="row flex-grow-1">
+                        <div class="col-md-6 d-flex flex-column">
                             <label for="symbolInput" class="form-label">Symbol</label>
-                            <div class="input-group">
+                            <div class="input-group mb-3">
                                 <input type="text" class="form-control" id="symbolInput" placeholder="Enter symbol (e.g., SPY, AAPL)" value="SPY">
                                 <button class="btn btn-primary" type="button" id="analyzeBtn">
                                     <i class="fas fa-chart-line"></i> Analyze
                                 </button>
                             </div>
-                            <div class="mt-2">
+                            <div class="mt-auto">
                                 <small class="text-muted">Popular:</small>
-                                @foreach (var symbol in Model.PopularSymbols)
-                                {
-                                    <button class="btn btn-sm btn-outline-secondary ms-1 popular-symbol" data-symbol="@symbol">@symbol</button>
-                                }
+                                <div class="mt-2">
+                                    @foreach (var symbol in Model.PopularSymbols)
+                                    {
+                                        <button class="btn btn-sm btn-outline-secondary ms-1 mb-1 popular-symbol" data-symbol="@symbol">@symbol</button>
+                                    }
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-flex flex-column">
                             <label for="timeframeSelect" class="form-label">Timeframe</label>
-                            <select class="form-select" id="timeframeSelect">
+                            <select class="form-select mb-3" id="timeframeSelect">
                                 @foreach (var tf in Model.TimeFrames)
                                 {
                                     @if (tf.Value == Model.SelectedTimeFrame)
@@ -87,14 +89,14 @@
                                     }
                                 }
                             </select>
-                            <small class="text-muted mt-1 d-block">Select based on your Nadex contract duration</small>
+                            <small class="text-muted mt-auto">Select based on your Nadex contract duration</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">Auto-Refresh Settings</h5>
                 </div>
