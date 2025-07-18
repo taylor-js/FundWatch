@@ -129,7 +129,12 @@
             if (data.success) {
                 displayTradingSignals(data.signals);
                 addToHistory(symbol, data.signals);
-                document.getElementById('signalContainer').style.display = 'block';
+                const signalContainer = document.getElementById('signalContainer');
+                if (signalContainer) {
+                    signalContainer.classList.remove('d-none');
+                } else {
+                    console.error('Signal container not found');
+                }
                 updateLastUpdateTime();
             } else {
                 showAlert(data.message || 'Failed to get trading signals', 'danger');

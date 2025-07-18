@@ -3016,6 +3016,22 @@ canvas.chart-container-450 {
     color: #ffffff !important;
 }
 
+/* Technical indicator cards */
+#signalContainer .card h3,
+#signalContainer .card h4,
+#signalContainer .card h5,
+#signalContainer .card h6 {
+    color: #ffffff !important;
+}
+
+#signalContainer .card .text-muted {
+    color: #8899a6 !important;
+}
+
+#signalContainer .card small {
+    color: #b0c4de !important;
+}
+
 .indicator-card {
     padding: 15px;
     background: #f8f9fa;
@@ -3025,19 +3041,22 @@ canvas.chart-container-450 {
 
 .level-indicator {
     height: 10px;
-    background: #e9ecef;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 5px;
     position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .price-position {
     position: absolute;
-    top: -5px;
-    width: 20px;
-    height: 20px;
+    top: -6px;
+    width: 22px;
+    height: 22px;
     background: #007bff;
     border-radius: 50%;
     transition: left 0.3s ease;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .popular-symbol {
@@ -3055,6 +3074,21 @@ canvas.chart-container-450 {
 .signal-neutral { background-color: #6c757d; color: white; }
 .signal-sell { background-color: #dc3545; color: white; }
 .signal-strong-sell { background-color: #bd2130; color: white; }
+
+/* Nadex Trading specific card styling */
+.bg-dark {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+.bg-dark .card-body h2,
+.bg-dark .card-body h5,
+.bg-dark .card-body h6 {
+    color: #ffffff !important;
+}
+
+.bg-dark .card-body .text-muted {
+    color: #8899a6 !important;
+}
 
 /* Toast container for notifications */
 #toast-container {

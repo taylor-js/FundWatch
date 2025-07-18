@@ -124,75 +124,88 @@
     </div>
 
     <!-- Main Trading Signal Display -->
-    <div class="row mb-4" id="signalContainer" style="display: none;">
-        <div class="col-md-8">
-            <div class="card">
+    <div class="row mb-4 d-none" id="signalContainer">
+        <!-- Column 1: Trading Signal Analysis -->
+        <div class="col-md-6">
+            <div class="card h-100">
                 <div class="card-header">
                     <h5 class="mb-0">Trading Signal Analysis</h5>
                 </div>
                 <div class="card-body">
                     <!-- Current Price and Signal -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h6 class="text-muted">Current Price</h6>
-                            <h2 id="currentPrice" class="mb-0">--</h2>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <h6 class="text-muted mb-2">Current Price</h6>
+                            <h3 id="currentPrice" class="mb-0">--</h3>
                             <small id="priceChange" class="text-muted">--</small>
                         </div>
-                        <div class="col-md-6 text-end">
-                            <h6 class="text-muted">Signal</h6>
-                            <h2 id="signalText" class="mb-0">--</h2>
-                            <div class="progress" style="height: 10px;">
+                        <div class="col-6">
+                            <h6 class="text-muted mb-2">Signal</h6>
+                            <h3 id="signalText" class="mb-2">--</h3>
+                            <div class="progress" style="height: 8px;">
                                 <div id="confidenceBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
                             </div>
                             <small class="text-muted">Confidence: <span id="confidenceText">0%</span></small>
                         </div>
                     </div>
 
-                    <!-- Technical Indicators -->
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="indicator-card">
-                                <h6>RSI (14)</h6>
-                                <div class="d-flex align-items-center">
-                                    <h4 id="rsiValue" class="mb-0 me-2">--</h4>
-                                    <span id="rsiStatus" class="badge">--</span>
-                                </div>
-                            </div>
+                    <hr class="my-3">
+
+                    <!-- RSI -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">RSI (14)</h6>
+                        <div class="d-flex align-items-center">
+                            <h4 id="rsiValue" class="mb-0 me-3">--</h4>
+                            <span id="rsiStatus" class="badge">--</span>
                         </div>
-                        <div class="col-md-4">
-                            <div class="indicator-card">
-                                <h6>Moving Averages</h6>
-                                <small class="d-block">SMA20: <span id="sma20">--</span></small>
-                                <small class="d-block">SMA50: <span id="sma50">--</span></small>
+                    </div>
+
+                    <!-- Moving Averages -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Moving Averages</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">SMA20</small>
+                                <h5 id="sma20" class="mb-0">--</h5>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="indicator-card">
-                                <h6>MACD</h6>
-                                <small class="d-block">MACD: <span id="macdValue">--</span></small>
-                                <small class="d-block">Signal: <span id="macdSignal">--</span></small>
+                            <div class="col-6">
+                                <small class="text-muted">SMA50</small>
+                                <h5 id="sma50" class="mb-0">--</h5>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Support & Resistance -->
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <h6>Key Levels</h6>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="text-center">
-                                    <small class="text-muted d-block">Support</small>
-                                    <strong id="supportLevel">--</strong>
+                    <!-- MACD -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">MACD</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">MACD</small>
+                                <h5 id="macdValue" class="mb-0">--</h5>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Signal</small>
+                                <h5 id="macdSignal" class="mb-0">--</h5>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Levels -->
+                    <div class="mt-3">
+                        <h6 class="text-muted mb-2">Key Levels</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted d-block">Support</small>
+                                <h5 id="supportLevel" class="mb-0">--</h5>
+                            </div>
+                            <div class="flex-grow-1 mx-3">
+                                <div class="level-indicator">
+                                    <div id="pricePosition" class="price-position"></div>
                                 </div>
-                                <div class="flex-grow-1 mx-3">
-                                    <div class="level-indicator">
-                                        <div id="pricePosition" class="price-position"></div>
-                                    </div>
-                                </div>
-                                <div class="text-center">
-                                    <small class="text-muted d-block">Resistance</small>
-                                    <strong id="resistanceLevel">--</strong>
-                                </div>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Resistance</small>
+                                <h5 id="resistanceLevel" class="mb-0">--</h5>
                             </div>
                         </div>
                     </div>
@@ -200,65 +213,80 @@
             </div>
         </div>
 
-        <!-- Binary Options Strategy -->
-        <div class="col-md-4">
-            <div class="card">
+        <!-- Column 2: Nadex Strategy and Alert Settings -->
+        <div class="col-md-6">
+            <div class="card h-100">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">Nadex Strategy</h5>
                 </div>
                 <div class="card-body">
-                    <div class="strategy-recommendation mb-3">
-                        <h6>Recommended Action</h6>
-                        <div id="strategyAction" class="alert alert-secondary text-center">
+                    <!-- Recommended Action -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Recommended Action</h6>
+                        <div id="strategyAction" class="alert alert-secondary text-center mb-0">
                             Analyzing...
                         </div>
                     </div>
 
-                    <div class="strike-prices mb-3">
-                        <h6>Suggested Strikes</h6>
+                    <!-- Suggested Strikes -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Suggested Strikes</h6>
                         <div class="row">
                             <div class="col-6">
-                                <small class="text-muted d-block">Call (Buy)</small>
-                                <strong id="callStrike" class="text-success">--</strong>
+                                <div class="text-center p-3 bg-dark rounded">
+                                    <small class="text-muted d-block">Call (Buy)</small>
+                                    <h5 id="callStrike" class="text-success mb-0 mt-1">--</h5>
+                                </div>
                             </div>
                             <div class="col-6">
-                                <small class="text-muted d-block">Put (Sell)</small>
-                                <strong id="putStrike" class="text-danger">--</strong>
+                                <div class="text-center p-3 bg-dark rounded">
+                                    <small class="text-muted d-block">Put (Sell)</small>
+                                    <h5 id="putStrike" class="text-danger mb-0 mt-1">--</h5>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="risk-management">
-                        <h6>Risk Analysis</h6>
-                        <small class="d-block">Expected Value: <span id="expectedPayout">--</span></small>
-                        <small class="d-block">Win Probability: <span id="winProbability">--</span></small>
-                        <div class="mt-2">
-                            <small class="text-warning">
-                                <i class="fas fa-exclamation-triangle"></i> 
-                                Risk only what you can afford to lose
-                            </small>
+                    <!-- Risk Analysis -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Risk Analysis</h6>
+                        <div class="bg-dark p-3 rounded">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Expected Value</small>
+                                    <h5 id="expectedPayout" class="mb-0">--</h5>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Win Probability</small>
+                                    <h5 id="winProbability" class="mb-0">--</h5>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-center">
+                                <small class="text-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    Risk only what you can afford to lose
+                                </small>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Alert Settings -->
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h6 class="mb-0">Alert Settings</h6>
-                </div>
-                <div class="card-body">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="strongSignalAlert">
-                        <label class="form-check-label" for="strongSignalAlert">
-                            Alert on Strong Signals
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="soundAlert">
-                        <label class="form-check-label" for="soundAlert">
-                            Enable Sound Alerts
-                        </label>
+                    <hr class="my-3">
+
+                    <!-- Alert Settings -->
+                    <div>
+                        <h6 class="text-muted mb-2">Alert Settings</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="strongSignalAlert">
+                            <label class="form-check-label" for="strongSignalAlert">
+                                Alert on Strong Signals
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="soundAlert">
+                            <label class="form-check-label" for="soundAlert">
+                                Enable Sound Alerts
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
