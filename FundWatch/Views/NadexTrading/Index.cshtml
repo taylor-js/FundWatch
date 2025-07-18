@@ -1,0 +1,302 @@
+@model FundWatch.Models.ViewModels.NadexTradingViewModel
+@{
+    ViewData["Title"] = "Nadex Trading Signals";
+}
+
+<div class="container-fluid px-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-4 text-primary">Nadex Trading Signals</h1>
+            <p class="lead">Real-time market analysis and binary options trading signals powered by advanced technical indicators</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row mb-4" id="marketStatus">
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2 text-muted">Market Status</h6>
+                    <h4 class="card-title" id="marketStatusText">Checking...</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2 text-muted">Current Time (ET)</h6>
+                    <h4 class="card-title" id="currentTime">--:--:--</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2 text-muted">Next Market Open</h6>
+                    <h4 class="card-title" id="nextOpen">--:--</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2 text-muted">Active Signals</h6>
+                    <h4 class="card-title" id="activeSignals">0</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Symbol Selection and Controls -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Select Asset & Timeframe</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="symbolInput" class="form-label">Symbol</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="symbolInput" placeholder="Enter symbol (e.g., SPY, AAPL)" value="SPY">
+                                <button class="btn btn-primary" type="button" id="analyzeBtn">
+                                    <i class="fas fa-chart-line"></i> Analyze
+                                </button>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">Popular:</small>
+                                @foreach (var symbol in Model.PopularSymbols)
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary ms-1 popular-symbol" data-symbol="@symbol">@symbol</button>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="timeframeSelect" class="form-label">Timeframe</label>
+                            <select class="form-select" id="timeframeSelect">
+                                @foreach (var tf in Model.TimeFrames)
+                                {
+                                    @if (tf.Value == Model.SelectedTimeFrame)
+                                    {
+                                        <option value="@tf.Value" selected>@tf.Display</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@tf.Value">@tf.Display</option>
+                                    }
+                                }
+                            </select>
+                            <small class="text-muted mt-1 d-block">Select based on your Nadex contract duration</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Auto-Refresh Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="autoRefresh">
+                        <label class="form-check-label" for="autoRefresh">
+                            Enable Auto-Refresh
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="refreshInterval" class="form-label">Refresh Interval</label>
+                        <select class="form-select" id="refreshInterval" disabled>
+                            <option value="30">30 seconds</option>
+                            <option value="60" selected>1 minute</option>
+                            <option value="300">5 minutes</option>
+                        </select>
+                    </div>
+                    <div class="text-center">
+                        <small class="text-muted">Last Update: <span id="lastUpdate">Never</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Trading Signal Display -->
+    <div class="row mb-4" id="signalContainer" style="display: none;">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Trading Signal Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Current Price and Signal -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Current Price</h6>
+                            <h2 id="currentPrice" class="mb-0">--</h2>
+                            <small id="priceChange" class="text-muted">--</small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <h6 class="text-muted">Signal</h6>
+                            <h2 id="signalText" class="mb-0">--</h2>
+                            <div class="progress" style="height: 10px;">
+                                <div id="confidenceBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted">Confidence: <span id="confidenceText">0%</span></small>
+                        </div>
+                    </div>
+
+                    <!-- Technical Indicators -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="indicator-card">
+                                <h6>RSI (14)</h6>
+                                <div class="d-flex align-items-center">
+                                    <h4 id="rsiValue" class="mb-0 me-2">--</h4>
+                                    <span id="rsiStatus" class="badge">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="indicator-card">
+                                <h6>Moving Averages</h6>
+                                <small class="d-block">SMA20: <span id="sma20">--</span></small>
+                                <small class="d-block">SMA50: <span id="sma50">--</span></small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="indicator-card">
+                                <h6>MACD</h6>
+                                <small class="d-block">MACD: <span id="macdValue">--</span></small>
+                                <small class="d-block">Signal: <span id="macdSignal">--</span></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Support & Resistance -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Key Levels</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-center">
+                                    <small class="text-muted d-block">Support</small>
+                                    <strong id="supportLevel">--</strong>
+                                </div>
+                                <div class="flex-grow-1 mx-3">
+                                    <div class="level-indicator">
+                                        <div id="pricePosition" class="price-position"></div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <small class="text-muted d-block">Resistance</small>
+                                    <strong id="resistanceLevel">--</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Binary Options Strategy -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Nadex Strategy</h5>
+                </div>
+                <div class="card-body">
+                    <div class="strategy-recommendation mb-3">
+                        <h6>Recommended Action</h6>
+                        <div id="strategyAction" class="alert alert-secondary text-center">
+                            Analyzing...
+                        </div>
+                    </div>
+
+                    <div class="strike-prices mb-3">
+                        <h6>Suggested Strikes</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted d-block">Call (Buy)</small>
+                                <strong id="callStrike" class="text-success">--</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block">Put (Sell)</small>
+                                <strong id="putStrike" class="text-danger">--</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-management">
+                        <h6>Risk Analysis</h6>
+                        <small class="d-block">Expected Value: <span id="expectedPayout">--</span></small>
+                        <small class="d-block">Win Probability: <span id="winProbability">--</span></small>
+                        <div class="mt-2">
+                            <small class="text-warning">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Risk only what you can afford to lose
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Settings -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Alert Settings</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="strongSignalAlert">
+                        <label class="form-check-label" for="strongSignalAlert">
+                            Alert on Strong Signals
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="soundAlert">
+                        <label class="form-check-label" for="soundAlert">
+                            Enable Sound Alerts
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signal History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Signals</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="signalHistory">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Symbol</th>
+                                    <th>Price</th>
+                                    <th>Signal</th>
+                                    <th>Confidence</th>
+                                    <th>Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No signals yet. Start by analyzing a symbol.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/nadex-trading.js"></script>
+}
