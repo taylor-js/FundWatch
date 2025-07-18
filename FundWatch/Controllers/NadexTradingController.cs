@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using FundWatch.Services;
 using FundWatch.Models;
 using FundWatch.Models.ViewModels;
+using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 namespace FundWatch.Controllers
 {
@@ -11,21 +13,24 @@ namespace FundWatch.Controllers
     {
         private readonly ILogger<NadexTradingController> _logger;
         private readonly StockService _stockService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public NadexTradingController(
             ILogger<NadexTradingController> logger,
-            StockService stockService)
+            StockService stockService,
+            IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _stockService = stockService;
+            _httpClientFactory = httpClientFactory;
         }
 
         public IActionResult Index()
         {
             var model = new NadexTradingViewModel
             {
-                // Initialize with popular trading symbols
-                PopularSymbols = new[] { "SPY", "QQQ", "GLD", "AAPL", "MSFT", "TSLA" },
+                // Initialize with popular trading symbols including forex pairs
+                PopularSymbols = new[] { "SPY", "QQQ", "EUR/USD", "GBP/USD", "USD/JPY", "AAPL" },
                 TimeFrames = new[] 
                 { 
                     new TimeFrameOption { Value = "5min", Display = "5 Minutes" },
@@ -44,6 +49,10 @@ namespace FundWatch.Controllers
         {
             try
             {
+                // Determine if this is a forex pair
+                var isForex = IsForexPair(request.Symbol);
+                var apiSymbol = isForex ? ConvertToForexSymbol(request.Symbol) : request.Symbol;
+                
                 // Get stock data from Polygon.io
                 // We need more historical data to calculate technical indicators properly
                 var daysBack = request.TimeFrame switch
@@ -55,12 +64,24 @@ namespace FundWatch.Controllers
                     _ => 5
                 };
 
-                var stockDataDict = await _stockService.GetRealTimeDataAsync(
-                    new List<string> { request.Symbol }, 
-                    daysBack
-                );
+                // For forex pairs, we need to use a different approach
+                List<StockDataPoint>? stockData = null;
+                
+                if (isForex)
+                {
+                    stockData = await GetForexDataAsync(apiSymbol, daysBack, request.TimeFrame);
+                }
+                else
+                {
+                    var stockDataDict = await _stockService.GetRealTimeDataAsync(
+                        new List<string> { request.Symbol }, 
+                        daysBack
+                    );
+                    
+                    stockDataDict.TryGetValue(request.Symbol, out stockData);
+                }
 
-                if (!stockDataDict.TryGetValue(request.Symbol, out var stockData) || stockData == null || !stockData.Any())
+                if (stockData == null || !stockData.Any())
                 {
                     return Json(new { success = false, message = "No data available for this symbol" });
                 }
@@ -305,6 +326,107 @@ namespace FundWatch.Controllers
             var expectedPayout = (winProbability * typicalPayout) - ((1 - winProbability) * 1);
 
             return (callStrike, putStrike, expectedPayout);
+        }
+
+        private bool IsForexPair(string symbol)
+        {
+            // Common forex pair patterns
+            var forexPairs = new[] { "EUR", "USD", "GBP", "JPY", "CHF", "AUD", "CAD", "NZD" };
+            
+            // Check if symbol contains currency codes
+            if (symbol.Contains("/") || symbol.Contains("-"))
+            {
+                return true;
+            }
+            
+            // Check if it's a 6-character currency pair
+            if (symbol.Length == 6)
+            {
+                var first = symbol.Substring(0, 3);
+                var second = symbol.Substring(3, 3);
+                return forexPairs.Contains(first) && forexPairs.Contains(second);
+            }
+            
+            return false;
+        }
+
+        private string ConvertToForexSymbol(string symbol)
+        {
+            // Remove any separators and convert to Polygon forex format
+            var cleanSymbol = symbol.Replace("/", "").Replace("-", "").ToUpper();
+            
+            // Ensure it's 6 characters for forex
+            if (cleanSymbol.Length == 6)
+            {
+                return $"C:{cleanSymbol}";
+            }
+            
+            return cleanSymbol;
+        }
+
+        private async Task<List<StockDataPoint>> GetForexDataAsync(string symbol, int daysBack, string timeFrame)
+        {
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient("PolygonApi");
+                var today = DateTime.UtcNow.Date;
+                var startDate = today.AddDays(-daysBack);
+                
+                // Determine the multiplier and timespan for the API
+                var (multiplier, timespan) = timeFrame switch
+                {
+                    "5min" => (5, "minute"),
+                    "20min" => (20, "minute"),
+                    "1hour" => (1, "hour"),
+                    "1day" => (1, "day"),
+                    _ => (5, "minute")
+                };
+                
+                var url = $"v2/aggs/ticker/{symbol}/range/{multiplier}/{timespan}/{startDate:yyyy-MM-dd}/{today:yyyy-MM-dd}?adjusted=true&sort=asc&limit=50000";
+                
+                _logger.LogInformation($"Fetching forex data from: {url}");
+                
+                var response = await httpClient.GetAsync(url);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var data = JObject.Parse(json);
+                    
+                    if (data["results"] is JArray results)
+                    {
+                        var dataPoints = new List<StockDataPoint>();
+                        
+                        foreach (var result in results)
+                        {
+                            var timestamp = result["t"]?.Value<long>() ?? 0;
+                            var date = DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
+                            
+                            dataPoints.Add(new StockDataPoint
+                            {
+                                Date = date,
+                                Open = result["o"]?.Value<decimal>() ?? 0,
+                                High = result["h"]?.Value<decimal>() ?? 0,
+                                Low = result["l"]?.Value<decimal>() ?? 0,
+                                Close = result["c"]?.Value<decimal>() ?? 0,
+                                Volume = result["v"]?.Value<long>() ?? 0
+                            });
+                        }
+                        
+                        return dataPoints.OrderBy(d => d.Date).ToList();
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning($"Forex API request failed: {response.StatusCode} - {response.ReasonPhrase}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching forex data for {Symbol}", symbol);
+            }
+            
+            return new List<StockDataPoint>();
         }
     }
 
