@@ -45,13 +45,14 @@ namespace FundWatch.Controllers
             try
             {
                 // Get stock data from Polygon.io
+                // We need more historical data to calculate technical indicators properly
                 var daysBack = request.TimeFrame switch
                 {
-                    "5min" => 1,
-                    "20min" => 1,
-                    "1hour" => 3,
-                    "1day" => 30,
-                    _ => 1
+                    "5min" => 5,    // 5 days of 5-minute data
+                    "20min" => 10,   // 10 days of 20-minute data
+                    "1hour" => 20,   // 20 days of hourly data
+                    "1day" => 60,    // 60 days of daily data
+                    _ => 5
                 };
 
                 var stockDataDict = await _stockService.GetRealTimeDataAsync(
@@ -63,6 +64,8 @@ namespace FundWatch.Controllers
                 {
                     return Json(new { success = false, message = "No data available for this symbol" });
                 }
+
+                _logger.LogInformation($"Retrieved {stockData.Count} data points for {request.Symbol}");
 
                 // Calculate technical indicators
                 var signals = CalculateTradingSignals(stockData, request.TimeFrame);
@@ -129,7 +132,11 @@ namespace FundWatch.Controllers
 
         private double CalculateRSI(List<double> prices, int period)
         {
-            if (prices.Count < period + 1) return 50;
+            if (prices.Count < period + 1) 
+            {
+                _logger.LogWarning($"Insufficient data for RSI calculation. Need {period + 1} points, have {prices.Count}");
+                return 50;
+            }
 
             var gains = new List<double>();
             var losses = new List<double>();
@@ -149,10 +156,13 @@ namespace FundWatch.Controllers
                 }
             }
 
-            var avgGain = gains.Skip(gains.Count - period).Average();
-            var avgLoss = losses.Skip(losses.Count - period).Average();
+            // Make sure we have enough data points
+            if (gains.Count < period) return 50;
 
-            if (avgLoss == 0) return 100;
+            var avgGain = gains.Skip(Math.Max(0, gains.Count - period)).Average();
+            var avgLoss = losses.Skip(Math.Max(0, losses.Count - period)).Average();
+
+            if (avgLoss == 0) return avgGain > 0 ? 100 : 50;
 
             var rs = avgGain / avgLoss;
             return 100 - (100 / (1 + rs));
