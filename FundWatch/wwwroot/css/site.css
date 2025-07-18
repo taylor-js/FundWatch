@@ -3055,3 +3055,17 @@ canvas.chart-container-450 {
 .signal-neutral { background-color: #6c757d; color: white; }
 .signal-sell { background-color: #dc3545; color: white; }
 .signal-strong-sell { background-color: #bd2130; color: white; }
+
+/* Toast container for notifications */
+#toast-container {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 350px;
+}
+
+#toast-container .alert {
+    margin-bottom: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}

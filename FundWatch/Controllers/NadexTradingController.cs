@@ -25,7 +25,7 @@ namespace FundWatch.Controllers
             var model = new NadexTradingViewModel
             {
                 // Initialize with popular trading symbols
-                PopularSymbols = new[] { "SPY", "QQQ", "GLD", "EUR/USD", "USD/JPY", "BTC-USD" },
+                PopularSymbols = new[] { "SPY", "QQQ", "GLD", "AAPL", "MSFT", "TSLA" },
                 TimeFrames = new[] 
                 { 
                     new TimeFrameOption { Value = "5min", Display = "5 Minutes" },

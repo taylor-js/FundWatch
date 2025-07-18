@@ -143,29 +143,36 @@
     }
 
     function displayTradingSignals(signals) {
+        // Validate signals object
+        if (!signals || typeof signals !== 'object') {
+            showAlert('Invalid trading signals received', 'danger');
+            return;
+        }
+
         // Update price and basic info
-        document.getElementById('currentPrice').textContent = `$${signals.currentPrice.toFixed(2)}`;
+        document.getElementById('currentPrice').textContent = `$${(signals.currentPrice || 0).toFixed(2)}`;
         
         // Update signal and confidence
         const signalElement = document.getElementById('signalText');
-        signalElement.textContent = signals.signal;
-        signalElement.className = `mb-0 ${getSignalClass(signals.signal)}`;
+        signalElement.textContent = signals.signal || 'NEUTRAL';
+        signalElement.className = `mb-0 ${getSignalClass(signals.signal || 'NEUTRAL')}`;
         
-        document.getElementById('confidenceBar').style.width = `${signals.confidence}%`;
-        document.getElementById('confidenceBar').className = `progress-bar ${getConfidenceBarClass(signals.confidence)}`;
-        document.getElementById('confidenceText').textContent = `${signals.confidence.toFixed(1)}%`;
+        const confidence = signals.confidence || 0;
+        document.getElementById('confidenceBar').style.width = `${confidence}%`;
+        document.getElementById('confidenceBar').className = `progress-bar ${getConfidenceBarClass(confidence)}`;
+        document.getElementById('confidenceText').textContent = `${confidence.toFixed(1)}%`;
 
-        // Update technical indicators
-        updateRSI(signals.rsi);
-        document.getElementById('sma20').textContent = signals.sma20.toFixed(2);
-        document.getElementById('sma50').textContent = signals.sma50.toFixed(2);
-        document.getElementById('macdValue').textContent = signals.macd.toFixed(4);
-        document.getElementById('macdSignal').textContent = signals.macdSignal.toFixed(4);
+        // Update technical indicators with fallbacks
+        updateRSI(signals.rsi || signals.RSI || 50);
+        document.getElementById('sma20').textContent = (signals.sma20 || signals.SMA20 || 0).toFixed(2);
+        document.getElementById('sma50').textContent = (signals.sma50 || signals.SMA50 || 0).toFixed(2);
+        document.getElementById('macdValue').textContent = (signals.macd || signals.MACD || 0).toFixed(4);
+        document.getElementById('macdSignal').textContent = (signals.macdSignal || signals.MACDSignal || 0).toFixed(4);
 
         // Update support and resistance
-        document.getElementById('supportLevel').textContent = `$${signals.support.toFixed(2)}`;
-        document.getElementById('resistanceLevel').textContent = `$${signals.resistance.toFixed(2)}`;
-        updatePricePosition(signals.currentPrice, signals.support, signals.resistance);
+        document.getElementById('supportLevel').textContent = `$${(signals.support || 0).toFixed(2)}`;
+        document.getElementById('resistanceLevel').textContent = `$${(signals.resistance || 0).toFixed(2)}`;
+        updatePricePosition(signals.currentPrice || 0, signals.support || 0, signals.resistance || 0);
 
         // Update Nadex strategy
         updateNadexStrategy(signals);
@@ -325,8 +332,32 @@
     }
 
     function showAlert(message, type) {
-        // You could implement a toast notification here
-        console.error(message);
+        // Create a toast notification
+        const toastContainer = document.getElementById('toast-container') || createToastContainer();
+        
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 150);
+        }, 5000);
+    }
+    
+    function createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position: fixed; top: 100px; right: 20px; z-index: 9999;';
+        document.body.appendChild(container);
+        return container;
     }
 
     function showNotification(message) {
